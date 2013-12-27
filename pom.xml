@@ -15,7 +15,11 @@
 		<!--  maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
 		<buildNumber>${maven.build.timestamp}</buildNumber -->
 	</properties>
-
+	<scm>
+		<connection>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</connection>
+		<developerConnection>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</developerConnection>
+		<url>http://code.taobao.org/svn/openclouddb/trunk</url>
+	</scm>
 	<dependencies>
 		<dependency>
 			<groupId>log4j</groupId>
@@ -261,7 +265,7 @@
             			<item>timestamp</item>
             			<item>scmVersion</item>
           			</items>
-					<urlScm>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</urlScm>
+					<!--  urlScm>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</urlScm -->
 					<doCheck>false</doCheck>
 					<doUpdate>false</doUpdate>
 					<useLastCommittedRevision>true</useLastCommittedRevision>
