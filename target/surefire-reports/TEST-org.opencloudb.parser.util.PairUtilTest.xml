@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite failures="0" time="0.001" errors="0" skipped="0" tests="1" name="org.opencloudb.parser.util.PairUtilTest">
+<testsuite failures="0" time="0.005" errors="0" skipped="0" tests="1" name="org.opencloudb.parser.util.PairUtilTest">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
     <property name="sun.boot.library.path" value="/home/svn/jdk1.6.0_45/jre/lib/i386"/>
@@ -19,7 +19,7 @@
     <property name="basedir" value="/home/svn/trunk"/>
     <property name="java.endorsed.dirs" value="/home/svn/jdk1.6.0_45/jre/lib/endorsed"/>
     <property name="os.arch" value="i386"/>
-    <property name="surefire.real.class.path" value="/tmp/surefirebooter6908173551444392402.jar"/>
+    <property name="surefire.real.class.path" value="/tmp/surefirebooter4928659939646365776.jar"/>
     <property name="java.io.tmpdir" value="/tmp"/>
     <property name="line.separator" value="
 "/>
@@ -42,7 +42,7 @@
     <property name="java.vm.specification.version" value="1.0"/>
     <property name="sun.arch.data.model" value="32"/>
     <property name="java.home" value="/home/svn/jdk1.6.0_45/jre"/>
-    <property name="sun.java.command" value="/tmp/surefirebooter6908173551444392402.jar /tmp/surefire4549181383095458002tmp /tmp/surefire3806799619696372227tmp"/>
+    <property name="sun.java.command" value="/tmp/surefirebooter4928659939646365776.jar /tmp/surefire5895436306195570294tmp /tmp/surefire5267378039969036523tmp"/>
     <property name="java.specification.vendor" value="Sun Microsystems Inc."/>
     <property name="user.language" value="zh"/>
     <property name="java.vm.info" value="mixed mode"/>

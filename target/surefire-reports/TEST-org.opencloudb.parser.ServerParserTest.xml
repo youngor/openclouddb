@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite failures="0" time="0.138" errors="0" skipped="0" tests="37" name="org.opencloudb.parser.ServerParserTest">
+<testsuite failures="0" time="0.14" errors="0" skipped="0" tests="37" name="org.opencloudb.parser.ServerParserTest">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
     <property name="sun.boot.library.path" value="/home/svn/jdk1.6.0_45/jre/lib/i386"/>
@@ -19,7 +19,7 @@
     <property name="basedir" value="/home/svn/trunk"/>
     <property name="java.endorsed.dirs" value="/home/svn/jdk1.6.0_45/jre/lib/endorsed"/>
     <property name="os.arch" value="i386"/>
-    <property name="surefire.real.class.path" value="/tmp/surefirebooter6908173551444392402.jar"/>
+    <property name="surefire.real.class.path" value="/tmp/surefirebooter4928659939646365776.jar"/>
     <property name="java.io.tmpdir" value="/tmp"/>
     <property name="line.separator" value="
 "/>
@@ -42,7 +42,7 @@
     <property name="java.vm.specification.version" value="1.0"/>
     <property name="sun.arch.data.model" value="32"/>
     <property name="java.home" value="/home/svn/jdk1.6.0_45/jre"/>
-    <property name="sun.java.command" value="/tmp/surefirebooter6908173551444392402.jar /tmp/surefire4549181383095458002tmp /tmp/surefire3806799619696372227tmp"/>
+    <property name="sun.java.command" value="/tmp/surefirebooter4928659939646365776.jar /tmp/surefire5895436306195570294tmp /tmp/surefire5267378039969036523tmp"/>
     <property name="java.specification.vendor" value="Sun Microsystems Inc."/>
     <property name="user.language" value="zh"/>
     <property name="java.vm.info" value="mixed mode"/>
@@ -57,41 +57,41 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase time="0.01" classname="org.opencloudb.parser.ServerParserTest" name="testIsBegin"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsBegin"/>
   <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsCommit"/>
-  <testcase time="0.016" classname="org.opencloudb.parser.ServerParserTest" name="testComment"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsDelete"/>
-  <testcase time="0.01" classname="org.opencloudb.parser.ServerParserTest" name="testIsInsert"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testComment"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsDelete"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsInsert"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsReplace"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsRollback"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelect"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsSet"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsShow"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsStart"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsUpdate"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsShowDatabases"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsShowDataSources"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsSet"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsShow"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsStart"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsUpdate"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsShowDatabases"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsShowDataSources"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testShowCobarStatus"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testShowCobarCluster"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testShowCobarCluster"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsShowOther"/>
-  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetAutocommitOn"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetAutocommitOff"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetNames"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsCharacterSetResults"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetOther"/>
+  <testcase time="0.005" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetAutocommitOn"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetAutocommitOff"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetNames"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsCharacterSetResults"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSetOther"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsKill"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsKillQuery"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsKillQuery"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSavepoint"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsUse"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsStartTransaction"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectVersionComment"/>
-  <testcase time="0.001" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectVersion"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectDatabase"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectUser"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testTxReadUncommitted"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsStartTransaction"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectVersionComment"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectVersion"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectDatabase"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIsSelectUser"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testTxReadUncommitted"/>
   <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testTxReadCommitted"/>
   <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testTxRepeatedRead"/>
-  <testcase time="0.002" classname="org.opencloudb.parser.ServerParserTest" name="testTxSerializable"/>
-  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testIdentity"/>
+  <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testTxSerializable"/>
+  <testcase time="0.004" classname="org.opencloudb.parser.ServerParserTest" name="testIdentity"/>
   <testcase time="0.003" classname="org.opencloudb.parser.ServerParserTest" name="testLastInsertId"/>
 </testsuite>
