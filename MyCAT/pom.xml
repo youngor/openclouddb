@@ -268,11 +268,10 @@
 					<doUpdate>false</doUpdate>
 
 					<providerImplementations>
-					 <svn>svnkit</svn> 
+					 <svn>javasvn</svn> 
 					 </providerImplementations>
 
 				</configuration>
-
 				<dependencies>
 					<dependency>
 						<groupId>com.google.code.maven-scm-provider-svnjava</groupId>
@@ -285,7 +284,6 @@
 						<version>1.7.8</version>
 					</dependency>
 				</dependencies>
-
 			</plugin>
 		</plugins>
 	</build>
