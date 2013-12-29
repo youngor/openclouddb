@@ -63,22 +63,21 @@ public class NonBlockingSession implements Session {
 	private volatile MultiNodeQueryHandler multiNodeHandler;
 	private volatile CommitNodeHandler commitHandler;
 	private volatile RollbackNodeHandler rollbackHandler;
-	private boolean openWRFluxContrl=false;
+	private boolean openWRFluxContrl = false;
 
-	public NonBlockingSession(ServerConnection source,int openWRFluxContrl) {
+	public NonBlockingSession(ServerConnection source, int openWRFluxContrl) {
 		this.source = source;
 		this.target = new ConcurrentHashMap<RouteResultsetNode, PhysicalConnection>(
 				2, 1);
 		this.terminating = new AtomicBoolean(false);
-		this.openWRFluxContrl=(openWRFluxContrl==1);
+		this.openWRFluxContrl = (openWRFluxContrl == 1);
 	}
 
 	/**
 	 * temporary supress channel read event ,because front connection is blocked
 	 */
 	public void supressTargetChannelReadEvent() {
-		if(!openWRFluxContrl)
-		{
+		if (!openWRFluxContrl) {
 			return;
 		}
 		final boolean isDebug = LOGGER.isDebugEnabled();
@@ -99,8 +98,7 @@ public class NonBlockingSession implements Session {
 	 * blocked
 	 */
 	public void unSupressTargetChannelReadEvent() {
-		if(!openWRFluxContrl)
-		{
+		if (!openWRFluxContrl) {
 			return;
 		}
 		final boolean isDebug = LOGGER.isDebugEnabled();
@@ -196,6 +194,9 @@ public class NonBlockingSession implements Session {
 	public void rollback() {
 		final int initCount = target.size();
 		if (initCount <= 0) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("no session bound connections found ,no need send rollback cmd ");
+			}
 			ByteBuffer buffer = source.allocate();
 			buffer = source.writeToBuffer(OkPacket.OK, buffer);
 			source.write(buffer);
@@ -239,17 +240,12 @@ public class NonBlockingSession implements Session {
 		});
 	}
 
-	public boolean closeConnection(RouteResultsetNode key) {
-		PhysicalConnection conn = target.remove(key);
-		if (conn != null) {
-			conn.close();
-			return true;
+	public void releaseConnectionIfSafe(PhysicalConnection conn, boolean debug) {
+		if (this.source.isAutocommit() || conn.isFromSlaveDB()
+				|| !conn.isModifiedSQLExecuted()) {
+			releaseConnection((RouteResultsetNode) conn.getAttachment(),
+					LOGGER.isDebugEnabled());
 		}
-		return false;
-	}
-
-	public void clearConnections() {
-		clearConnections(true);
 	}
 
 	public void releaseConnection(RouteResultsetNode rrn, boolean debug) {
@@ -263,18 +259,14 @@ public class NonBlockingSession implements Session {
 				c.setAttachment(null);
 			}
 			if (c.isRunning()) {
-				c.close();
-				try {
-					throw new IllegalStateException(
-							"running connection is found: " + c);
-				} catch (Exception e) {
-					LOGGER.error(e.getMessage(), e);
-				}
+				LOGGER.warn("close running connection is found " + c);
+				c.close("abnomal");
 			} else if (!c.isClosedOrQuit()) {
-				if (source.isClosed()) {
-					c.quit();
-				} else {
+				if (c.isAutocommit()) {
 					c.release();
+				} else {
+					c.setResponseHandler(new RollbackReleaseHandler());
+					c.rollback();
 				}
 			}
 		}
@@ -328,6 +320,32 @@ public class NonBlockingSession implements Session {
 		}
 	}
 
+	public boolean tryExistsCon(final PhysicalConnection conn,
+			RouteResultsetNode node, Runnable runable) {
+
+		if (conn == null) {
+			return false;
+		}
+		if (!conn.isFromSlaveDB()
+				|| node.canRunnINReadDB(getSource().isAutocommit())) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("found connections in session to use " + conn
+						+ " for " + node);
+			}
+			conn.setAttachment(node);
+			getSource().getProcessor().getExecutor().execute(runable);
+			return true;
+		} else {
+			// slavedb connection and can't use anymore ,release it
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("release slave connection,can't be used in trasaction  "
+						+ conn + " for " + node);
+			}
+			releaseConnection(node, LOGGER.isDebugEnabled());
+		}
+		return false;
+	}
+
 	private void kill(Runnable run) {
 		boolean hooked = false;
 		AtomicInteger count = null;
@@ -377,7 +395,7 @@ public class NonBlockingSession implements Session {
 
 			// 如果通道正在运行中，则关闭当前通道。
 			if (c.isRunning() || (pessimisticRelease && source.isClosed())) {
-				c.close();
+				c.close("source closed");
 				continue;
 			}
 
@@ -389,6 +407,19 @@ public class NonBlockingSession implements Session {
 
 			c.setResponseHandler(new RollbackReleaseHandler());
 			c.rollback();
+		}
+	}
+
+	public void clearResources() {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("clear session resources " + this);
+		}
+		this.releaseConnections();
+		if (this.singleNodeHandler != null) {
+			singleNodeHandler.clearResources();
+		}
+		if (this.multiNodeHandler != null) {
+			multiNodeHandler.clearResources();
 		}
 	}
 

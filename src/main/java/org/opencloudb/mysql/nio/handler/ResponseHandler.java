@@ -27,44 +27,56 @@ import org.opencloudb.backend.PhysicalConnection;
  * @author mycat
  */
 public interface ResponseHandler {
-    /**
-     * 已获得有效连接的响应处理
-     */
-    void connectionAcquired(PhysicalConnection conn);
 
-    /**
-     * 发生异常的响应处理
-     */
-    void connectionError(Throwable e, PhysicalConnection conn);
+	/**
+	 * 无法获取连接
+	 * 
+	 * @param e
+	 * @param conn
+	 */
+	public void connectionError(Throwable e, PhysicalConnection conn);
 
-    /**
-     * 收到错误数据包的响应处理
-     */
-    void errorResponse(byte[] err, PhysicalConnection conn);
+	/**
+	 * 已获得有效连接的响应处理
+	 */
+	void connectionAcquired(PhysicalConnection conn);
 
-    /**
-     * 收到OK数据包的响应处理
-     */
-    void okResponse(byte[] ok, PhysicalConnection conn);
+	/**
+	 * 收到错误数据包的响应处理
+	 */
+	void errorResponse(byte[] err, PhysicalConnection conn);
 
-    /**
-     * 收到字段数据包结束的响应处理
-     */
-    void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, PhysicalConnection conn);
+	/**
+	 * 收到OK数据包的响应处理
+	 */
+	void okResponse(byte[] ok, PhysicalConnection conn);
 
-    /**
-     * 收到行数据包的响应处理
-     */
-    void rowResponse(byte[] row, PhysicalConnection conn);
+	/**
+	 * 收到字段数据包结束的响应处理
+	 */
+	void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof,
+			PhysicalConnection conn);
 
-    /**
-     * 收到行数据包结束的响应处理
-     */
-    void rowEofResponse(byte[] eof, PhysicalConnection conn);
-    
-    /**
-     * 写队列为空，可以写数据了
-     * 
-     */
-    void writeQueueAvailable();
+	/**
+	 * 收到行数据包的响应处理
+	 */
+	void rowResponse(byte[] row, PhysicalConnection conn);
+
+	/**
+	 * 收到行数据包结束的响应处理
+	 */
+	void rowEofResponse(byte[] eof, PhysicalConnection conn);
+
+	/**
+	 * 写队列为空，可以写数据了
+	 * 
+	 */
+	void writeQueueAvailable();
+
+	/**
+	 * on connetion close event
+	 */
+	void connectionClose(PhysicalConnection conn, String reason);
+
+	
 }

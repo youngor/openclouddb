@@ -98,7 +98,7 @@ public final class SetHandler {
             break;
         default:
             StringBuilder s = new StringBuilder();
-            logger.warn(s.append(c).append(stmt).append(" is not executed").toString());
+            logger.warn(s.append(c).append(stmt).append(" is not recoginized and ignored").toString());
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
         }
     }

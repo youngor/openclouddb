@@ -87,7 +87,8 @@ public final class RollbackConfig {
 		// 如果回滚不成功，则清理已初始化的资源。
 		if (!rollbackStatus) {
 			for (PhysicalDBPool dn : dataHosts.values()) {
-				dn.clearDataSources();
+				dn.clearDataSources("rollbackup config");
+				dn.stopHeartbeat();
 			}
 			return false;
 		}
@@ -97,7 +98,8 @@ public final class RollbackConfig {
 
 		// 处理旧的资源
 		for (PhysicalDBPool dn : cNodes.values()) {
-			dn.clearDataSources();
+			dn.clearDataSources("clear old config ");
+			dn.stopHeartbeat();
 		}
 
 		return true;

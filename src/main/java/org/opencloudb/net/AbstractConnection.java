@@ -26,15 +26,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.log4j.Logger;
 import org.opencloudb.buffer.BufferPool;
 import org.opencloudb.buffer.BufferQueue;
 import org.opencloudb.config.ErrorCode;
+import org.opencloudb.server.ServerConnection;
 import org.opencloudb.util.TimeUtil;
 
 /**
  * @author mycat
  */
 public abstract class AbstractConnection implements NIOConnection {
+	private static final Logger LOGGER = Logger
+			.getLogger(AbstractConnection.class);
 	private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
 	private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
 
@@ -160,7 +164,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			handler.handle(data);
 		} catch (Throwable e) {
 			if (e instanceof ConnectionException) {
-				close();
+				close("exeption:" + e.toString());
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
 			} else {
 				error(ErrorCode.ERR_HANDLE_DATA, e);
@@ -273,8 +277,8 @@ public abstract class AbstractConnection implements NIOConnection {
 			processor.postWrite(this);
 		} else {
 			processor.getBufferPool().recycle(buffer);
-			System.out.println("close conn ,not registered " + this);
-			close();
+			// System.out.println("close conn ,not registered " + this);
+			close("not registed con");
 		}
 	}
 
@@ -386,14 +390,13 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	@Override
-	public boolean close() {
-		if (isClosed.get()) {
-			return false;
-		} else {
+	public void close(String reason) {
+		if (!isClosed.get()) {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("close connection,reason:" + reason + " " + this);
+			}
 			if (closeSocket()) {
-				return isClosed.compareAndSet(false, true);
-			} else {
-				return false;
+				isClosed.set(true);
 			}
 		}
 	}

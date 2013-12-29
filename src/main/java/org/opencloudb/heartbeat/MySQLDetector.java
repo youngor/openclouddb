@@ -167,7 +167,7 @@ public class MySQLDetector extends BackendConnection {
 				write(writeToBuffer(QuitPacket.QUIT, allocate()));
 				write(processor.getBufferPool().allocate());
 			} else {
-				close();
+				close("heartbeat quit");
 			}
 		}
 	}

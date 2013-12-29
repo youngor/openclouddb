@@ -70,10 +70,7 @@ public class KillConnectionHandler implements ResponseHandler {
 
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
-		if (conn != null) {
-			conn.close();
-		}
-		killee.close();
+		killee.close("exception:" + e.toString());
 		finished();
 	}
 
@@ -84,7 +81,7 @@ public class KillConnectionHandler implements ResponseHandler {
 					+ killee.getThreadId());
 		}
 		conn.release();
-		killee.close();
+		killee.close("killed");
 		finished();
 	}
 
@@ -94,7 +91,7 @@ public class KillConnectionHandler implements ResponseHandler {
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
 		conn.quit();
-		killee.close();
+		killee.close("killed");
 		finished();
 	}
 
@@ -111,7 +108,7 @@ public class KillConnectionHandler implements ResponseHandler {
 		LOGGER.warn("kill backend connection " + killee + " failed: " + msg
 				+ " con:" + conn);
 		conn.release();
-		killee.close();
+		killee.close("exception:" + msg);
 		finished();
 	}
 
@@ -126,7 +123,12 @@ public class KillConnectionHandler implements ResponseHandler {
 
 	@Override
 	public void writeQueueAvailable() {
-		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
+		finished();
 
 	}
 

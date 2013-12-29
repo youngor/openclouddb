@@ -21,9 +21,11 @@ package org.opencloudb.mysql.nio.handler;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.mysql.ErrorPacket;
+import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.NonBlockingSession;
 import org.opencloudb.util.StringUtil;
 
@@ -31,10 +33,12 @@ import org.opencloudb.util.StringUtil;
  * @author mycat
  */
 abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
+	private static final Logger LOGGER = Logger
+			.getLogger(MultiNodeHandler.class);
 	protected final ReentrantLock lock = new ReentrantLock();
 	protected final NonBlockingSession session;
-	protected AtomicBoolean isFail = new AtomicBoolean(false);
-	private ErrorPacket error;
+	private AtomicBoolean isFailed = new AtomicBoolean(false);
+	private volatile String error;
 	protected byte packetId;
 
 	public MultiNodeHandler(NonBlockingSession session) {
@@ -42,6 +46,15 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 			throw new IllegalArgumentException("session is null!");
 		}
 		this.session = session;
+	}
+
+	public void setFail(String errMsg) {
+		isFailed.set(true);
+		error = errMsg;
+	}
+
+	public boolean isFail() {
+		return isFailed.get();
 	}
 
 	private int nodeCount;
@@ -80,6 +93,34 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		}
 	}
 
+	public void connectionError(Throwable e, PhysicalConnection conn) {
+		boolean canClose = decrementCountBy(1);
+		this.tryErrorFinished(conn, canClose);
+	}
+
+	public void errorResponse(byte[] data, PhysicalConnection conn) {
+
+		ErrorPacket err = new ErrorPacket();
+		err.read(data);
+		String errmsg = new String(err.message);
+		LOGGER.warn("error response from " + conn + " err " + errmsg + " code:"
+				+ err.errno);
+		this.setFail(errmsg);
+		this.tryErrorFinished(conn, this.decrementCountBy(1));
+	}
+
+	public boolean clearIfSessionClosed(NonBlockingSession session) {
+		if (session.closed()) {
+			LOGGER.info("session closed ,clear resources " + session);
+			session.clearResources();
+			this.clearResources();
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+
 	protected boolean decrementCountBy(int finished) {
 		boolean zeroReached = false;
 		Runnable callback = null;
@@ -100,60 +141,47 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 
 	protected void reset(int initCount) {
 		nodeCount = initCount;
-		isFail.set(false);
+		isFailed.set(false);
 		error = null;
 		packetId = 0;
 	}
 
-	protected void backendConnError(PhysicalConnection conn, String errMsg) {
+	protected ErrorPacket createErrPkg(String errmgs) {
 		ErrorPacket err = new ErrorPacket();
-		err.packetId = 1;// ERROR_PACKET
-		err.errno = ErrorCode.ER_YES;
-		err.message = StringUtil.encode(errMsg, session.getSource()
-				.getCharset());
-		backendConnError(conn, err);
-	}
-
-	protected void backendConnError(PhysicalConnection conn, ErrorPacket err) {
-		conn.setRunning(false);
 		lock.lock();
 		try {
-			if (error == null) {
-				error = err;
-			}
+			err.packetId = ++packetId;
 		} finally {
 			lock.unlock();
 		}
-		isFail.set(true);
-		if (decrementCountBy(1)) {
-			session.clearConnections();
-			notifyError();
+		err.errno = ErrorCode.ER_YES;
+		err.message = StringUtil.encode(errmgs, session.getSource()
+				.getCharset());
+		return err;
+	}
+
+	protected void tryErrorFinished(PhysicalConnection conn, boolean allEnd) {
+		tryErrorFinished(conn, this.error, allEnd);
+	}
+
+	protected void tryErrorFinished(PhysicalConnection conn, String errMsg,
+			boolean allEnd) {
+		conn.setRunning(false);
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+		this.setFail(errMsg);
+		if (allEnd) {
+			session.clearResources();
+			createErrPkg(errMsg).write(session.getSource());
+			session.getSource().setTxInterrupt();
 		}
 	}
 
-	protected void notifyError() {
-		notifyError((byte) 1);
-
+	public void connectionClose(PhysicalConnection conn, String reason) {
+		conn.setRunning(false);
+		session.removeTarget((RouteResultsetNode) conn.getAttachment());
+		tryErrorFinished(conn, reason, this.decrementCountBy(1));
 	}
 
-	protected void notifyError(byte errPacketId) {
-		recycleResources();
-		ErrorPacket err = error;
-		if (err == null) {
-			err = new ErrorPacket();
-			err.packetId = 1;
-			err.errno = ErrorCode.ER_YES;
-			err.message = StringUtil.encode("unknown error", session
-					.getSource().getCharset());
-		} else {
-			err.packetId = 1;
-		}
-		err.write(session.getSource());
-		session.clearConnections();
-		session.getSource().setTxInterrupt();
-
-	}
-
-	protected void recycleResources() {
+	public void clearResources() {
 	}
 }

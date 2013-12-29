@@ -202,7 +202,7 @@ public class MyCATHeartbeat {
                 isChecking.set(false);
             } else {
                 if (isTransferError) {
-                    detector.close();
+                    detector.close("heatbeat transferError");
                 }
                 setError(detector);
             }

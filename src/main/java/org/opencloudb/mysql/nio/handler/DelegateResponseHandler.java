@@ -72,8 +72,14 @@ public class DelegateResponseHandler implements ResponseHandler {
 
 	@Override
 	public void writeQueueAvailable() {
-		// TODO Auto-generated method stub
+		target.writeQueueAvailable();
 		
 	}
 
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
+		target.connectionClose(conn, reason);
+	}
+
+	
 }

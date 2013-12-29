@@ -47,7 +47,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 					LOGGER.debug("execute in datanode " + dn);
 				}
 				mysqlDN.getConnection(new RouteResultsetNode(dn,
-						ServerParse.SELECT, sql),false, this, dn);
+						ServerParse.SELECT, sql), false, this, dn);
 			} catch (Exception e) {
 				LOGGER.warn("get connection err " + e);
 			}
@@ -73,7 +73,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void connectionAcquired(PhysicalConnection conn) {
-
+		conn.setRunning(true);
 		conn.setResponseHandler(this);
 		try {
 			conn.query(sql);
@@ -90,10 +90,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void errorResponse(byte[] data, PhysicalConnection conn) {
+		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		LOGGER.warn("errorResponse " + err.errno + " "
 				+ new String(err.message));
+		conn.setRunning(false);
+		conn.release();
 
 	}
 
@@ -145,14 +148,22 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	private void executeException(PhysicalConnection c, Throwable e) {
 		LOGGER.warn("executeException   " + e);
 		c.setRunning(false);
-		c.close();
+		c.close("exception:" + e);
 
 	}
 
 	@Override
 	public void writeQueueAvailable() {
-		// TODO Auto-generated method stub
 
 	}
+
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
+
+		LOGGER.warn("connection closed " + conn + " reason:" + reason);
+	}
+
+	
+	
 
 }

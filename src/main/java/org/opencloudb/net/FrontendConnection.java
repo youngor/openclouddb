@@ -36,7 +36,6 @@ import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.HandshakePacket;
 import org.opencloudb.net.mysql.OkPacket;
 import org.opencloudb.util.RandomUtil;
-import org.opencloudb.util.StringUtil;
 import org.opencloudb.util.TimeUtil;
 
 /**
@@ -344,7 +343,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 	protected void idleCheck() {
 		if (isIdleTimeout()) {
 			LOGGER.warn(toString() + " idle timeout");
-			close();
+			close(" idle ");
 		}
 	}
 

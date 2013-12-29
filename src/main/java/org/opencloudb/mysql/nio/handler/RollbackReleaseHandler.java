@@ -35,13 +35,11 @@ public class RollbackReleaseHandler implements ResponseHandler {
     @Override
     public void connectionAcquired(PhysicalConnection conn) {
         logger.error("unexpected invocation: connectionAcquired from rollback-release");
-        conn.close();
     }
 
     @Override
     public void connectionError(Throwable e, PhysicalConnection conn) {
-        logger.error("unexpected invocation: connectionError from rollback-release");
-        conn.close();
+     
     }
 
     @Override
@@ -64,14 +62,18 @@ public class RollbackReleaseHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-        logger.error("unexpected packet: EOF of resultSet from rollback-release");
-        conn.close();
+     
     }
 
 	@Override
 	public void writeQueueAvailable() {
-		// TODO Auto-generated method stub
 		
 	}
 
-}
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
+		
+		
+	}
+
+	}

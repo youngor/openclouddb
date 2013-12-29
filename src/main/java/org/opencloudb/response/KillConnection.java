@@ -41,7 +41,7 @@ public final class KillConnection {
             for (NIOConnection c : list) {
                 StringBuilder s = new StringBuilder();
                 logger.warn(s.append(c).append("killed by manager").toString());
-                c.close();
+                c.close("kill by manager");
                 count++;
             }
         OkPacket packet = new OkPacket();

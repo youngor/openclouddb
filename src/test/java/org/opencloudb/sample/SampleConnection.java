@@ -39,7 +39,7 @@ public class SampleConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, t.getMessage());
             break;
         default:
-            close();
+            close(t.toString());
         }
     }
 

@@ -22,7 +22,7 @@ import java.nio.channels.Selector;
 /**
  * @author mycat
  */
-public interface NIOConnection {
+public interface NIOConnection extends ClosableConnection{
 
     /**
      * 注册网络事件
@@ -72,10 +72,7 @@ public interface NIOConnection {
      */
     void error(int errCode, Throwable t);
 
-    /**
-     * 关闭连接
-     */
-    boolean close();
+   
     
     
 }

@@ -33,6 +33,7 @@ import org.opencloudb.net.mysql.FieldPacket;
 import org.opencloudb.net.mysql.ResultSetHeaderPacket;
 import org.opencloudb.net.mysql.RowDataPacket;
 import org.opencloudb.util.IntegerUtil;
+import org.opencloudb.util.LongUtil;
 import org.opencloudb.util.StringUtil;
 
 /**
@@ -43,7 +44,7 @@ import org.opencloudb.util.StringUtil;
  */
 public final class ShowDataSource {
 
-	private static final int FIELD_COUNT = 5;
+	private static final int FIELD_COUNT = 9;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -66,6 +67,18 @@ public final class ShowDataSource {
 		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("W/R", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("IDLE", Fields.FIELD_TYPE_LONG);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
 
 		eof.packetId = ++packetId;
@@ -124,6 +137,10 @@ public final class ShowDataSource {
 		row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
 		row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
 		row.add(StringUtil.encode(ds.isReadNode() ? "R" : "W", charset));
+		row.add(IntegerUtil.toBytes(ds.getActiveCount()));
+		row.add(IntegerUtil.toBytes(ds.getIdleCount()));
+		row.add(IntegerUtil.toBytes(ds.getSize()));
+		row.add(LongUtil.toBytes(ds.getExecuteCount()));
 		return row;
 	}
 

@@ -19,6 +19,7 @@
 package org.opencloudb.config.model;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.opencloudb.config.model.rule.RuleConfig;
 import org.opencloudb.util.SplitUtil;
@@ -40,7 +41,7 @@ public class TableConfig {
 	private final String joinKey;
 	private final String parentKey;
 	private final String locateRTableKeySql;
-
+    private final Random rand=new Random();
 	public TableConfig(String name, int tableType, String dataNode,
 			RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
 			boolean isChildTable, String joinKey, String parentKey) {
@@ -167,7 +168,11 @@ public class TableConfig {
 	public ArrayList<String> getDataNodes() {
 		return dataNodes;
 	}
-
+    public String getRandomDataNode()
+    {
+    	int index=Math.abs(rand.nextInt())%dataNodes.size();
+    	return dataNodes.get(index);
+    }
 	public boolean isRuleRequired() {
 		return ruleRequired;
 	}

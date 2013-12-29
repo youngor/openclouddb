@@ -85,4 +85,8 @@ public final class RouteResultsetNode {
 		return str1.equals(str2);
 	}
 
+	public boolean isModifySQL() {
+		return !canRunInReadDB;
+	}
+
 }

@@ -42,7 +42,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 		this.listener = listener;
 	}
 
-	public void connectionError(Throwable e) {
+	public void connectionError(MySQLConnection source, Throwable e) {
 		listener.connectionError(e, source);
 	}
 
@@ -68,7 +68,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 			case ErrorPacket.FIELD_COUNT:
 				ErrorPacket err = new ErrorPacket();
 				err.read(data);
-				throw new ConnectionException(err.errno,new String(err.message));
+				throw new ConnectionException(err.errno,
+						new String(err.message));
 			case EOFPacket.FIELD_COUNT:
 				auth323(data[3]);
 				break;

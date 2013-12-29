@@ -24,7 +24,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.config.ErrorCode;
-import org.opencloudb.server.ServerConnection;
 
 /**
  * 网络事件反应器
@@ -105,8 +104,6 @@ public final class NIOReactor {
 								int readyOps = key.readyOps();
 								if ((readyOps & SelectionKey.OP_READ) != 0) {
 									read((NIOConnection) att);
-								} else if ((readyOps & SelectionKey.OP_WRITE) != 0) {
-									write((NIOConnection) att);
 								} else {
 									key.cancel();
 								}
@@ -137,26 +134,13 @@ public final class NIOReactor {
 		private void read(NIOConnection c) {
 
 			try {
-				// if (LOGGER.isDebugEnabled()) {
-				// LOGGER.debug("read  con:" + c);
-				// }
-				if (c instanceof ServerConnection) {
-					LOGGER.debug("read backend con:" + c);
-				}
-
 				c.read();
 			} catch (Throwable e) {
 				c.error(ErrorCode.ERR_READ, e);
+				c.close("exception:" + e.toString());
 			}
 		}
 
-		private void write(NIOConnection c) {
-			try {
-				c.writeByEvent();
-			} catch (Throwable e) {
-				c.error(ErrorCode.ERR_WRITE_BY_EVENT, e);
-			}
-		}
 	}
 
 	private final class W implements Runnable {
@@ -172,23 +156,15 @@ public final class NIOReactor {
 			for (;;) {
 				try {
 					if ((c = writeQueue.take()) != null) {
-						// System.out.println("write queue "+c);
-						write(c);
+						c.writeByQueue();
 					}
 				} catch (Throwable e) {
 					LOGGER.warn(name, e);
+					c.close("exception:" + e.toString());
 				}
 			}
 		}
 
-		private void write(NIOConnection c) {
-			try {
-				c.writeByQueue();
-			} catch (Throwable e) {
-				e.printStackTrace();
-				c.error(ErrorCode.ERR_WRITE_BY_QUEUE, e);
-			}
-		}
 	}
 
 }

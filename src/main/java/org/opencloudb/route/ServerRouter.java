@@ -345,7 +345,7 @@ public final class ServerRouter {
 			throws SQLNonTransientException {
 
 		if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE && isSelect) {
-			return routeToSingleNode(rrs, tc.getDataNodes().get(0), sql);
+			return routeToSingleNode(rrs, tc.getRandomDataNode(), sql);
 		}
 
 		// no partion define or no where condtion for this table or no
@@ -553,7 +553,7 @@ public final class ServerRouter {
 			Map<String, TableConfig> tables = schema.getTables();
 			TableConfig tc;
 			if (tables != null && (tc = tables.get(table)) != null) {
-				dataNode = tc.getDataNodes().get(0);
+				dataNode = tc.getRandomDataNode();
 			}
 			return dataNode;
 		}

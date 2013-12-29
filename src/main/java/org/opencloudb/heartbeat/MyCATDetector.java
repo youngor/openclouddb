@@ -151,7 +151,7 @@ public class MyCATDetector extends BackendConnection {
 
     public void quit() {
         if (isQuit.compareAndSet(false, true)) {
-            close();
+            close("heartbeat quit");
         }
     }
 

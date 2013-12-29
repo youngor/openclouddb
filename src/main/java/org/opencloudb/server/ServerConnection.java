@@ -207,34 +207,24 @@ public class ServerConnection extends FrontendConnection {
 			LOGGER.warn(toString(), t);
 		}
 
-		// 异常返回码处理
-		switch (errCode) {
-		case ErrorCode.ERR_HANDLE_DATA:
-			String msg = t.getMessage();
-			writeErrMessage(ErrorCode.ER_YES, msg == null ? t.getClass()
-					.getSimpleName() : msg);
-			break;
-		default:
-			close();
-		}
+		String msg = t.getMessage();
+		writeErrMessage(ErrorCode.ER_YES, msg == null ? t.getClass()
+				.getSimpleName() : msg);
+
 	}
 
 	@Override
-	public boolean close() {
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("close connection," + this);
-		}
+	public void close(String reason) {
 
-		if (super.close()) {
+		super.close(reason);
+		if (this.isClosed()) {
 			processor.getExecutor().execute(new Runnable() {
 				@Override
 				public void run() {
 					session.terminate();
 				}
 			});
-			return true;
-		} else {
-			return false;
+			return;
 		}
 	}
 

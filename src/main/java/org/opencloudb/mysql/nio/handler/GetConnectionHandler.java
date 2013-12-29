@@ -62,25 +62,26 @@ public class GetConnectionHandler implements ResponseHandler {
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
 			byte[] eof, PhysicalConnection conn) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void rowResponse(byte[] row, PhysicalConnection conn) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void writeQueueAvailable() {
-		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
 
 	}
 

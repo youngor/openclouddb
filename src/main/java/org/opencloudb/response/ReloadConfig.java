@@ -84,8 +84,10 @@ public final class ReloadConfig {
 		}
 		// 如果重载不成功，则清理已初始化的资源。
 		if (!reloadStatus) {
+			LOGGER.warn("reload failed ,clear previously created datasources ");
 			for (PhysicalDBPool dn : dataHosts.values()) {
-				dn.clearDataSources();
+				dn.clearDataSources("reload config");
+				dn.stopHeartbeat();
 			}
 			return false;
 		}
@@ -95,7 +97,8 @@ public final class ReloadConfig {
 
 		// 处理旧的资源
 		for (PhysicalDBPool dn : cNodes.values()) {
-			dn.clearDataSources();
+			dn.clearDataSources("reload config clear old datasources");
+			dn.stopHeartbeat();
 		}
 
 		return true;

@@ -1,7 +1,7 @@
 package org.opencloudb.backend;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
@@ -11,27 +11,27 @@ import org.opencloudb.config.model.DataHostConfig;
 import org.opencloudb.heartbeat.DBHeartbeat;
 import org.opencloudb.mysql.nio.handler.DelegateResponseHandler;
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
+import org.opencloudb.route.RouteResultsetNode;
+import org.opencloudb.server.ServerConnection;
 import org.opencloudb.util.TimeUtil;
 
 public abstract class PhysicalDatasource {
 	private static final Logger LOGGER = Logger
 			.getLogger(PhysicalDatasource.class);
 
-	protected final String name;
-	protected final ReentrantLock lock = new ReentrantLock();
+	private final String name;
+	private final ReentrantLock lock = new ReentrantLock();
 	private final int size;
 	private final DBHostConfig config;
 	private final PhysicalConnection[] items;
-	private final ArrayList<PhysicalConnection> runningItems;
-	protected int activeCount;
-	protected int idleCount;
-	protected DBHeartbeat heartbeat;
-
+	private DBHeartbeat heartbeat;
 	private final boolean readNode;
 	private volatile long heartbeatRecoveryTime;
-	protected final DataHostConfig hostConfig;
+	private final DataHostConfig hostConfig;
 
 	private PhysicalDBPool dbPool;
+
+	private long executeCount;
 
 	public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig,
 			boolean isReadNode) {
@@ -42,25 +42,16 @@ public abstract class PhysicalDatasource {
 		this.hostConfig = hostConfig;
 		heartbeat = this.createHeartBeat();
 		this.readNode = isReadNode;
-		this.runningItems = new ArrayList<PhysicalConnection>(size * 2 / 3);
 	}
 
 	public boolean isMyConnection(PhysicalConnection con) {
 		PhysicalConnection[] theItems = null;
-		ArrayList<PhysicalConnection> theRunningItems = null;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
 			theItems = this.items;
-			theRunningItems = this.runningItems;
 		} finally {
 			lock.unlock();
-		}
-
-		for (PhysicalConnection myCon : theRunningItems) {
-			if (myCon == con) {
-				return true;
-			}
 		}
 		for (PhysicalConnection myCon : theItems) {
 			if (myCon == con) {
@@ -82,14 +73,6 @@ public abstract class PhysicalDatasource {
 		return size;
 	}
 
-	public void setActiveCount(int activeCount) {
-		this.activeCount = activeCount;
-	}
-
-	public void setIdleCount(int idleCount) {
-		this.idleCount = idleCount;
-	}
-
 	public void setDbPool(PhysicalDBPool dbPool) {
 		this.dbPool = dbPool;
 	}
@@ -104,8 +87,18 @@ public abstract class PhysicalDatasource {
 		return name;
 	}
 
+	public long getExecuteCount() {
+		return executeCount;
+	}
+
 	public int getActiveCount() {
-		return activeCount;
+		int running = 0;
+		for (PhysicalConnection con : this.items) {
+			if (con != null && con.isBorrowed()) {
+				running++;
+			}
+		}
+		return running;
 	}
 
 	public DBHeartbeat getHeartbeat() {
@@ -113,7 +106,13 @@ public abstract class PhysicalDatasource {
 	}
 
 	public int getIdleCount() {
-		return idleCount;
+		int idle = 0;
+		for (PhysicalConnection con : this.items) {
+			if (con != null && !con.isBorrowed()) {
+				idle++;
+			}
+		}
+		return idle;
 	}
 
 	public void idleCheck(long timeout) {
@@ -125,8 +124,8 @@ public abstract class PhysicalDatasource {
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
 				if (c != null && time > c.getLastTime()) {
-					c.closeNoActive();
-					--idleCount;
+
+					c.closeNoActive(" idle ");
 					items[i] = null;
 				}
 			}
@@ -135,7 +134,7 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
-	public void clearCons() {
+	public void clearCons(String reason) {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
@@ -143,8 +142,7 @@ public abstract class PhysicalDatasource {
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
 				if (c != null) {
-					c.closeNoActive();
-					--idleCount;
+					c.closeNoActive(reason);
 					items[i] = null;
 				}
 			}
@@ -175,54 +173,45 @@ public abstract class PhysicalDatasource {
 		}
 	}
 
-	private PhysicalConnection takeCon(int index,
+	private PhysicalConnection takeCon(PhysicalConnection conn,
 			final ResponseHandler handler, final Object attachment,
 			String schema) {
-
-		PhysicalConnection conn = items[index];
-		items[index] = null;
-		runningItems.add(conn);
-		--idleCount;
-		++activeCount;
+		conn.setBorrowed(true);
 		if (schema != null) {
 			conn.setSchema(schema);
 		}
+		executeCount++;
 		conn.setAttachment(attachment);
 		handler.connectionAcquired(conn);
-
 		return conn;
 	}
 
 	public PhysicalConnection getConnection(final ResponseHandler handler,
 			final Object attachment, final String schema) throws Exception {
+		int activeCount = this.getActiveCount();
+		// used to store new created connection
+		int emptyIndex = -1;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			// too many active connections
-			if (activeCount >= size) {
-				StringBuilder s = new StringBuilder();
-				s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=")
-						.append(name).append(",active=");
-				s.append(activeCount).append(",size=").append(size).append(']');
-				LOGGER.warn(s.toString());
-				throw new IOException("datasource is full,can't get any more "
-						+ this.getName());
-			}
-
 			// get connection from pool
 			final PhysicalConnection[] items = this.items;
 			int oldestIdleConIndx = -1;
 			long oldestConTime = Long.MAX_VALUE;
-			for (int i = 0, len = items.length; idleCount > 0 && i < len; ++i) {
-				if (items[i] != null) {
+			for (int i = 0; i < items.length; i++) {
+				if (items[i] == null) {
+					emptyIndex = i;
+				} else if (items[i] != null) {
 					PhysicalConnection conn = items[i];
+					// closed or quit
 					if (conn.isClosedOrQuit()) {
 						items[i] = null;
-						--idleCount;
+						emptyIndex = i;
 						continue;
-					} else {
+					} else if (!conn.isBorrowed()) {
+						// can use
 						if (schema.equals(conn.getSchema())) {
-							return takeCon(i, handler, attachment, null);
+							return takeCon(items[i], handler, attachment, null);
 						} else if (conn.getLastTime() < oldestConTime) {
 							oldestIdleConIndx = i;
 							oldestConTime = conn.getLastTime();
@@ -230,75 +219,72 @@ public abstract class PhysicalDatasource {
 					}
 				}
 			}
-			if (oldestIdleConIndx > -1) {
-				return takeCon(oldestIdleConIndx, handler, attachment, schema);
+			if (oldestIdleConIndx != -1) {
+				return takeCon(items[oldestIdleConIndx], handler, attachment,
+						schema);
+			} else if (emptyIndex == -1) {
+				StringBuilder s = new StringBuilder();
+				s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=")
+						.append(name).append(",active=");
+				s.append(activeCount).append(",size=").append(size).append(']');
+				LOGGER.warn(s.toString());
+				throw new IOException("datasource is full,can't get any more "
+						+ this.getName());
+			} else {
+				// creat new connection
+				items[emptyIndex] = new FakeConnection();
 			}
 		} finally {
 			lock.unlock();
 		}
+
 		LOGGER.info("not ilde connection in pool,create new connection for "
 				+ this.name);
+		final int insertIndex = emptyIndex;
 		// create connection
 		return this.createNewConnection(new DelegateResponseHandler(handler) {
 			@Override
 			public void connectionError(Throwable e, PhysicalConnection conn) {
 				handler.connectionError(e, conn);
+				lock.lock();
+				try {
+					items[insertIndex] = null;
+				} finally {
+					lock.unlock();
+				}
 			}
 
 			@Override
 			public void connectionAcquired(PhysicalConnection conn) {
 				lock.lock();
 				try {
-					++activeCount;
-					runningItems.add(conn);
+					items[insertIndex] = conn;
+					takeCon(conn, handler, attachment, schema);
 				} finally {
 					lock.unlock();
 				}
-				conn.setSchema(schema);
-				conn.setAttachment(attachment);
-				handler.connectionAcquired(conn);
 			}
 		});
 	}
 
+	private void returnCon(PhysicalConnection c) {
+		c.setBorrowed(false);
+		c.setLastTime(TimeUtil.currentTimeMillis());
+	}
+
 	public void releaseChannel(PhysicalConnection c) {
-		if (c == null || c.isClosedOrQuit()) {
-			return;
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("release channel " + c);
 		}
-
 		// release connection
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			final PhysicalConnection[] items = this.items;
-			for (int i = 0; i < items.length; i++) {
-				if (items[i] == null) {
-					++idleCount;
-					--activeCount;
-					c.setLastTime(TimeUtil.currentTimeMillis());
-					items[i] = c;
-					return;
-				}
-			}
-		} finally {
-			lock.unlock();
-		}
-
-		// close excess connection
-		c.quit();
+		returnCon(c);
 	}
 
 	public abstract PhysicalConnection createNewConnection(
 			ResponseHandler handler) throws IOException;
 
-	public void deActive() {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			--activeCount;
-		} finally {
-			lock.unlock();
-		}
+	public void deActive(PhysicalConnection con) {
+		returnCon(con);
 	}
 
 	public long getHeartbeatRecoveryTime() {
@@ -312,4 +298,151 @@ public abstract class PhysicalDatasource {
 	public DBHostConfig getConfig() {
 		return config;
 	}
+}
+
+class FakeConnection implements PhysicalConnection {
+
+	@Override
+	public boolean isFromSlaveDB() {
+		return false;
+	}
+
+	@Override
+	public String getSchema() {
+		return null;
+	}
+
+	@Override
+	public void setSchema(String newSchema) {
+
+	}
+
+	@Override
+	public long getLastTime() {
+		return System.currentTimeMillis();
+	}
+
+	@Override
+	public void closeNoActive(String reason) {
+
+	}
+
+	@Override
+	public boolean isClosedOrQuit() {
+		return false;
+	}
+
+	@Override
+	public void setAttachment(Object attachment) {
+
+	}
+
+	@Override
+	public void quit() {
+
+	}
+
+	@Override
+	public void setLastTime(long currentTimeMillis) {
+	}
+
+	@Override
+	public void release() {
+	}
+
+	@Override
+	public void close(String reason) {
+
+	}
+
+	@Override
+	public void setRunning(boolean running) {
+
+	}
+
+	@Override
+	public boolean setResponseHandler(ResponseHandler commandHandler) {
+		return false;
+	}
+
+	@Override
+	public void commit() {
+
+	}
+
+	@Override
+	public void query(String sql) throws UnsupportedEncodingException {
+
+	}
+
+	@Override
+	public Object getAttachment() {
+		return null;
+	}
+
+	@Override
+	public long getThreadId() {
+		return 0;
+	}
+
+	@Override
+	public String getCharset() {
+		return null;
+	}
+
+	@Override
+	public void execute(RouteResultsetNode node, ServerConnection source,
+			boolean autocommit) throws IOException {
+
+	}
+
+	@Override
+	public void recordSql(String host, String schema, String statement) {
+
+	}
+
+	@Override
+	public boolean syncAndExcute() throws UnsupportedEncodingException {
+		return false;
+	}
+
+	@Override
+	public void rollback() {
+
+	}
+
+	@Override
+	public boolean isSuppressReadTemporay() {
+		return false;
+	}
+
+	@Override
+	public void setSuppressReadTemporay(boolean b) {
+	}
+
+	@Override
+	public boolean isRunning() {
+		return false;
+	}
+
+	@Override
+	public boolean isBorrowed() {
+		return true;
+	}
+
+	@Override
+	public void setBorrowed(boolean borrowed) {
+
+	}
+
+	@Override
+	public boolean isAutocommit() {
+		return false;
+	}
+
+	@Override
+	public boolean isModifiedSQLExecuted() {
+		return false;
+	}
+
 }

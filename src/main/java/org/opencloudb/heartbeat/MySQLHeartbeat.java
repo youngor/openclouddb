@@ -153,7 +153,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				isChecking.set(false);
 			} else {
 				if (isTransferError) {
-					detector.close();
+					detector.close("heartbeat transfererr");
 				}
 				setError(detector);
 			}

@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
+import org.opencloudb.net.ClosableConnection;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.ServerConnection;
 
-public interface PhysicalConnection {
-
+public interface PhysicalConnection extends ClosableConnection{
+	
+	public boolean isModifiedSQLExecuted();
+	
 	public boolean isFromSlaveDB();
 
 	public String getSchema();
@@ -17,7 +20,7 @@ public interface PhysicalConnection {
 
 	public long getLastTime();
 
-	public void closeNoActive();
+	public void closeNoActive(String reason);
 
 	public boolean isClosedOrQuit();
 
@@ -29,11 +32,11 @@ public interface PhysicalConnection {
 
 	public void release();
 
-	public boolean close();
 
 	public void setRunning(boolean running);
 
 	public boolean setResponseHandler(ResponseHandler commandHandler);
+	
 
 	public void commit();
 
@@ -59,6 +62,10 @@ public interface PhysicalConnection {
 	public void setSuppressReadTemporay(boolean b);
 
 	public boolean isRunning();
+	
+	public boolean isBorrowed();
+	
+	public void setBorrowed(boolean borrowed);
 
 	public boolean isAutocommit();
 }

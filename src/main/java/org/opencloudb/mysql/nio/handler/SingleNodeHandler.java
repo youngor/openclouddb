@@ -126,33 +126,20 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		} finally {
 			lock.unlock();
 		}
-
 		final PhysicalConnection conn = session.getTarget(node);
-		if (conn != null) {
-			if (!conn.isFromSlaveDB()
-					|| node.canRunnINReadDB(session.getSource()
-							.isAutocommit())) {
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("found connections in session to use "
-							+ conn + " for " + node);
-				}
-			
-			conn.setAttachment(node);
-			session.getSource().getProcessor().getExecutor()
-					.execute(new Runnable() {
-						@Override
-						public void run() {
-							_execute(conn);
-						}
-					});
-			return;
-		 }
-		}
+		if (!session.tryExistsCon(conn, node, new Runnable() {
+			@Override
+			public void run() {
+				_execute(conn);
+			}
+		})) {
+			// create new connection
 			MycatConfig conf = MycatServer.getInstance().getConfig();
 			PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
 			dn.getConnection(node, session.getSource().isAutocommit(), this,
 					node);
-		
+		}
+
 	}
 
 	@Override
@@ -172,7 +159,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		if (session.closed()) {
 			conn.setRunning(false);
 			endRunning();
-			session.clearConnections();
+			session.clearResources();
 			return;
 		}
 		conn.setResponseHandler(this);
@@ -186,25 +173,17 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	private void executeException(PhysicalConnection c) {
-		c.setRunning(false);
-		endRunning();
-		session.clearConnections();
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_YES;
 		err.message = StringUtil.encode(
 				"unknown backend charset: " + c.getCharset(), session
 						.getSource().getCharset());
-		ServerConnection source = session.getSource();
-		source.write(err.write(buffer, source));
+		this.backConnectionErr(err, c);
 	}
 
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
-		// System.out.println("connectionError:" + e.toString());
-		if (!session.closeConnection(node)) {
-			conn.close();
-		}
 		endRunning();
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
@@ -217,18 +196,25 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void errorResponse(byte[] data, PhysicalConnection conn) {
-		// System.out.println("received errorResponse from conn:" + conn);
-
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
+		err.packetId = ++packetId;
+		backConnectionErr(err, conn);
+
+	}
+
+	private void backConnectionErr(ErrorPacket errPkg, PhysicalConnection conn) {
 		conn.setRunning(false);
-		session.clearConnections();
+		if (session.getSource().isAutocommit()) {
+			session.releaseConnections();
+		} else {
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+		}
 		endRunning();
 		ServerConnection source = session.getSource();
 		source.setTxInterrupt();
-
 		recycleResources();
-		err.write(source);
+		errPkg.write(source);
 	}
 
 	@Override
@@ -236,14 +222,16 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		boolean executeResponse = false;
 		try {
 			executeResponse = conn.syncAndExcute();
-			// System.out.println("executeResponse  "+executeResponse);
-			// System.out.println("received okResponse from conn:" + conn
-			// + " response:" + executeResponse);
 		} catch (UnsupportedEncodingException e) {
 			executeException(conn);
 		}
 		if (executeResponse) {
 			conn.setRunning(false);
+			if (session.getSource().isAutocommit()) {
+				session.releaseConnections();
+			} else {
+				session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+			}
 			ServerConnection source = session.getSource();
 			endRunning();
 			OkPacket ok = new OkPacket();
@@ -252,27 +240,21 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			recycleResources();
 			// ok.packetId = ++packetId;// OK_PACKET
 			source.setLastInsertId(ok.insertId);
-
-			if (source.isAutocommit()) {
-				session.releaseConnections();
-				ok.write(source);
-			} else {
-				ok.write(source);
-			}
+			ok.write(source);
 
 		}
 	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-		// System.out.println("received  rowEofResponse from conn:" + conn);
 		ServerConnection source = session.getSource();
 		conn.setRunning(false);
 		conn.recordSql(source.getHost(), source.getSchema(),
 				node.getStatement());
-
-		if (source.isAutocommit()) {
+		if (session.getSource().isAutocommit()) {
 			session.releaseConnections();
+		} else {
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		}
 		endRunning();
 		lock.lock();
@@ -328,4 +310,20 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	}
 
+	@Override
+	public void connectionClose(PhysicalConnection conn, String reason) {
+		conn.setRunning(false);
+		session.removeTarget((RouteResultsetNode) conn.getAttachment());
+		ErrorPacket err = new ErrorPacket();
+		err.packetId = ++packetId;
+		err.errno = ErrorCode.ER_YES;
+		err.message = StringUtil.encode(reason, session.getSource()
+				.getCharset());
+		this.backConnectionErr(err, conn);
+
+	}
+
+	public void clearResources() {
+
+	}
 }

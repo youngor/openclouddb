@@ -100,7 +100,7 @@ public class PhysicalDBPool {
 	}
 
 	/**
-	 * 切换数据源
+	 * 鍒囨崲鏁版嵁婧�
 	 */
 	public boolean switchSource(int newIndex, boolean isAlarm, String reason) {
 		if (!checkIndex(newIndex)) {
@@ -111,18 +111,7 @@ public class PhysicalDBPool {
 		try {
 			int current = activedIndex;
 			if (current != newIndex) {
-				// 清理即将使用的数据源并开启心跳
-				sources[newIndex].clearCons();
-				sources[newIndex].startHeartbeat();
-
-				// 执行切换赋值
-				activedIndex = newIndex;
-
-				// 清理切换前的数据源
-				sources[current].clearCons();
-				sources[current].stopHeartbeat();
-
-				// 记录切换日志
+				// write log
 				LOGGER.warn(switchMessage(current, newIndex, false, reason));
 
 				return true;
@@ -214,13 +203,13 @@ public class PhysicalDBPool {
 
 	public void doHeartbeat() {
 
-		// 检查内部是否有连接池配置信息
+		// 妫�煡鍐呴儴鏄惁鏈夎繛鎺ユ睜閰嶇疆淇℃伅
 		if (sources == null || sources.length == 0) {
 			return;
 		}
 
 		for (PhysicalDatasource source : this.allDs) {
-			// 准备执行心跳检测
+			// 鍑嗗鎵ц蹇冭烦妫�祴
 			if (source != null) {
 				source.doHeartbeat();
 			} else {
@@ -230,12 +219,12 @@ public class PhysicalDBPool {
 				LOGGER.error(s.toString());
 			}
 		}
-		// 读库的心跳检测
+		// 璇诲簱鐨勫績璺虫娴�
 		// todo
 	}
 
 	/**
-	 * 空闲检查
+	 * 绌洪棽妫�煡
 	 */
 	public void idleCheck() {
 		for (PhysicalDatasource ds : sources) {
@@ -257,12 +246,13 @@ public class PhysicalDBPool {
 		}
 	}
 
-	public void clearDataSources() {
+	public void clearDataSources(String reason) {
 		LOGGER.info("clear datasours of pool " + this.hostName);
 		for (PhysicalDatasource source : this.allDs) {
 			LOGGER.info("clear datasoure of pool  " + this.hostName + " ds:"
 					+ source.getConfig());
-			source.clearCons();
+			source.clearCons(reason);
+			source.stopHeartbeat();
 		}
 
 	}
@@ -315,7 +305,7 @@ public class PhysicalDBPool {
 		ArrayList<PhysicalDatasource> okSources = null;
 		switch (banlance) {
 		case BALANCE_ALL_BACK: {// all read nodes and the standard by masters
-			if (sources[this.activedIndex].heartbeat.getStatus() == DBHeartbeat.OK_STATUS) {// cur
+			if (sources[this.activedIndex].getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {// cur
 				okSources = getAllActiveSlaveSources();
 			} else {// at least one master alive
 				okSources = getAllActiveRWSources(false);

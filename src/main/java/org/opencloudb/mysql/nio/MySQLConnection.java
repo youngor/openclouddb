@@ -47,10 +47,12 @@ public class MySQLConnection extends BackendConnection implements
 	private static final Logger LOGGER = Logger
 			.getLogger(MySQLConnection.class);
 	private static final long CLIENT_FLAGS = initClientFlags();
-	protected final AtomicBoolean isRunning = new AtomicBoolean();
-	protected long lastTime; // QS_TODO
-	protected volatile String schema = "";
-	protected volatile String oldSchema;
+	private final AtomicBoolean isRunning = new AtomicBoolean();
+	private volatile long lastTime; // QS_TODO
+	private volatile String schema = "";
+	private volatile String oldSchema;
+	private volatile boolean borrowed = false;
+	private volatile boolean modifiedSQLExecuted = false;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -228,6 +230,9 @@ public class MySQLConnection extends BackendConnection implements
 	}
 
 	public void setRunning(boolean running) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("set running " + running + " for " + this);
+		}
 		isRunning.set(running);
 	}
 
@@ -285,12 +290,25 @@ public class MySQLConnection extends BackendConnection implements
 			this.charCmd = conn.charsetIndex != charIndex ? getCharsetCommand(charIndex)
 					: null;
 			this.txIsolation = sc.getTxIsolation();
+
 			this.isoCmd = conn.txIsolation != txIsolation ? getTxIsolationCommand(txIsolation)
 					: null;
-			this.autocommit = autocommit;
-			this.acCmd = conn.autocommit != autocommit ? (autocommit ? _AUTOCOMMIT_ON
-					: _AUTOCOMMIT_OFF)
-					: null;
+			if (!conn.modifiedSQLExecuted||conn.isFromSlaveDB()) {
+				// never executed modify sql,so auto commit
+				this.autocommit = true;
+				this.acCmd = _AUTOCOMMIT_ON;
+			} else {
+				this.autocommit = autocommit;
+				this.acCmd = conn.autocommit != autocommit ? (autocommit ? _AUTOCOMMIT_ON
+						: _AUTOCOMMIT_OFF)
+						: null;
+
+			}
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("connectino syn command : schemaCmd:" + schemaCmd
+						+ " charCmd:" + charCmd + " txIsolationCmd:" + isoCmd
+						+ " autocommitCmd: " + acCmd);
+			}
 
 		}
 
@@ -377,6 +395,7 @@ public class MySQLConnection extends BackendConnection implements
 		public void execute() throws UnsupportedEncodingException {
 			executed = true;
 			conn.sendQueryCmd(rrn.getStatement());
+
 		}
 
 		private static CommandPacket getTxIsolationCommand(int txIsolation) {
@@ -438,6 +457,9 @@ public class MySQLConnection extends BackendConnection implements
 
 	public void execute(RouteResultsetNode rrn, ServerConnection sc,
 			boolean autocommit) throws UnsupportedEncodingException {
+		if (!modifiedSQLExecuted && rrn.isModifySQL()) {
+			modifiedSQLExecuted = true;
+		}
 		StatusSync sync = new StatusSync(this, rrn, sc, autocommit);
 		statusSync = sync;
 		if (sync.isSync() || !sync.sync()) {
@@ -470,19 +492,21 @@ public class MySQLConnection extends BackendConnection implements
 				write(writeToBuffer(QuitPacket.QUIT, allocate()));
 				write(processor.getBufferPool().allocate());
 			} else {
-				close();
+				close("normal");
 			}
 		}
 	}
 
 	@Override
-	public boolean close() {
+	public void close(String reason) {
 		isQuit.set(true);
-		boolean closed = super.close();
-		if (closed) {
-			pool.deActive();
+		super.close(reason);
+		if (isClosed.get()) {
+			if (this.respHandler != null) {
+				this.respHandler.connectionClose(this, reason);
+			}
+			pool.deActive(this);
 		}
-		return closed;
 	}
 
 	public void commit() {
@@ -496,13 +520,14 @@ public class MySQLConnection extends BackendConnection implements
 	public void release() {
 		attachment = null;
 		statusSync = null;
+		modifiedSQLExecuted = false;
 		setResponseHandler(null);
 		pool.releaseChannel(this);
 	}
 
 	@Override
 	public void error(int errCode, Throwable t) {
-		LOGGER.warn(toString() + " error code: "+errCode ,t);
+		LOGGER.warn(toString() + " error code: " + errCode, t);
 		switch (errCode) {
 		case ErrorCode.ERR_HANDLE_DATA:
 			// handle error ..
@@ -510,17 +535,16 @@ public class MySQLConnection extends BackendConnection implements
 		case ErrorCode.ERR_PUT_WRITE_QUEUE:
 			// QS_TODO
 			break;
-		default:
-			close();
-
+		case ErrorCode.ERR_CONNECT_SOCKET:
 			if (handler instanceof MySQLConnectionHandler) {
 				MySQLConnectionHandler theHandler = (MySQLConnectionHandler) handler;
 				theHandler.connectionError(t);
-				// resultStatus = RESULT_STATUS_INIT;
-
 			} else {
-				((MySQLConnectionAuthenticator) handler).connectionError(t);
+				((MySQLConnectionAuthenticator) handler).connectionError(this,
+						t);
 			}
+			break;
+
 		}
 	}
 
@@ -568,9 +592,9 @@ public class MySQLConnection extends BackendConnection implements
 		this.lastTime = now;
 	}
 
-	public void closeNoActive() {
+	public void closeNoActive(String reason) {
 		if (isClosed.compareAndSet(false, true)) {
-			close();
+			close(reason);
 		}
 	}
 
@@ -591,6 +615,33 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public boolean isFromSlaveDB() {
 		return fromSlaveDB;
+	}
+
+	@Override
+	public boolean isBorrowed() {
+		return borrowed;
+	}
+
+	@Override
+	public void setBorrowed(boolean borrowed) {
+		this.borrowed = borrowed;
+	}
+
+	@Override
+	public String toString() {
+		return "MySQLConnection [id=" + id + ", isRunning=" + isRunning
+				+ ", lastTime=" + lastTime + ", schema=" + schema
+				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
+				+ ", threadId=" + threadId + ", charset=" + charset
+				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
+				+ ", attachment=" + attachment + ", respHandler=" + respHandler
+				+ ", host=" + host + ", port=" + port
+				+ ", suppressReadTemporay=" + suppressReadTemporay + ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
+	}
+
+	@Override
+	public boolean isModifiedSQLExecuted() {
+		return modifiedSQLExecuted;
 	}
 
 }
