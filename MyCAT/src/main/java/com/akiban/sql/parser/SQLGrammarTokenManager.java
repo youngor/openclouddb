@@ -3486,19 +3486,18 @@ private int jjMoveStringLiteralDfa3_0(long old1, long active1, long old2, long a
          else if ((active2 & 0x40000000000000L) != 0L)
          {
             jjmatchedKind = 182;
-            jjmatchedPos = 3;
-         }
-         else if ((active3 & 0x100000000000L) != 0L)
+            jjmatchedPos = 3; 
+      l   
+         else if 00a00ive00&) x100000000000L) != 0L)
          {
             jjmatchedKind = 236;
             jjmatchedPos = 3;
          }
-         else if ((active4 & 0x1L) != 0L)
+ ((a ti e4 &e0xfL((active4 & 0x1L) != 0L)
          {
             jjmatchedKind = 256;
-            jjmatchedPos = 3;
-         }
-         else if ((active4 & 0x2000000000L) != 0L)
+            jjmatc edPos = 3;
+         }f ((    v 4 se if ((active4 & 0x2000000000L) != 0L)
          {
             jjmatchedKind = 293;
             jjmatchedPos = 3;
