@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opencloudb.mycat</groupId>
 	<artifactId>Mycat-server</artifactId>
-	<version>1.0GA-b1</version>
+	<version>1.0GA</version>
 	<packaging>jar</packaging>
 	<name>Mycat-server</name>
 	<description>The project of Mycat-server</description>
@@ -12,8 +12,8 @@
 
 	<properties>
 		<app.encoding>UTF-8</app.encoding>
-		<!--  maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
-		<buildNumber>${maven.build.timestamp}</buildNumber -->
+		<!-- maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format> 
+			<buildNumber>${maven.build.timestamp}</buildNumber -->
 	</properties>
 	<scm>
 		<connection>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</connection>
@@ -62,7 +62,7 @@
 	</issueManagement>
 
 	<build>
-		<!--  finalName>${artifactId}-${version}-${buildNumber}</finalName -->
+		<!-- finalName>${artifactId}-${version}-${buildNumber}</finalName -->
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
@@ -113,16 +113,15 @@
 				<configuration>
 					<excludes>
 						<exclude>**/.svn/**</exclude>
-					</excludes>					
+					</excludes>
 				</configuration>
 				<executions>
 					<execution>
 						<goals>
 							<goal>test-jar</goal>
 						</goals>
-						<!--  configuration>
-							<finalName>${project.build.finalName}-${buildNumber}</finalName>
-						</configuration -->
+						<!-- configuration> <finalName>${project.build.finalName}-${buildNumber}</finalName> 
+							</configuration -->
 					</execution>
 				</executions>
 			</plugin>
@@ -156,10 +155,10 @@
 					<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
 					<repositoryLayout>flat</repositoryLayout>
 					<useWildcardClassPath>true</useWildcardClassPath>
-					
+
 					<daemons>
 						<daemon>
-							
+
 							<id>mycat</id>
 							<mainClass>org.opencloudb.MycatStartup</mainClass>
 							<commandLineArguments>
@@ -233,7 +232,7 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>					
+				<configuration>
 					<descriptor>src/main/assembly/assembly.xml</descriptor>
 				</configuration>
 				<executions>
@@ -261,18 +260,19 @@
 				</executions>
 				<configuration>
 					<format>{0,date,yyyyMMdd}-{1}</format>
-          			<items>
-            			<item>timestamp</item>
-            			<item>scmVersion</item>
-          			</items>
-					<!--  urlScm>scm:svn:http://code.taobao.org/svn/openclouddb/trunk</urlScm -->
+					<items>
+						<item>timestamp</item>
+						<item>scmVersion</item>
+					</items>
 					<doCheck>false</doCheck>
 					<doUpdate>false</doUpdate>
-					<useLastCommittedRevision>true</useLastCommittedRevision>
+
 					<providerImplementations>
-						<svn>javasvn</svn>
-					</providerImplementations>
+					 <svn>svnkit</svn> 
+					 </providerImplementations>
+
 				</configuration>
+
 				<dependencies>
 					<dependency>
 						<groupId>com.google.code.maven-scm-provider-svnjava</groupId>
@@ -285,9 +285,10 @@
 						<version>1.7.8</version>
 					</dependency>
 				</dependencies>
+
 			</plugin>
 		</plugins>
 	</build>
-	
+
 
 </project>

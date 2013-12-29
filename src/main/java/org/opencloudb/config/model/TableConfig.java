@@ -110,7 +110,7 @@ public class TableConfig {
 		String sql = "SELECT " + prevTC.parentTC.name + '.' + prevTC.parentKey
 				+ " FROM " + tableSb.substring(0, tableSb.length() - 1)
 				+ " WHERE " + ((level<2)?latestCond:condition.toString()+latestCond);
-		System.out.println(this.name+" sql " + sql);
+		//System.out.println(this.name+" sql " + sql);
 		return sql;
 
 	}
