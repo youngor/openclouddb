@@ -1,0 +1,476 @@
+package org.opencloudb.mpp;
+
+import java.sql.SQLSyntaxErrorException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import org.opencloudb.route.RouteResultset;
+
+import com.akiban.sql.StandardException;
+import com.akiban.sql.parser.AggregateNode;
+import com.akiban.sql.parser.BinaryOperatorNode;
+import com.akiban.sql.parser.BinaryRelationalOperatorNode;
+import com.akiban.sql.parser.ColumnReference;
+import com.akiban.sql.parser.ConstantNode;
+import com.akiban.sql.parser.CursorNode;
+import com.akiban.sql.parser.FromBaseTable;
+import com.akiban.sql.parser.FromList;
+import com.akiban.sql.parser.FromSubquery;
+import com.akiban.sql.parser.FromTable;
+import com.akiban.sql.parser.GroupByList;
+import com.akiban.sql.parser.InListOperatorNode;
+import com.akiban.sql.parser.JoinNode;
+import com.akiban.sql.parser.NodeTypes;
+import com.akiban.sql.parser.NumericConstantNode;
+import com.akiban.sql.parser.OrderByColumn;
+import com.akiban.sql.parser.OrderByList;
+import com.akiban.sql.parser.QueryTreeNode;
+import com.akiban.sql.parser.ResultColumn;
+import com.akiban.sql.parser.ResultColumnList;
+import com.akiban.sql.parser.ResultSetNode;
+import com.akiban.sql.parser.RowConstructorNode;
+import com.akiban.sql.parser.SelectNode;
+import com.akiban.sql.parser.SubqueryNode;
+import com.akiban.sql.parser.UnaryLogicalOperatorNode;
+import com.akiban.sql.parser.UnionNode;
+import com.akiban.sql.parser.ValueNode;
+import com.akiban.sql.parser.ValueNodeList;
+import com.akiban.sql.unparser.NodeToString;
+
+public class SelectSQLAnalyser {
+
+	private static String andTableName(SelectParseInf parsInf,
+			FromBaseTable fromTable) throws StandardException {
+		String tableName = fromTable.getOrigTableName().getTableName();
+		String aliasName = fromTable.getTableName().getTableName();
+		if ((aliasName != null) && !aliasName.equals(tableName)) {// store alias
+			// ->real
+			// name
+			// relation
+			parsInf.ctx.tableAliasMap.put(aliasName, tableName.toUpperCase());
+		}
+		tableName = tableName.toUpperCase();
+		Map<String, Set<ColumnRoutePair>> columVarMap = parsInf.ctx.tablesAndCondtions
+				.get(tableName);
+		if (columVarMap == null) {
+			columVarMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
+			parsInf.ctx.tablesAndCondtions.put(tableName, columVarMap);
+		}
+		return tableName;
+	}
+
+	/**
+	 * anlayse group ,order ,limit condtions
+	 * 
+	 * @param rrs
+	 * @param ast
+	 * @throws SQLSyntaxErrorException
+	 */
+	public static String analyseMergeInf(RouteResultset rrs, QueryTreeNode ast,
+			boolean modifySQLLimit) throws SQLSyntaxErrorException {
+		CursorNode rsNode = (CursorNode) ast;
+		NumericConstantNode offsetNode = null;
+		NumericConstantNode offCountNode = null;
+		ResultSetNode resultNode = rsNode.getResultSetNode();
+		if (resultNode instanceof SelectNode) {
+			Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
+			boolean hasAggrColumn = false;
+			SelectNode selNode = (SelectNode) resultNode;
+			ResultColumnList colums = selNode.getResultColumns();
+			for (int i = 0; i < colums.size(); i++) {
+				ResultColumn col = colums.get(i);
+				ValueNode exp = col.getExpression();
+				if (exp instanceof AggregateNode) {
+					hasAggrColumn = true;
+					String colName = col.getName();
+					String aggName = ((AggregateNode) exp).getAggregateName();
+					if (colName != null) {
+						aggrColumns
+								.put(colName, MergeCol.getMergeType(aggName));
+					}
+				}
+			}
+			if (!aggrColumns.isEmpty()) {
+				rrs.setMergeCols(aggrColumns);
+			}
+			rrs.setHasAggrColumn(hasAggrColumn);
+			GroupByList groupL = selNode.getGroupByList();
+			if (groupL != null && !groupL.isEmpty()) {
+				String[] groupCols = new String[groupL.size()];
+				for (int i = 0; i < groupCols.length; i++) {
+					groupCols[i] = groupL.get(i).getColumnName();
+				}
+				rrs.setGroupByCols(groupCols);
+			}
+		}
+		OrderByList orderBy = rsNode.getOrderByList();
+		if (orderBy != null && !orderBy.isEmpty()) {
+			LinkedHashMap<String, Integer> orderCols = new LinkedHashMap<String, Integer>();
+
+			for (int i = 0; i < orderBy.size(); i++) {
+				OrderByColumn orderCol = orderBy.get(i);
+				ValueNode orderExp = orderCol.getExpression();
+				if (!(orderExp instanceof ColumnReference)) {
+					throw new SQLSyntaxErrorException(
+							" aggregated column should has a alias in order to be used in order by clause");
+				}
+				orderCols.put(orderExp.getColumnName(),
+						orderCol.isAscending() ? OrderCol.COL_ORDER_TYPE_ASC
+								: OrderCol.COL_ORDER_TYPE_DESC);
+			}
+			rrs.setOrderByCols(orderCols);
+		}
+		if (rsNode.getOffsetClause() != null) {
+			offsetNode = (NumericConstantNode) rsNode.getOffsetClause();
+			rrs.setLimitStart(Integer
+					.parseInt(offsetNode.getValue().toString()));
+
+		}
+		if (rsNode.getFetchFirstClause() != null) {
+			offCountNode = (NumericConstantNode) rsNode.getFetchFirstClause();
+			rrs.setLimitSize(Integer.parseInt(offCountNode.getValue()
+					.toString()));
+		}
+		if (modifySQLLimit && offsetNode != null) {
+			offsetNode.setValue(0);
+			offCountNode.setValue(rrs.getLimitStart() + rrs.getLimitSize());
+			try {
+				return new NodeToString().toString(ast);
+			} catch (StandardException e) {
+				throw new SQLSyntaxErrorException(e);
+			}
+		} else {
+			return null;
+		}
+
+	}
+
+	public static void analyse(SelectParseInf parsInf, QueryTreeNode ast)
+			throws SQLSyntaxErrorException {
+		try {
+			analyseSQL(parsInf, ast, false);
+		} catch (StandardException e) {
+			throw new SQLSyntaxErrorException(e);
+		}
+	}
+
+	private static void addTableName(FromSubquery theSub, SelectParseInf parsInf)
+			throws StandardException {
+		FromList fromList = ((SelectNode) theSub.getSubquery()).getFromList();
+		if (fromList.size() == 1) {
+			FromTable fromT = fromList.get(0);
+			if (fromT instanceof FromBaseTable) {
+				FromBaseTable baseT = ((FromBaseTable) fromT);
+				String tableName = baseT.getOrigTableName().getTableName();
+				String corrName = theSub.getCorrelationName();
+				if (corrName != null) {
+					andTableName(parsInf, baseT);
+					parsInf.ctx.tableAliasMap.put(corrName,
+							tableName.toUpperCase());
+
+				}
+			}
+
+		}
+
+	}
+
+	private static void analyseSQL(SelectParseInf parsInf, QueryTreeNode ast,
+			boolean notOpt) throws StandardException {
+		SelectNode selNode = null;
+		switch (ast.getNodeType()) {
+		case NodeTypes.CURSOR_NODE: {
+			ResultSetNode rsNode = ((CursorNode) ast).getResultSetNode();
+			if (rsNode instanceof UnionNode) {
+				UnionNode unionNode = (UnionNode) rsNode;
+				analyseSQL(parsInf, unionNode.getLeftResultSet(), notOpt);
+				analyseSQL(parsInf, unionNode.getRightResultSet(), notOpt);
+				return;
+			} else if (!(rsNode instanceof SelectNode)) {
+				System.out.println("not select node "
+						+ rsNode.getClass().getCanonicalName());
+				return;
+			}
+			selNode = (SelectNode) rsNode;
+			break;
+		}
+		case NodeTypes.SELECT_NODE: {
+			selNode = (SelectNode) ast;
+			break;
+		}
+		case NodeTypes.SUBQUERY_NODE: {
+			SubqueryNode subq = (SubqueryNode) ast;
+			selNode = (SelectNode) subq.getResultSet();
+			break;
+		}
+		case NodeTypes.FROM_SUBQUERY: {
+			FromSubquery subq = (FromSubquery) ast;
+			selNode = (SelectNode) subq.getSubquery();
+			break;
+		}
+		default: {
+			System.out.println("todo :not select node "
+					+ ast.getClass().getCanonicalName());
+			return;
+		}
+		}
+
+		FromList fromList = selNode.getFromList();
+		int formSize = fromList.size();
+		String defaultTableName = null;
+		if (formSize == 1) {
+			FromTable fromT = fromList.get(0);
+			if (fromT instanceof FromBaseTable) {
+				FromBaseTable baseT = ((FromBaseTable) fromT);
+				defaultTableName = baseT.getOrigTableName().getTableName();
+			}
+
+		}
+		for (int i = 0; i < formSize; i++) {
+			FromTable fromT = fromList.get(i);
+			if (fromT instanceof FromBaseTable) {
+				andTableName(parsInf, (FromBaseTable) fromT);
+
+			} else if (fromT instanceof JoinNode) {
+				JoinNode joinNd = (JoinNode) fromT;
+				// FromSubquery
+				ResultSetNode leftNode = joinNd.getLeftResultSet();
+				if (leftNode instanceof FromSubquery) {
+					FromSubquery theSub = (FromSubquery) leftNode;
+					addTableName(theSub, parsInf);
+					analyseSQL(parsInf, theSub, notOpt);
+
+				} else {
+					andTableName(parsInf, (FromBaseTable) leftNode);
+				}
+				ResultSetNode rightNode = joinNd.getRightResultSet();
+				if (rightNode instanceof FromSubquery) {
+					FromSubquery theSub = (FromSubquery) rightNode;
+					addTableName(theSub, parsInf);
+					analyseSQL(parsInf, theSub, notOpt);
+
+				} else {
+					andTableName(parsInf, (FromBaseTable) rightNode);
+				}
+
+				BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinNd
+						.getJoinClause();
+				addTableJoinInf(parsInf.ctx,
+						(ColumnReference) joinOpt.getLeftOperand(),
+						(ColumnReference) joinOpt.getRightOperand());
+
+			} else if (fromT instanceof FromSubquery) {
+				analyseSQL(parsInf, ((FromSubquery) fromT).getSubquery(),
+						notOpt);
+			} else {
+				System.out.println("warn,todo " + fromT.getClass().toString());
+			}
+		}
+
+		ValueNode valueNode = selNode.getWhereClause();
+		if (valueNode == null) {
+			return;
+		}
+		analyseWhereCondition(parsInf, notOpt, defaultTableName, valueNode);
+	}
+
+	public static void analyseWhereCondition(SelectParseInf parsInf,
+			boolean notOpt, String defaultTableName, ValueNode valueNode)
+			throws StandardException {
+		// valueNode.treePrint();
+		if (valueNode instanceof BinaryOperatorNode) {
+			BinaryOperatorNode binRelNode = (BinaryOperatorNode) valueNode;
+			ValueNode leftOp = binRelNode.getLeftOperand();
+			ValueNode wrightOp = binRelNode.getRightOperand();
+			tryColumnCondition(parsInf, defaultTableName,
+					binRelNode.getMethodName(), leftOp, wrightOp, notOpt);
+
+		} else if (valueNode instanceof SubqueryNode) {
+			analyseSQL(parsInf, valueNode, notOpt);
+		} else if (valueNode instanceof UnaryLogicalOperatorNode) {
+			UnaryLogicalOperatorNode logicNode = (UnaryLogicalOperatorNode) valueNode;
+			boolean theNotOpt = logicNode.getOperator().equals("not") | notOpt;
+			analyseWhereCondition(parsInf, theNotOpt, defaultTableName,
+					logicNode.getOperand());
+		} else if (valueNode instanceof InListOperatorNode) {
+			if (notOpt) {
+				return;
+			}
+			InListOperatorNode theOpNode = (InListOperatorNode) valueNode;
+			parseIncondition(defaultTableName, theOpNode, parsInf.ctx);
+			// addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
+			// theOpNode.getRightOperandList(), "IN", ctx,
+			// defaultTableName, notOpt);
+		} else {
+
+			System.out.println("todo parse where cond\r\n "
+					+ valueNode.getClass().getCanonicalName());
+			// valueNode.treePrint();
+		}
+	}
+
+	private static void tryColumnCondition(SelectParseInf parsInf,
+			String defaultTableName, String methodName, ValueNode leftOp,
+			ValueNode wrightOp, boolean notOpt) throws StandardException {
+		// 简单的 column=aaa的情况
+		if (leftOp instanceof ColumnReference) {
+			addConstCondition(leftOp, wrightOp, methodName, parsInf,
+					defaultTableName, notOpt);
+			return;
+		} else if (wrightOp instanceof ColumnReference) {
+			addConstCondition(wrightOp, leftOp, methodName, parsInf,
+					defaultTableName, notOpt);
+			return;
+		}
+		// 左边 为(a=b) ,(a>b)
+		if (leftOp instanceof BinaryOperatorNode) {
+			BinaryOperatorNode theOptNode = (BinaryOperatorNode) leftOp;
+			tryColumnCondition(parsInf, defaultTableName,
+					theOptNode.getMethodName(), theOptNode.getLeftOperand(),
+					theOptNode.getRightOperand(), notOpt);
+
+		} else if (leftOp instanceof InListOperatorNode) {
+			InListOperatorNode theOpNode = (InListOperatorNode) leftOp;
+			addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
+					theOpNode.getRightOperandList(), "IN", parsInf,
+					defaultTableName, notOpt);
+		}
+		// 右边 为(a=b) ,(a>b)
+		if (wrightOp instanceof BinaryOperatorNode) {
+			BinaryOperatorNode theOptNode = (BinaryOperatorNode) wrightOp;
+			tryColumnCondition(parsInf, defaultTableName,
+					theOptNode.getMethodName(), theOptNode.getLeftOperand(),
+					theOptNode.getRightOperand(), notOpt);
+		} else if (wrightOp instanceof InListOperatorNode) {
+			InListOperatorNode theOpNode = (InListOperatorNode) wrightOp;
+			addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
+					theOpNode.getRightOperandList(), "IN", parsInf,
+					defaultTableName, notOpt);
+		}
+
+	}
+
+	private static String getTableNameForColumn(String defaultTable,
+			ColumnReference column, Map<String, String> tableAliasMap) {
+		String tableName = column.getTableName();
+		if (tableName == null) {
+			tableName = defaultTable;
+		} else {
+			// judge if is alias table name
+			String realTableName = tableAliasMap.get(tableName);
+			if (realTableName != null) {
+				return realTableName;
+			}
+		}
+		return tableName.toUpperCase();
+	}
+
+	private static void parseIncondition(String tableName,
+			InListOperatorNode theOpNode, ShardingParseInfo ctx) {
+		ValueNodeList columnLst = theOpNode.getLeftOperand().getNodeList();
+		ValueNodeList columnValLst = theOpNode.getRightOperandList()
+				.getNodeList();
+		int columnSize = columnLst.size();
+		for (int i = 0; i < columnSize; i++) {
+			ValueNode columNode = columnLst.get(i);
+			if (!(columNode instanceof ColumnReference)) {
+				continue;
+			}
+			ColumnReference columRef = (ColumnReference) columNode;
+			tableName = getTableNameForColumn(tableName, columRef,
+					ctx.tableAliasMap);
+			String colName = columRef.getColumnName();
+			final Object[] values = new Object[columnValLst.size()];
+			for (int j = 0; j < values.length; j++) {
+				ValueNode valNode = columnValLst.get(j);
+				if (valNode instanceof ConstantNode) {
+					values[j] = ((ConstantNode) valNode).getValue();
+				} else {
+					// rows
+					RowConstructorNode rowConsNode = (RowConstructorNode) valNode;
+					values[j] = ((ConstantNode) rowConsNode.getNodeList()
+							.get(i)).getValue();
+
+				}
+
+			}
+			ctx.addShardingExpr(tableName, colName, values);
+		}
+	}
+
+	private static void addTableJoinInf(ShardingParseInfo ctx,
+			ColumnReference leftColum, ColumnReference rightColm)
+			throws StandardException {
+		// A.a=B.b
+		String leftTable = ctx.getTableName(leftColum.getTableName());
+		String rightTale = ctx.getTableName(rightColm.getTableName());
+		ctx.addJoin(new JoinRel(leftTable, leftColum.getColumnName(),
+				rightTale, rightColm.getColumnName()));
+
+	}
+
+	private static void addConstCondition(ValueNode leftOp, ValueNode wrightOp,
+			String method, SelectParseInf parsInf, String defaultTableName,
+			boolean notOpt) throws StandardException {
+
+		if (wrightOp instanceof ConstantNode) {
+			if (notOpt) {
+				return;
+			}
+			ColumnReference leftColumRef = (ColumnReference) leftOp;
+			String tableName = getTableNameForColumn(defaultTableName,
+					leftColumRef, parsInf.ctx.tableAliasMap);
+			parsInf.ctx.addShardingExpr(tableName, leftOp.getColumnName(),
+					((ConstantNode) wrightOp).getValue());
+
+		} else if (wrightOp instanceof RowConstructorNode) {
+			if (notOpt) {
+				return;
+			}
+			if (!(leftOp instanceof ColumnReference)) {
+				return;
+			}
+			String tableName = getTableNameForColumn(defaultTableName,
+					(ColumnReference) leftOp, parsInf.ctx.tableAliasMap);
+			ValueNodeList valList = ((RowConstructorNode) wrightOp)
+					.getNodeList();
+			final Object[] values = new Object[valList.size()];
+			for (int i = 0; i < values.length; i++) {
+				ValueNode valNode = valList.get(i);
+				values[i] = ((ConstantNode) valNode).getValue();
+
+			}
+			parsInf.ctx.addShardingExpr(tableName, leftOp.getColumnName(),
+					values);
+		} else if (wrightOp instanceof ColumnReference) {
+			ColumnReference wrightRef = (ColumnReference) wrightOp;
+			if (leftOp instanceof ConstantNode) {
+				if (notOpt) {
+					return;
+				}
+				String tableName = getTableNameForColumn(defaultTableName,
+						wrightRef, parsInf.ctx.tableAliasMap);
+				parsInf.ctx.addShardingExpr(tableName, leftOp.getColumnName(),
+						((ConstantNode) leftOp).getValue());
+
+			} else if (leftOp instanceof ColumnReference) {
+
+				ColumnReference leftCol = (ColumnReference) leftOp;
+				addTableJoinInf(parsInf.ctx, leftCol, wrightRef);
+
+			} else {
+				System.out.println("todo ,parse condition: "
+						+ leftOp.getClass().getCanonicalName());
+			}
+		} else if (wrightOp instanceof SubqueryNode) {
+			analyseSQL(parsInf, ((SubqueryNode) wrightOp).getResultSet(),
+					notOpt);
+		} else {
+			System.out.println("todo ,parse condition: "
+					+ wrightOp.getClass().getCanonicalName());
+		}
+
+	}
+}

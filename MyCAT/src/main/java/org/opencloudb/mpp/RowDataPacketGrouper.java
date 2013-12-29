@@ -1,0 +1,107 @@
+package org.opencloudb.mpp;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+
+import org.opencloudb.net.mysql.RowDataPacket;
+import org.opencloudb.util.ByteUtil;
+import org.opencloudb.util.LongUtil;
+
+/**
+ * implement group function select a,count(*),sum(*) from A group by a
+ * 
+ * @author wuzhih
+ * 
+ */
+public class RowDataPacketGrouper {
+
+	private final MergeCol[] mergCols;
+	private final int[] groupColumnIndexs;
+	private Collection<RowDataPacket> result = new LinkedList<RowDataPacket>();
+
+	public RowDataPacketGrouper(int[] groupColumnIndexs, MergeCol[] mergCols) {
+		super();
+		this.groupColumnIndexs = groupColumnIndexs;
+		this.mergCols = mergCols;
+	}
+
+	public Collection<RowDataPacket> getResult() {
+		return result;
+	}
+
+	public void addRow(RowDataPacket rowDataPkg) {
+
+		for (RowDataPacket row : result) {
+			if (sameGropuColums(rowDataPkg, row)) {
+				aggregateRow(row, rowDataPkg);
+				return;
+			}
+		}
+		// not aggreated ,insert new
+		result.add(rowDataPkg);
+
+	}
+
+	private void aggregateRow(RowDataPacket toRow, RowDataPacket newRow) {
+		if (mergCols == null) {
+			return;
+		}
+		for (MergeCol merg : mergCols) {
+
+			byte[] result = mertFields(
+					toRow.fieldValues.get(merg.colMeta.colIndex),
+					newRow.fieldValues.get(merg.colMeta.colIndex),
+					merg.colMeta.colType, merg.mergeType);
+			if (result != null) {
+				toRow.fieldValues.set(merg.colMeta.colIndex, result);
+			}
+		}
+
+	}
+
+	private byte[] mertFields(byte[] bs, byte[] bs2, int colType, int mergeType) {
+		// System.out.println("mergeType:"+ mergeType+" colType "+colType+
+		// " field:"+Arrays.toString(bs)+ " ->  "+Arrays.toString(bs2));
+		switch (mergeType) {
+		case MergeCol.MERGE_SUM:
+		case MergeCol.MERGE_COUNT: {
+			long s1 = Long.parseLong(new String(bs));
+			long s2 = Long.parseLong(new String(bs2));
+			long total = s1 + s2;
+			return LongUtil.toBytes(total);
+		}
+		case MergeCol.MERGE_MAX: {
+			// int compare = ByteUtil.compareNumberArray(bs, bs2);
+			// return (compare > 0) ? bs : bs2;
+			return ByteUtil.compareNumberArray2(bs, bs2, 1);
+		}
+		case MergeCol.MERGE_MIN: {
+			// int compare = ByteUtil.compareNumberArray(bs, bs2);
+			// return (compare > 0) ? bs2 : bs;
+			return ByteUtil.compareNumberArray2(bs, bs2, 2);
+		}
+		default:
+			return null;
+		}
+
+	}
+
+	// private static final
+
+	private boolean sameGropuColums(RowDataPacket newRow, RowDataPacket existRow) {
+		if (groupColumnIndexs == null) {// select count(*) from aaa , or group
+										// column
+			return true;
+		}
+		for (int i = 0; i < groupColumnIndexs.length; i++) {
+			if (!Arrays.equals(newRow.fieldValues.get(groupColumnIndexs[i]),
+					existRow.fieldValues.get(groupColumnIndexs[i]))) {
+				return false;
+			}
+
+		}
+		return true;
+
+	}
+}
