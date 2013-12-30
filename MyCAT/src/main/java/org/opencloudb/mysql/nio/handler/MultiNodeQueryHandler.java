@@ -89,15 +89,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			lock.unlock();
 		}
 
-		if (this.clearIfSessionClosed(session)) {
-			return;
-		}
-
 		for (final RouteResultsetNode node : route) {
 			final PhysicalConnection conn = session.getTarget(node);
 			if (session.tryExistsCon(conn, node, new Runnable() {
 				@Override
 				public void run() {
+
 					_execute(conn, node);
 				}
 			})) {
@@ -113,6 +110,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	private void _execute(PhysicalConnection conn, RouteResultsetNode node) {
+		if (clearIfSessionClosed(session)) {
+			return;
+		}
 		conn.setResponseHandler(this);
 		conn.setRunning(true);
 		try {
@@ -120,28 +120,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		} catch (IOException e) {
 			connectionError(e, conn);
 		}
-	}
-
-	@Override
-	public void clearResources() {
-		if (dataMergeSvr != null) {
-			dataMergeSvr.clear();
-		}
-
-		ByteBuffer buf;
-		lock.lock();
-		try {
-			buf = buffer;
-			if (buf != null) {
-				buffer = null;
-			}
-		} finally {
-			lock.unlock();
-		}
-		if (buf != null) {
-			session.getSource().recycle(buf);
-		}
-
 	}
 
 	@Override
@@ -166,23 +144,17 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		LOGGER.warn("error response from " + conn + " err " + errmsg + " code:"
 				+ err.errno);
 		this.setFail(errmsg);
-		if (canClose(conn, true)) {
-			return;
-		}
+		// try connection and finish conditon check
+		canClose(conn, true);
 	}
 
 	@Override
 	public void okResponse(byte[] data, PhysicalConnection conn) {
-		boolean executeResponse = false;
-		try {
-			executeResponse = conn.syncAndExcute();
-		} catch (Exception e) {
-			this.setFail(e.toString());
-			this.canClose(conn, true);
-			return;
-		}
+		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
-			if (canClose(conn, false)) {
+			if (clearIfSessionClosed(session)) {
+				return;
+			} else if (canClose(conn, false)) {
 				return;
 			}
 			ServerConnection source = session.getSource();
@@ -199,6 +171,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				lock.unlock();
 			}
 			if (decrementCountBy(1)) {
+				// clear resources
+				clearResources();
 				if (this.autocommit) {// clear all connections
 					session.releaseConnections();
 				}
@@ -208,7 +182,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				}
 				lock.lock();
 				try {
-					clearResources();
+
 					ok.packetId = ++packetId;// OK_PACKET
 					ok.affectedRows = affectedRows;
 					if (insertId > 0) {
@@ -219,6 +193,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				} catch (Exception e) {
 					LOGGER.warn("exception happens in success notification: "
 							+ session.getSource(), e);
+					// return err package
 					createErrPkg(e.toString()).write(source);
 
 				} finally {
@@ -235,23 +210,21 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		RouteResultsetNode curNode = (RouteResultsetNode) conn.getAttachment();
 		conn.recordSql(source.getHost(), source.getSchema(),
 				curNode.getStatement());
+		// realse this connection if safe
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		// release cur finished node and connection
 		if (tryErrorFinish) {
 			allFinshed = this.decrementCountBy(1);
 			this.tryErrorFinished(conn, allFinshed);
 		}
 
-		if (clearIfSessionClosed(session)) {
-			return true;
-		} else {
-			return allFinshed;
-		}
+		return allFinshed;
 	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-		if (canClose(conn, false)) {
+		if (clearIfSessionClosed(session)) {
+			return;
+		} else if (canClose(conn, false)) {
 			return;
 		}
 		ServerConnection source = session.getSource();
@@ -361,6 +334,28 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	@Override
+	public void clearResources() {
+		if (dataMergeSvr != null) {
+			dataMergeSvr.clear();
+		}
+
+		ByteBuffer buf;
+		lock.lock();
+		try {
+			buf = buffer;
+			if (buf != null) {
+				buffer = null;
+			}
+		} finally {
+			lock.unlock();
+		}
+		if (buf != null) {
+			session.getSource().recycle(buf);
+		}
+
 	}
 
 	@Override

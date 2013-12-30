@@ -241,10 +241,14 @@ public class NonBlockingSession implements Session {
 	}
 
 	public void releaseConnectionIfSafe(PhysicalConnection conn, boolean debug) {
-		if (this.source.isAutocommit() || conn.isFromSlaveDB()
-				|| !conn.isModifiedSQLExecuted()) {
-			releaseConnection((RouteResultsetNode) conn.getAttachment(),
-					LOGGER.isDebugEnabled());
+		RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+
+		if (node != null) {
+			if (this.source.isAutocommit() || conn.isFromSlaveDB()
+					|| !conn.isModifiedSQLExecuted()) {
+				releaseConnection((RouteResultsetNode) conn.getAttachment(),
+						LOGGER.isDebugEnabled());
+			}
 		}
 	}
 

@@ -402,7 +402,7 @@ class FakeConnection implements PhysicalConnection {
 	}
 
 	@Override
-	public boolean syncAndExcute() throws UnsupportedEncodingException {
+	public boolean syncAndExcute() {
 		return false;
 	}
 

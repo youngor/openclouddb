@@ -25,7 +25,6 @@ import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.mysql.ErrorPacket;
-import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.NonBlockingSession;
 import org.opencloudb.util.StringUtil;
 
@@ -99,13 +98,15 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	public void errorResponse(byte[] data, PhysicalConnection conn) {
-
+		conn.setRunning(false);
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		String errmsg = new String(err.message);
+		this.setFail(errmsg);
 		LOGGER.warn("error response from " + conn + " err " + errmsg + " code:"
 				+ err.errno);
-		this.setFail(errmsg);
+
 		this.tryErrorFinished(conn, this.decrementCountBy(1));
 	}
 
@@ -161,25 +162,24 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	protected void tryErrorFinished(PhysicalConnection conn, boolean allEnd) {
-		tryErrorFinished(conn, this.error, allEnd);
-	}
-
-	protected void tryErrorFinished(PhysicalConnection conn, String errMsg,
-			boolean allEnd) {
-		conn.setRunning(false);
-		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		this.setFail(errMsg);
 		if (allEnd) {
-			session.clearResources();
-			createErrPkg(errMsg).write(session.getSource());
-			session.getSource().setTxInterrupt();
+			if (session.getSource().isAutocommit()) {
+				session.clearResources();
+				createErrPkg(this.error).write(session.getSource());
+			} else {
+				session.getSource().setTxInterrupt();
+			}
+			// clear resouces
+			clearResources();
 		}
+
 	}
 
 	public void connectionClose(PhysicalConnection conn, String reason) {
 		conn.setRunning(false);
-		session.removeTarget((RouteResultsetNode) conn.getAttachment());
-		tryErrorFinished(conn, reason, this.decrementCountBy(1));
+		this.setFail("closed connection:" + reason + " con:" + conn);
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+		tryErrorFinished(conn, this.decrementCountBy(1));
 	}
 
 	public void clearResources() {

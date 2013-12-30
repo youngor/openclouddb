@@ -257,11 +257,15 @@ public class MySQLConnection extends BackendConnection implements
 	}
 
 	protected void sendQueryCmd(String query)
-			throws UnsupportedEncodingException {
+			 {
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
-		packet.arg = query.getBytes(charset);
+		try {
+			packet.arg = query.getBytes(charset);
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
 		lastTime = TimeUtil.currentTimeMillis();
 		packet.write((BackendConnection) this);
 	}
@@ -392,7 +396,7 @@ public class MySQLConnection extends BackendConnection implements
 			return false;
 		}
 
-		public void execute() throws UnsupportedEncodingException {
+		public void execute() {
 			executed = true;
 			conn.sendQueryCmd(rrn.getStatement());
 
@@ -440,7 +444,7 @@ public class MySQLConnection extends BackendConnection implements
 	 * @return if synchronization finished and execute-sql has already been sent
 	 *         before
 	 */
-	public boolean syncAndExcute() throws UnsupportedEncodingException {
+	public boolean syncAndExcute()  {
 		StatusSync sync = statusSync;
 		if (sync.isExecuted()) {
 			return true;

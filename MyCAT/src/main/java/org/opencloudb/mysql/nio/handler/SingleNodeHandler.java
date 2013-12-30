@@ -19,7 +19,6 @@
 package org.opencloudb.mysql.nio.handler;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -179,11 +178,13 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		err.message = StringUtil.encode(
 				"unknown backend charset: " + c.getCharset(), session
 						.getSource().getCharset());
+		
 		this.backConnectionErr(err, c);
 	}
 
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
+		conn.setRunning(false);
 		endRunning();
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
@@ -205,12 +206,8 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	private void backConnectionErr(ErrorPacket errPkg, PhysicalConnection conn) {
 		conn.setRunning(false);
-		if (session.getSource().isAutocommit()) {
-			session.releaseConnections();
-		} else {
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		}
 		endRunning();
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		ServerConnection source = session.getSource();
 		source.setTxInterrupt();
 		recycleResources();
@@ -219,21 +216,12 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void okResponse(byte[] data, PhysicalConnection conn) {
-		boolean executeResponse = false;
-		try {
-			executeResponse = conn.syncAndExcute();
-		} catch (UnsupportedEncodingException e) {
-			executeException(conn);
-		}
+		boolean executeResponse =  conn.syncAndExcute();;
 		if (executeResponse) {
 			conn.setRunning(false);
-			if (session.getSource().isAutocommit()) {
-				session.releaseConnections();
-			} else {
-				session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-			}
-			ServerConnection source = session.getSource();
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 			endRunning();
+			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);
 
@@ -251,11 +239,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		conn.setRunning(false);
 		conn.recordSql(source.getHost(), source.getSchema(),
 				node.getStatement());
-		if (session.getSource().isAutocommit()) {
-			session.releaseConnections();
-		} else {
-			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		}
+		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		endRunning();
 		lock.lock();
 		try {
@@ -313,7 +297,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	@Override
 	public void connectionClose(PhysicalConnection conn, String reason) {
 		conn.setRunning(false);
-		session.removeTarget((RouteResultsetNode) conn.getAttachment());
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_YES;

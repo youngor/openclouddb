@@ -53,7 +53,7 @@ public interface PhysicalConnection extends ClosableConnection{
 
 	public void recordSql(String host, String schema, String statement);
 
-	public boolean syncAndExcute() throws UnsupportedEncodingException;
+	public boolean syncAndExcute();
 
 	public void rollback();
 

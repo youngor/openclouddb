@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author shenzhw
+ * @author wuzh
  * 
  */
-public class TestGlobalTableInsertPerf {
+public class TestUpdatePerf {
 
 	private static AtomicInteger finshiedCount = new AtomicInteger();
 	private static AtomicInteger failedCount = new AtomicInteger();
@@ -36,8 +36,8 @@ public class TestGlobalTableInsertPerf {
 					.println("input param,format: [jdbcurl] [user] [password]  [threadpoolsize]  [record] ");
 			return;
 		}
-		int threadCount = 0;// 线程数
-		int recordCount = 0;// 要插入的记录数
+		int threadCount = 0;// threads
+		int recordCount = 0;// records
 		String url = args[0];
 		String user = args[1];
 		String password = args[2];
@@ -45,7 +45,7 @@ public class TestGlobalTableInsertPerf {
 		recordCount = Integer.parseInt(args[4]);
 
 		System.out.println("concerent threads:" + threadCount);
-		System.out.println("total insert records:" + recordCount);
+		System.out.println("total update records:" + recordCount);
 		if (recordCount < 5000) {
 			System.out.println("recoud count must > 5000");
 		}
@@ -59,8 +59,8 @@ public class TestGlobalTableInsertPerf {
 				Connection con = getCon(url, user, password);
 				System.out.println("create thread " + i
 						+ " insert record start at " + startId);
-				GoodsInsertJob job = new GoodsInsertJob(con, threadTotalRecord,
-						batchSize, startId, finshiedCount, failedCount);
+				TravelRecordUpdateJob job = new TravelRecordUpdateJob(con,
+						threadTotalRecord, batchSize, startId,finshiedCount,failedCount);
 				Thread thread = new Thread(job);
 				threads.add(thread);
 			} catch (Exception e) {
@@ -93,3 +93,4 @@ public class TestGlobalTableInsertPerf {
 	}
 
 }
+

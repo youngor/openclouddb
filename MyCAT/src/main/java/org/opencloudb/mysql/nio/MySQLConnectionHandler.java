@@ -135,19 +135,21 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
 	public void setResponseHandler(ResponseHandler responseHandler) {
 		// logger.info("set response handler "+responseHandler);
-//		if (this.responseHandler != null && responseHandler != null) {
-//			throw new RuntimeException("reset agani!");
-//		}
+		// if (this.responseHandler != null && responseHandler != null) {
+		// throw new RuntimeException("reset agani!");
+		// }
 		this.responseHandler = responseHandler;
 	}
 
 	@Override
 	protected void handleDataError(Throwable t) {
-		logger.warn("caught Data process err:", t);
+		logger.warn("handleDataError err,maybe BUG,please reprot :", t);
 		dataQueue.clear();
-		resultStatus = RESULT_STATUS_INIT;
+		String errMsg = "execption:(handleDataError) " + t.toString();
+		this.source.close(errMsg);
+
 		if (responseHandler != null) {
-			responseHandler.connectionError(t, source);
+			responseHandler.connectionClose(source, errMsg);
 		}
 
 	}
