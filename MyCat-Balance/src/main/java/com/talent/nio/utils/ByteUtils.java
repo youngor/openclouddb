@@ -75,7 +75,7 @@ public class ByteUtils
      */
     public static List<String> toLinesList(ByteBuf buffer) throws IOException
     {
-        List<String> retList = new ArrayList<>(20);
+        List<String> retList = new ArrayList<String>(20);
 
         int lastPosition = 0;
         int byteCountInOneLine = 0; // 记录一行的字节数

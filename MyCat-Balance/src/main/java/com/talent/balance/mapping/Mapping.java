@@ -44,7 +44,7 @@ public class Mapping
 	/**
 	 * key: frontendChannelContext; value: 后端BackendServer对象
 	 */
-	private static Map<ChannelContext, BackendServerConf> frontChannelcontextAndBackserverMap = new HashMap<>();
+	private static Map<ChannelContext, BackendServerConf> frontChannelcontextAndBackserverMap = new HashMap<ChannelContext, BackendServerConf>();
 
 	/**
 	 * 

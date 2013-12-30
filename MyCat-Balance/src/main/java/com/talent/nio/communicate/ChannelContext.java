@@ -153,17 +153,17 @@ public class ChannelContext
 
 	public boolean getBoolean(String key, Object dftValue)
 	{
-		return (boolean) getProperty(key, dftValue);
+		return (boolean) Boolean.parseBoolean(getProperty(key, dftValue).toString());
 	}
 
 	public int getInt(String key, Object dftValue)
 	{
-		return (int) getProperty(key, dftValue);
+		return (int) Integer.parseInt(getProperty(key, dftValue).toString());
 	}
 
 	public long getLong(String key, Object dftValue)
 	{
-		return (long) getProperty(key, dftValue);
+		return (long)Long.parseLong(getProperty(key, dftValue).toString()) ;
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(ChannelContext.class);
