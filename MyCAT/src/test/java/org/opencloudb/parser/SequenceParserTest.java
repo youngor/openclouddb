@@ -20,7 +20,7 @@ public class SequenceParserTest {
 
 		String filePath = Thread.currentThread().getContextClassLoader()
 				.getResource("").getPath()
-				+ "seq_global.properties";
+				+ "sequence_conf.properties";
 
 		Properties props = new Properties();
 		props.load(new FileInputStream(filePath));
