@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.5" 
+	xmlns="http://java.sun.com/xml/ns/javaee" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+	<display-name>framework</display-name>
+	
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath*:spring/**/applicationContext.xml,classpath*:spring/**/applicationContext*.xml</param-value>
+	</context-param>
+	
+    
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	
+<!--	<listener>
+	     <listener-class>org.hx.rainbow.common.web.listener.RainbowSessionListener</listener-class>
+	</listener>
+	
+ 	<listener>
+	     <listener-class>org.hx.rainbow.common.dao.OwnerMapDB</listener-class>
+	</listener>
+
+	<listener>
+	     <listener-class>com.spl.wsplat.ws.listener.DBListener</listener-class>
+	</listener>
+	<listener>
+	     <listener-class>com.spl.wsplat.ws.listener.AQListener</listener-class>
+	</listener>  -->
+	
+	<!-- 权限 -->
+	<filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>
+            org.springframework.web.filter.DelegatingFilterProxy
+        </filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+	
+	<!-- 解决工程编码过滤器 -->
+	<filter>
+	    <filter-name>characterEncodingFilter</filter-name>
+	    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+	    <init-param>
+	        <param-name>encoding</param-name>
+	        <param-value>UTF-8</param-value>
+	    </init-param>
+	</filter>
+	<filter-mapping>
+	    <filter-name>characterEncodingFilter</filter-name>
+	    <url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<listener>
+    	<listener-class>org.jasig.cas.client.session.SingleSignOutHttpSessionListener</listener-class>
+  	</listener>
+
+  
+	<servlet>
+		<servlet-name>springMVC</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath*:spring/spring-mvc.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>springMVC</servlet-name>
+		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+	<!--
+	<servlet>
+	<servlet-name>Kaptcha</servlet-name>
+	<servlet-class>com.google.code.kaptcha.servlet.KaptchaServlet</servlet-class>
+
+	
+		For a complete list of Init Parameters, please see:
+		http://code.google.com/p/kaptcha/wiki/ConfigParameters
+	
+	<init-param>
+		<param-name>kaptcha.border</param-name>
+		<param-value>no</param-value>
+	</init-param>
+	
+	<init-param>
+		<param-name>kaptcha.noise.impl</param-name>
+		<param-value>com.google.code.kaptcha.impl.NoNoise</param-value>
+	</init-param>
+
+	<init-param>
+		<param-name>kaptcha.textproducer.font.color</param-name>
+		<param-value>white</param-value>
+	</init-param>
+
+	<init-param>
+		<param-name>kaptcha.textproducer.char.space</param-name>
+		<param-value>5</param-value>
+	</init-param>
+	
+	<init-param>
+		<param-name>kaptcha.textproducer.font.names</param-name>
+		<param-value>微软雅黑</param-value>
+	</init-param>
+	
+	<init-param>
+		<param-name>kaptcha.background.clear.from</param-name>
+		<param-value>47,77,145</param-value>
+	</init-param>
+	
+	<init-param>
+		<param-name>kaptcha.background.clear.to</param-name>
+		<param-value>47,77,145</param-value>
+	</init-param>
+	
+
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>Kaptcha</servlet-name>
+		<url-pattern>/Kaptcha.jpg</url-pattern>
+	</servlet-mapping>-->
+	
+	
+	<!-- ws start
+	<servlet>
+		<servlet-name>CXFServlet</servlet-name>
+		<servlet-class>org.apache.cxf.transport.servlet.CXFServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>CXFServlet</servlet-name>
+		<url-pattern>/ws/*</url-pattern>
+	</servlet-mapping>-->
+     <!-- ws end -->
+     
+   <session-config>
+         <session-timeout>20</session-timeout>
+   </session-config>
+  
+  <!-- Default page to serve -->
+  <welcome-file-list>
+    <welcome-file>login.jsp</welcome-file>
+  </welcome-file-list>
+
+</web-app>
+
+
