@@ -49,12 +49,14 @@ import org.opencloudb.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.server.parser.ServerParse;
 
+import com.akiban.sql.StandardException;
 import com.akiban.sql.parser.CursorNode;
 import com.akiban.sql.parser.DDLStatementNode;
 import com.akiban.sql.parser.NodeTypes;
 import com.akiban.sql.parser.QueryTreeNode;
 import com.akiban.sql.parser.ResultSetNode;
 import com.akiban.sql.parser.SelectNode;
+import com.akiban.sql.unparser.NodeToString;
 
 /**
  * @author mycat
@@ -94,6 +96,21 @@ public final class ServerRouter {
 		// 生成和展开AST
 		QueryTreeNode ast = SQLParserDelegate.parse(stmt,
 				charset == null ? "utf-8" : charset);
+		// @micmiu 简单模糊判断SQL是否包含sequence
+		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
+			try {
+				NodeToString strHandler = new NodeToString();
+				// 如果存在sequence 转化sequence为实际数值
+				stmt = strHandler.toString(ast);
+				rrs = new RouteResultset(stmt, sqlType);
+				QueryTreeNode ast2 = SQLParserDelegate.parse(stmt,
+						charset == null ? "utf-8" : charset);
+				ast = ast2;
+			} catch (StandardException e) {
+				LOGGER.error(e);
+			}
+		}
+
 		// Select SQL
 		if (ast.getNodeType() == NodeTypes.CURSOR_NODE) {
 			ResultSetNode rsNode = ((CursorNode) ast).getResultSetNode();
@@ -567,10 +584,11 @@ public final class ServerRouter {
 		boolean flag = false;
 		indx = upStmt.indexOf(upSchema, strtPos);
 		if (indx < 0) {
-			StringBuilder sb = new StringBuilder("`").append(schema.toUpperCase()).append("`.");
+			StringBuilder sb = new StringBuilder("`").append(
+					schema.toUpperCase()).append("`.");
 			indx = upStmt.indexOf(sb.toString(), strtPos);
 			flag = true;
-			if(indx < 0){
+			if (indx < 0) {
 				return stmt;
 			}
 		}
@@ -578,7 +596,7 @@ public final class ServerRouter {
 		while (indx > 0) {
 			sb.append(stmt.substring(strtPos, indx));
 			strtPos = indx + upSchema.length();
-			if(flag) {
+			if (flag) {
 				strtPos += 2;
 			}
 			indx = upStmt.indexOf(upSchema, strtPos);
