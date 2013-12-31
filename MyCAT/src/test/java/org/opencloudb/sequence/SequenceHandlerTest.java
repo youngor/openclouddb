@@ -15,7 +15,7 @@ import org.opencloudb.sequence.handler.SequenceHandler;
  */
 public class SequenceHandlerTest {
 
-	@Test
+	//@Test
 	public void testPropSequence() {
 		SequenceHandler hander = IncrSequencePropHandler.getInstance();
 		Assert.assertEquals(hander.nextId("DEF") - hander.nextId("DEF"), -1);
