@@ -105,11 +105,8 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	public void execute() throws Exception {
 		ServerConnection sc = session.getSource();
-
 		this.isRunning = true;
 		this.packetId = 0;
-		this.buffer = sc.allocate();
-
 		final PhysicalConnection conn = session.getTarget(node);
 		if (!session.tryExistsCon(conn, node, new Runnable() {
 			@Override
@@ -179,7 +176,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		err.message = StringUtil.encode(e.getMessage(), session.getSource()
 				.getCharset());
 		ServerConnection source = session.getSource();
-		source.write(err.write(buffer, source));
+		source.write(err.write(allocBuffer(), source));
 	}
 
 	@Override

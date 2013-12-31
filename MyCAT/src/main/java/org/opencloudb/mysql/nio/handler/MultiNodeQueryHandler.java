@@ -86,7 +86,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			this.fieldsReturned = false;
 			this.affectedRows = 0L;
 			this.insertId = 0L;
-			this.buffer = sc.allocate();
 		} finally {
 			lock.unlock();
 		}
@@ -111,6 +110,18 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			dn.getConnection(conMeta, node, this, node);
 
 		}
+	}
+
+	/**
+	 * lazy create ByteBuffer only when needed
+	 * 
+	 * @return
+	 */
+	private ByteBuffer allocBuffer() {
+		if (buffer == null) {
+			buffer = session.getSource().allocate();
+		}
+		return buffer;
 	}
 
 	private void _execute(PhysicalConnection conn, RouteResultsetNode node) {
@@ -243,6 +254,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			}
 			try {
 				lock.lock();
+				// lazy allocate buffer
+				allocBuffer();
 				if (dataMergeSvr != null && !mergeOutputed) {
 					int i = 0;
 					int start = dataMergeSvr.getRrs().getLimitStart();
@@ -279,6 +292,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
 			byte[] eof, PhysicalConnection conn) {
 		lock.lock();
+		// lazy allocate buffer
+		allocBuffer();
 		try {
 			if (fieldsReturned) {
 				return;

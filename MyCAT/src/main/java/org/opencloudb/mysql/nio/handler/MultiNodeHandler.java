@@ -164,13 +164,14 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	protected void tryErrorFinished(PhysicalConnection conn, boolean allEnd) {
 		if (allEnd) {
 			if (session.getSource().isAutocommit()) {
+				//clear session resources,release all
 				session.clearResources();
-				createErrPkg(this.error).write(session.getSource());
 			} else {
 				session.getSource().setTxInterrupt();
+				// clear resouces
+				clearResources();
 			}
-			// clear resouces
-			clearResources();
+			createErrPkg(this.error).write(session.getSource());
 		}
 
 	}
