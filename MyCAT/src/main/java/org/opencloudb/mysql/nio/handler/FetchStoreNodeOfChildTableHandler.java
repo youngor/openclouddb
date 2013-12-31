@@ -7,6 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.net.mysql.ErrorPacket;
@@ -37,17 +38,19 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 		long startTime = System.currentTimeMillis();
 		long endTime = startTime + 5 * 60 * 1000L;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
+		
 		for (String dn : dataNodes) {
 			if (dataNode != null) {
 				return dataNode;
 			}
 			PhysicalDBNode mysqlDN = conf.getDataNodes().get(dn);
+			ConnectionMeta conMeta=new ConnectionMeta(mysqlDN.getDatabase(),null,-1,true);
 			try {
 				if (LOGGER.isDebugEnabled()) {
 					LOGGER.debug("execute in datanode " + dn);
 				}
-				mysqlDN.getConnection(new RouteResultsetNode(dn,
-						ServerParse.SELECT, sql), false, this, dn);
+				mysqlDN.getConnection(conMeta,new RouteResultsetNode(dn,
+						ServerParse.SELECT, sql),  this, dn);
 			} catch (Exception e) {
 				LOGGER.warn("get connection err " + e);
 			}

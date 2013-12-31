@@ -36,9 +36,6 @@ public class PhysicalDBNode {
 		return database;
 	}
 
-	public boolean isInitSuccess() {
-		return dbPool.isInitSuccess();
-	}
 
 	/**
 	 * get connection from the same datasource
@@ -46,25 +43,25 @@ public class PhysicalDBNode {
 	 * @param exitsCon
 	 * @throws Exception
 	 */
-	public void getConnectionFromSameSource(PhysicalConnection exitsCon,
+	public void getConnectionFromSameSource(ConnectionMeta conMeta,PhysicalConnection exitsCon,
 			ResponseHandler handler, Object attachment) throws Exception {
 		PhysicalDatasource ds = this.dbPool.findDatasouce(exitsCon);
 		if (ds == null) {
 			throw new RuntimeException(
 					"can't find exits connection,maybe fininshed " + exitsCon);
 		} else {
-			ds.getConnection(handler, attachment, this.database);
+			ds.getConnection(conMeta,handler, attachment, this.database);
 		}
 
 	}
 
-	public void getConnection(RouteResultsetNode rrs, boolean autocommit,
+	public void getConnection(ConnectionMeta conMeta,RouteResultsetNode rrs,
 			ResponseHandler handler, Object attachment) throws Exception {
 		if (dbPool.isInitSuccess()) {
-			if (rrs.canRunnINReadDB(autocommit)) {
-				dbPool.getRWBanlanceCon(handler, attachment, this.database);
+			if (rrs.canRunnINReadDB(conMeta.isAutocommit())) {
+				dbPool.getRWBanlanceCon(conMeta,handler, attachment, this.database);
 			} else {
-				dbPool.getSource().getConnection(handler, attachment,
+				dbPool.getSource().getConnection(conMeta,handler, attachment,
 						this.database);
 			}
 

@@ -21,11 +21,11 @@ package org.opencloudb.mysql.nio.handler;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.cache.MysqlDataSetService;
@@ -45,10 +45,10 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			.getLogger(SingleNodeHandler.class);
 	private final RouteResultsetNode node;
 	private final NonBlockingSession session;
-	private byte packetId;
+	// only one thread access at one time no need lock
+	private volatile byte packetId;
 	private volatile ByteBuffer buffer;
-	private ReentrantLock lock = new ReentrantLock();
-	private boolean isRunning;
+	private volatile boolean isRunning;
 	private Runnable terminateCallBack;
 	private static final MysqlDataSetService dataSetSrv = MysqlDataSetService
 			.getInstance();
@@ -68,16 +68,13 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	@Override
 	public void terminate(Runnable callback) {
 		boolean zeroReached = false;
-		lock.lock();
-		try {
-			if (isRunning) {
-				terminateCallBack = callback;
-			} else {
-				zeroReached = true;
-			}
-		} finally {
-			lock.unlock();
+
+		if (isRunning) {
+			terminateCallBack = callback;
+		} else {
+			zeroReached = true;
 		}
+
 		if (zeroReached) {
 			callback.run();
 		}
@@ -85,46 +82,34 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	private void endRunning() {
 		Runnable callback = null;
-		lock.lock();
-		try {
-			if (isRunning) {
-				isRunning = false;
-				callback = terminateCallBack;
-				terminateCallBack = null;
-			}
-		} finally {
-			lock.unlock();
+		if (isRunning) {
+			isRunning = false;
+			callback = terminateCallBack;
+			terminateCallBack = null;
 		}
+
 		if (callback != null) {
 			callback.run();
 		}
 	}
 
 	private void recycleResources() {
-		ByteBuffer buf;
-		lock.lock();
-		try {
-			buf = buffer;
-			if (buf != null) {
-				buffer = null;
-			}
-		} finally {
-			lock.unlock();
-		}
+
+		ByteBuffer buf = buffer;
 		if (buf != null) {
-			session.getSource().recycle(buf);
+			buffer = null;
+			session.getSource().recycle(buffer);
+
 		}
 	}
 
 	public void execute() throws Exception {
-		lock.lock();
-		try {
-			this.isRunning = true;
-			this.packetId = 0;
-			this.buffer = session.getSource().allocate();
-		} finally {
-			lock.unlock();
-		}
+		ServerConnection sc = session.getSource();
+
+		this.isRunning = true;
+		this.packetId = 0;
+		this.buffer = sc.allocate();
+
 		final PhysicalConnection conn = session.getTarget(node);
 		if (!session.tryExistsCon(conn, node, new Runnable() {
 			@Override
@@ -133,10 +118,12 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			}
 		})) {
 			// create new connection
+
 			MycatConfig conf = MycatServer.getInstance().getConfig();
 			PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-			dn.getConnection(node, session.getSource().isAutocommit(), this,
-					node);
+			ConnectionMeta conMeta = new ConnectionMeta(dn.getDatabase(),
+					sc.getCharset(), sc.getCharsetIndex(), sc.isAutocommit());
+			dn.getConnection(conMeta, node, this, node);
 		}
 
 	}
@@ -178,7 +165,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		err.message = StringUtil.encode(
 				"unknown backend charset: " + c.getCharset(), session
 						.getSource().getCharset());
-		
+
 		this.backConnectionErr(err, c);
 	}
 
@@ -216,7 +203,8 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void okResponse(byte[] data, PhysicalConnection conn) {
-		boolean executeResponse =  conn.syncAndExcute();;
+		boolean executeResponse = conn.syncAndExcute();
+		;
 		if (executeResponse) {
 			conn.setRunning(false);
 			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
@@ -241,52 +229,44 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 				node.getStatement());
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		endRunning();
-		lock.lock();
-		try {
-			eof[3] = ++packetId;
-			buffer = source.writeToBuffer(eof, buffer);
-			source.write(buffer);
-		} finally {
-			lock.unlock();
+		eof[3] = ++packetId;
+		buffer = source.writeToBuffer(eof, allocBuffer());
+		source.write(buffer);
+
+	}
+
+	/**
+	 * lazy create ByteBuffer only when needed
+	 * 
+	 * @return
+	 */
+	private ByteBuffer allocBuffer() {
+		if (buffer == null) {
+			buffer = session.getSource().allocate();
 		}
+		return buffer;
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
 			byte[] eof, PhysicalConnection conn) {
-		// System.out.println("received  fieldEofResponse from conn:" + conn);
-		lock.lock();
-		try {
-			header[3] = ++packetId;
-			ServerConnection source = session.getSource();
-			buffer = source.writeToBuffer(header, buffer);
-			for (int i = 0, len = fields.size(); i < len; ++i) {
-				byte[] field = fields.get(i);
-				field[3] = ++packetId;
-				buffer = source.writeToBuffer(field, buffer);
-			}
-			eof[3] = ++packetId;
-			buffer = source.writeToBuffer(eof, buffer);
-		} finally {
-			lock.unlock();
+		header[3] = ++packetId;
+		ServerConnection source = session.getSource();
+		buffer = source.writeToBuffer(header, allocBuffer());
+		for (int i = 0, len = fields.size(); i < len; ++i) {
+			byte[] field = fields.get(i);
+			field[3] = ++packetId;
+			buffer = source.writeToBuffer(field, buffer);
 		}
-		// if(dataSetSrv.isEnabled() )
-		// {
-		// dataSetSrv.needCache()
-		// }
+		eof[3] = ++packetId;
+		buffer = source.writeToBuffer(eof, buffer);
 
 	}
 
 	@Override
 	public void rowResponse(byte[] row, PhysicalConnection conn) {
-		// System.out.println("received rowResponse from conn:" + conn);
-		lock.lock();
-		try {
-			row[3] = ++packetId;
-			buffer = session.getSource().writeToBuffer(row, buffer);
-		} finally {
-			lock.unlock();
-		}
+		row[3] = ++packetId;
+		buffer = session.getSource().writeToBuffer(row, allocBuffer());
 	}
 
 	@Override
@@ -296,7 +276,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void connectionClose(PhysicalConnection conn, String reason) {
-		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_YES;

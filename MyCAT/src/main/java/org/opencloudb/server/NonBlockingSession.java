@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.config.ErrorCode;
@@ -367,6 +368,7 @@ public class NonBlockingSession implements Session {
 			}
 		}
 		if (hooked) {
+			ConnectionMeta conMeta = new ConnectionMeta(null, null, -1, true);
 			for (Entry<RouteResultsetNode, PhysicalConnection> en : killees
 					.entrySet()) {
 				KillConnectionHandler kill = new KillConnectionHandler(
@@ -375,8 +377,8 @@ public class NonBlockingSession implements Session {
 				PhysicalDBNode dn = conf.getDataNodes().get(
 						en.getKey().getName());
 				try {
-					dn.getConnectionFromSameSource(en.getValue(), kill,
-							en.getKey());
+					dn.getConnectionFromSameSource(conMeta, en.getValue(),
+							kill, en.getKey());
 				} catch (Exception e) {
 					LOGGER.error(
 							"get killer connection failed for " + en.getKey(),

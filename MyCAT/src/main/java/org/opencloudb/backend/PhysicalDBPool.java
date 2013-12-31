@@ -167,7 +167,7 @@ public class PhysicalDBPool {
 	}
 
 	private String getMessage(int index, String info) {
-		return new StringBuilder().append(hostName).append(':').append(index)
+		return new StringBuilder().append(hostName).append(" index:").append(index)
 				.append(info).toString();
 	}
 
@@ -180,9 +180,10 @@ public class PhysicalDBPool {
 				initSize);
 		// long start=System.currentTimeMillis();
 		// long timeOut=start+5000*1000L;
+		ConnectionMeta conMeta = new ConnectionMeta(null, "UTF-8", -1, true);
 		for (int i = 0; i < initSize; i++) {
 			try {
-				ds.getConnection(getConHandler, null, null);
+				ds.getConnection(conMeta, getConHandler, null, null);
 			} catch (Exception e) {
 				LOGGER.warn(getMessage(index, " init connection error."), e);
 			}
@@ -299,8 +300,9 @@ public class PhysicalDBPool {
 	 * @param database
 	 * @throws Exception
 	 */
-	public void getRWBanlanceCon(ResponseHandler handler, Object attachment,
-			String database) throws Exception {
+	public void getRWBanlanceCon(ConnectionMeta conMeta,
+			ResponseHandler handler, Object attachment, String database)
+			throws Exception {
 		PhysicalDatasource theNode = null;
 		ArrayList<PhysicalDatasource> okSources = null;
 		switch (banlance) {
@@ -327,7 +329,7 @@ public class PhysicalDBPool {
 			LOGGER.debug("select read source " + theNode.getName()
 					+ " for dataHost:" + this.getHostName());
 		}
-		theNode.getConnection(handler, attachment, database);
+		theNode.getConnection(conMeta, handler, attachment, database);
 	}
 
 	private PhysicalDatasource randomSelect(

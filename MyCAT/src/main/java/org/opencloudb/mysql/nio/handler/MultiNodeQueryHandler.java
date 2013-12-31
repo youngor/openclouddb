@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.mpp.ColMeta;
@@ -77,6 +78,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	private boolean fieldsReturned;
 
 	public void execute() throws Exception {
+		ServerConnection sc = session.getSource();
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
@@ -84,10 +86,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			this.fieldsReturned = false;
 			this.affectedRows = 0L;
 			this.insertId = 0L;
-			this.buffer = session.getSource().allocate();
+			this.buffer = sc.allocate();
 		} finally {
 			lock.unlock();
 		}
+		MycatConfig conf = MycatServer.getInstance().getConfig();
 
 		for (final RouteResultsetNode node : route) {
 			final PhysicalConnection conn = session.getTarget(node);
@@ -102,9 +105,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				continue;
 			}
 			// create new connection
-			MycatConfig conf = MycatServer.getInstance().getConfig();
 			PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-			dn.getConnection(node, autocommit, this, node);
+			ConnectionMeta conMeta = new ConnectionMeta(dn.getDatabase(),
+					sc.getCharset(), sc.getCharsetIndex(), autocommit);
+			dn.getConnection(conMeta, node, this, node);
 
 		}
 	}

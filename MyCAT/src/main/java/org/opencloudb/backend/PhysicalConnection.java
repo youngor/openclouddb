@@ -67,5 +67,6 @@ public interface PhysicalConnection extends ClosableConnection{
 	
 	public void setBorrowed(boolean borrowed);
 
+	public int getTxIsolation();
 	public boolean isAutocommit();
 }

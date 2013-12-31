@@ -256,8 +256,7 @@ public class MySQLConnection extends BackendConnection implements
 		return isClosed() || isQuit.get();
 	}
 
-	protected void sendQueryCmd(String query)
-			 {
+	protected void sendQueryCmd(String query) {
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
@@ -297,21 +296,34 @@ public class MySQLConnection extends BackendConnection implements
 
 			this.isoCmd = conn.txIsolation != txIsolation ? getTxIsolationCommand(txIsolation)
 					: null;
-			if (!conn.modifiedSQLExecuted||conn.isFromSlaveDB()) {
+			if (!conn.modifiedSQLExecuted || conn.isFromSlaveDB()) {
 				// never executed modify sql,so auto commit
 				this.autocommit = true;
-				this.acCmd = _AUTOCOMMIT_ON;
 			} else {
 				this.autocommit = autocommit;
-				this.acCmd = conn.autocommit != autocommit ? (autocommit ? _AUTOCOMMIT_ON
-						: _AUTOCOMMIT_OFF)
-						: null;
 
 			}
+			this.acCmd = conn.autocommit != this.autocommit ? (autocommit ? _AUTOCOMMIT_ON
+					: _AUTOCOMMIT_OFF)
+					: null;
+
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("connectino syn command : schemaCmd:" + schemaCmd
-						+ " charCmd:" + charCmd + " txIsolationCmd:" + isoCmd
-						+ " autocommitCmd: " + acCmd);
+				StringBuilder inf = new StringBuilder();
+				if (schemaCmd != null) {
+					inf.append("   need syn schemaCmd " + schemaCmd + "\r\n");
+				}
+				if (charCmd != null) {
+					inf.append("   need syn charCmd " + charCmd + "\r\n");
+				}
+				if (isoCmd != null) {
+					inf.append("   need syn txIsolationCmd " + isoCmd + "\r\n");
+				}
+				if (acCmd != null) {
+					inf.append("   need syn autcommitCmd " + acCmd + "\r\n");
+				}
+				if (inf.length() > 0) {
+					LOGGER.debug(this.conn + "\r\n" + inf);
+				}
 			}
 
 		}
@@ -444,7 +456,7 @@ public class MySQLConnection extends BackendConnection implements
 	 * @return if synchronization finished and execute-sql has already been sent
 	 *         before
 	 */
-	public boolean syncAndExcute()  {
+	public boolean syncAndExcute() {
 		StatusSync sync = statusSync;
 		if (sync.isExecuted()) {
 			return true;
@@ -640,12 +652,18 @@ public class MySQLConnection extends BackendConnection implements
 				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
 				+ ", attachment=" + attachment + ", respHandler=" + respHandler
 				+ ", host=" + host + ", port=" + port
-				+ ", suppressReadTemporay=" + suppressReadTemporay + ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
+				+ ", suppressReadTemporay=" + suppressReadTemporay
+				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}
 
 	@Override
 	public boolean isModifiedSQLExecuted() {
 		return modifiedSQLExecuted;
+	}
+
+	@Override
+	public int getTxIsolation() {
+		return txIsolation;
 	}
 
 }

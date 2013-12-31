@@ -186,41 +186,52 @@ public abstract class PhysicalDatasource {
 		return conn;
 	}
 
-	public PhysicalConnection getConnection(final ResponseHandler handler,
-			final Object attachment, final String schema) throws Exception {
+	public PhysicalConnection getConnection(final ConnectionMeta conMeta,
+			final ResponseHandler handler, final Object attachment,
+			final String schema) throws Exception {
 		int activeCount = this.getActiveCount();
 		// used to store new created connection
 		int emptyIndex = -1;
+		int bestCandidate = -1;
+		int bestCandidateSimilarity = -1;
+		long bestCandidateTime = Long.MAX_VALUE;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
 			// get connection from pool
 			final PhysicalConnection[] items = this.items;
-			int oldestIdleConIndx = -1;
-			long oldestConTime = Long.MAX_VALUE;
+
 			for (int i = 0; i < items.length; i++) {
-				if (items[i] == null) {
+				if (emptyIndex == -1 && items[i] == null) {
 					emptyIndex = i;
 				} else if (items[i] != null) {
 					PhysicalConnection conn = items[i];
 					// closed or quit
 					if (conn.isClosedOrQuit()) {
 						items[i] = null;
-						emptyIndex = i;
-						continue;
+						if (emptyIndex == -1) {
+							emptyIndex = i;
+						}
 					} else if (!conn.isBorrowed()) {
-						// can use
-						if (schema.equals(conn.getSchema())) {
-							return takeCon(items[i], handler, attachment, null);
-						} else if (conn.getLastTime() < oldestConTime) {
-							oldestIdleConIndx = i;
-							oldestConTime = conn.getLastTime();
+						// compare if more similary
+						int similary = conMeta.getMetaSimilarity(conn);
+						if (bestCandidateSimilarity < similary) {
+							bestCandidateSimilarity = similary;
+							bestCandidateTime=conn.getLastTime();
+							bestCandidate = i;
+						} else if (bestCandidateSimilarity == similary) {
+							// compare if more old
+							if (conn.getLastTime() < bestCandidateTime) {
+								bestCandidateTime=conn.getLastTime();
+								bestCandidate = i;
+							}
+
 						}
 					}
 				}
 			}
-			if (oldestIdleConIndx != -1) {
-				return takeCon(items[oldestIdleConIndx], handler, attachment,
+			if (bestCandidate != -1) {
+				return takeCon(items[bestCandidate], handler, attachment,
 						schema);
 			} else if (emptyIndex == -1) {
 				StringBuilder s = new StringBuilder();
@@ -443,6 +454,11 @@ class FakeConnection implements PhysicalConnection {
 	@Override
 	public boolean isModifiedSQLExecuted() {
 		return false;
+	}
+
+	@Override
+	public int getTxIsolation() {
+		return 0;
 	}
 
 }
