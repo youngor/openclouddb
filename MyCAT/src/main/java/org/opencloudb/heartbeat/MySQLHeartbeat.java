@@ -178,6 +178,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 			this.status = OK_STATUS;
 			this.errorCount = 0;
 			this.isChecking.set(false);
+			this.switchSourceIfNeed("heart beate ok");
 			if (isStop.get()) {
 				detector.quit();
 			}
@@ -185,48 +186,40 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	}
 
 	private void setError(MySQLDetector detector) {
-		if (++errorCount < maxRetryCount) {
-			isChecking.set(false);
-			if (detector != null && isStop.get()) {
-				detector.quit();
-			} else {
-				heartbeat(); // error count not enough, heart beat again
-			}
-		} else {
-			this.status = ERROR_STATUS;
-			this.errorCount = 0;
-			this.isChecking.set(false);
-			try {
-
-				switchSource("ERROR");
-			} finally {
+		if (!source.isReadNode()) {
+			// write node maybe switch ,should continues check error status
+			if (++errorCount < maxRetryCount) {
+				isChecking.set(false);
 				if (detector != null && isStop.get()) {
 					detector.quit();
+				} else {
+					heartbeat(); // error count not enough, heart beat again
 				}
+				return;
 			}
 		}
+
+		this.status = ERROR_STATUS;
+		this.errorCount = 0;
+		this.isChecking.set(false);
 	}
 
 	private void setTimeout(MySQLDetector detector) {
 		status = DBHeartbeat.TIMEOUT_STATUS;
-		if (++errorCount >= MAX_RETRY_COUNT) {
-			try {
-				switchSource("TIMEOUT");
-			} finally {
-				detector.quit();
-				isChecking.set(false);
-			}
-		}
+		isChecking.set(false);
+
 	}
 
 	/**
 	 * switch data source
 	 */
-	private void switchSource(String reason) {
+	private void switchSourceIfNeed(String reason) {
 		// read node can't switch ,only write node can switch
-		if (!isStop.get() && !source.isReadNode()) {
+		if (!source.isReadNode() && this.status == DBHeartbeat.OK_STATUS) {
 			PhysicalDBPool pool = source.getDbPool();
-			if (pool.getSources().length > 1) {
+			// try to see if need switch datasource
+			if (pool.getSources().length > 1
+					&& pool.getSource().getHeartbeat().getStatus() != DBHeartbeat.OK_STATUS) {
 				int i = pool.next(pool.getActivedIndex());
 				pool.switchSource(i, true, reason);
 			}
