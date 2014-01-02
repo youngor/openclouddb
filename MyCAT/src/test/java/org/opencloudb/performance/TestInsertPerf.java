@@ -77,7 +77,7 @@ public class TestInsertPerf {
 		}
 		long start = System.currentTimeMillis();
 		System.out.println("all thread started,waiting finsh...");
-		while (finshiedCount.get() < recordCount) {
+		while (finshiedCount.get() < recordCount && hasAnyThreadAlive(threads)) {
 			long sucess = finshiedCount.get() - failedCount.get();
 			System.out.println("finished records :" + finshiedCount.get()
 					+ " failed:" + failedCount.get() + " speed:" + sucess
@@ -90,6 +90,17 @@ public class TestInsertPerf {
 		long sucess = finshiedCount.get() - failedCount.get();
 		System.out.println("used time total:" + usedTime + "seconds");
 		System.out.println("tps:" + sucess / usedTime);
+	}
+
+	private static boolean hasAnyThreadAlive(ArrayList<Thread> threads) {
+		for(Thread thred:threads)
+		{
+			if(thred.isAlive())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

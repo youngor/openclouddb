@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TravelRecordInsertJob implements Runnable {
 	private final Connection con;
-	private final int totalRecords;
+	private final int endId;
 	private int finsihed;
 	private final int batchSize;
 	private final  AtomicInteger finshiedCount;
@@ -26,7 +26,7 @@ public class TravelRecordInsertJob implements Runnable {
 			int batchSize, int startId,AtomicInteger finshiedCount,AtomicInteger failedCount) {
 		super();
 		this.con = con;
-		this.totalRecords = startId + totalRecords;
+		this.endId = startId + totalRecords;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
 		this.finshiedCount=finshiedCount;
@@ -57,8 +57,8 @@ public class TravelRecordInsertJob implements Runnable {
 	}
 
 	private List<Map<String, String>> getNextBatch() {
-		int end = (finsihed + batchSize) < this.totalRecords ? (finsihed + batchSize)
-				: totalRecords;
+		int end = (finsihed + batchSize) < this.endId ? (finsihed + batchSize)
+				: endId;
 		List<Map<String, String>> list = new ArrayList<Map<String, String>>(
 				(end - finsihed));
 		for (int i = finsihed; i < end; i++) {
