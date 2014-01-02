@@ -23,7 +23,6 @@ public interface ErrorCode {
     // mycat error code
     int ERR_OPEN_SOCKET = 3001;
     int ERR_CONNECT_SOCKET = 3002;
-    int ERR_FINISH_CONNECT = 3003;
     int ERR_REGISTER = 3004;
     int ERR_READ = 3005;
     int ERR_PUT_WRITE_QUEUE = 3006;

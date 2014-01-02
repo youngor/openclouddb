@@ -326,6 +326,7 @@ public class SelectSQLAnalyser {
 		}
 		// 左边 为(a=b) ,(a>b)
 		if (leftOp instanceof BinaryOperatorNode) {
+
 			BinaryOperatorNode theOptNode = (BinaryOperatorNode) leftOp;
 			tryColumnCondition(parsInf, defaultTableName,
 					theOptNode.getMethodName(), theOptNode.getLeftOperand(),
@@ -414,11 +415,15 @@ public class SelectSQLAnalyser {
 	private static void addConstCondition(ValueNode leftOp, ValueNode wrightOp,
 			String method, SelectParseInf parsInf, String defaultTableName,
 			boolean notOpt) throws StandardException {
-
+		String upMethod = method.toUpperCase();
+		if(notOpt)
+		{
+			return;
+		}
+		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN"))) {
+			return;
+		}
 		if (wrightOp instanceof ConstantNode) {
-			if (notOpt) {
-				return;
-			}
 			ColumnReference leftColumRef = (ColumnReference) leftOp;
 			String tableName = getTableNameForColumn(defaultTableName,
 					leftColumRef, parsInf.ctx.tableAliasMap);
@@ -426,9 +431,6 @@ public class SelectSQLAnalyser {
 					((ConstantNode) wrightOp).getValue());
 
 		} else if (wrightOp instanceof RowConstructorNode) {
-			if (notOpt) {
-				return;
-			}
 			if (!(leftOp instanceof ColumnReference)) {
 				return;
 			}
@@ -447,9 +449,6 @@ public class SelectSQLAnalyser {
 		} else if (wrightOp instanceof ColumnReference) {
 			ColumnReference wrightRef = (ColumnReference) wrightOp;
 			if (leftOp instanceof ConstantNode) {
-				if (notOpt) {
-					return;
-				}
 				String tableName = getTableNameForColumn(defaultTableName,
 						wrightRef, parsInf.ctx.tableAliasMap);
 				parsInf.ctx.addShardingExpr(tableName, leftOp.getColumnName(),

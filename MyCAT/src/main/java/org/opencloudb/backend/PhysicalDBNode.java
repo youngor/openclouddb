@@ -57,6 +57,10 @@ public class PhysicalDBNode {
 
 	public void getConnection(ConnectionMeta conMeta,RouteResultsetNode rrs,
 			ResponseHandler handler, Object attachment) throws Exception {
+		if(!dbPool.isInitSuccess())
+		{
+			dbPool.init(dbPool.activedIndex);
+		}
 		if (dbPool.isInitSuccess()) {
 			if (rrs.canRunnINReadDB(conMeta.isAutocommit())) {
 				dbPool.getRWBanlanceCon(conMeta,handler, attachment, this.database);

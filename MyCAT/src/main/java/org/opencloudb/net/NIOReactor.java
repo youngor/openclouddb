@@ -136,8 +136,9 @@ public final class NIOReactor {
 			try {
 				c.read();
 			} catch (Throwable e) {
-				c.error(ErrorCode.ERR_READ, e);
 				c.close("exception:" + e.toString());
+				c.error(ErrorCode.ERR_READ, e);
+				
 			}
 		}
 

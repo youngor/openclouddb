@@ -544,7 +544,8 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public void error(int errCode, Throwable t) {
 		LOGGER.warn(" error code: " + errCode + " exception: " + t + " con: "
-				+ this);
+				+ this,t);
+		
 		switch (errCode) {
 		case ErrorCode.ERR_HANDLE_DATA:
 			// handle error ..
@@ -553,6 +554,9 @@ public class MySQLConnection extends BackendConnection implements
 			// QS_TODO
 			break;
 		case ErrorCode.ERR_CONNECT_SOCKET:
+			if (handler == null) {
+				return;
+			}
 			if (handler instanceof MySQLConnectionHandler) {
 				MySQLConnectionHandler theHandler = (MySQLConnectionHandler) handler;
 				theHandler.connectionError(t);

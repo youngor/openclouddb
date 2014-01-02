@@ -156,8 +156,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		String errmsg = new String(err.message);
-		LOGGER.warn("error response from " + conn + " err " + errmsg + " code:"
-				+ err.errno);
+		LOGGER.warn("error response from backend, code:" + err.errno
+				+ " errmsg: " + errmsg + ",from " + conn);
 		this.setFail(errmsg);
 		// try connection and finish conditon check
 		canClose(conn, true);

@@ -109,7 +109,7 @@ public final class NIOConnector extends Thread {
             }
         } catch (Throwable e) {
             clearSelectionKey(key);
-            c.error(ErrorCode.ERR_FINISH_CONNECT, e);
+            c.error(ErrorCode.ERR_CONNECT_SOCKET, e);
         }
     }
 
