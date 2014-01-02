@@ -187,8 +187,7 @@ public abstract class PhysicalDatasource {
 	}
 
 	public PhysicalConnection getConnection(final ConnectionMeta conMeta,
-			final ResponseHandler handler, final Object attachment,
-			final String schema) throws Exception {
+			final ResponseHandler handler, final Object attachment) throws Exception {
 		int activeCount = this.getActiveCount();
 		// used to store new created connection
 		int emptyIndex = -1;
@@ -232,7 +231,7 @@ public abstract class PhysicalDatasource {
 			}
 			if (bestCandidate != -1) {
 				return takeCon(items[bestCandidate], handler, attachment,
-						schema);
+						conMeta.getSchema());
 			} else if (emptyIndex == -1) {
 				StringBuilder s = new StringBuilder();
 				s.append(Alarms.DEFAULT).append("DATASOURCE EXCEED [name=")
@@ -270,7 +269,7 @@ public abstract class PhysicalDatasource {
 				lock.lock();
 				try {
 					items[insertIndex] = conn;
-					takeCon(conn, handler, attachment, schema);
+					takeCon(conn, handler, attachment, conMeta.getSchema());
 				} finally {
 					lock.unlock();
 				}

@@ -147,7 +147,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 		dataQueue.clear();
 		String errMsg = "execption:(handleDataError) " + t.toString();
 		this.source.close(errMsg);
-
 		if (responseHandler != null) {
 			responseHandler.connectionClose(source, errMsg);
 		}

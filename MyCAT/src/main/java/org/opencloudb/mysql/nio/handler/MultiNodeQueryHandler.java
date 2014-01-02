@@ -279,6 +279,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				}
 				eof[3] = ++packetId;
 				source.write(source.writeToBuffer(eof, buffer));
+			} catch (Exception e) {
+               
+               this.createErrPkg("exception:multiNodeQuery process err,"+e).write(source);
 			} finally {
 				if (dataMergeSvr != null) {
 					dataMergeSvr.clear();

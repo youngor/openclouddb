@@ -164,7 +164,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	protected void tryErrorFinished(PhysicalConnection conn, boolean allEnd) {
 		if (allEnd) {
 			if (session.getSource().isAutocommit()) {
-				//clear session resources,release all
+				// clear session resources,release all
 				session.clearResources();
 			} else {
 				session.getSource().setTxInterrupt();
@@ -180,7 +180,18 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		conn.setRunning(false);
 		this.setFail("closed connection:" + reason + " con:" + conn);
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		tryErrorFinished(conn, this.decrementCountBy(1));
+		boolean finished = false;
+		lock.lock();
+		try {
+			finished = (this.nodeCount == 0);
+
+		} finally {
+			lock.unlock();
+		}
+		if (finished == false) {
+			finished = this.decrementCountBy(1);
+		}
+		tryErrorFinished(conn, finished);
 	}
 
 	public void clearResources() {

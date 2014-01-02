@@ -33,9 +33,11 @@ public class RowDataPacketSorter {
 		} catch (Exception e) {
 
 		}
-		Collections.addAll(this.sorted,array);
+		if (array != null) {
+			Collections.addAll(this.sorted, array);
+		}
 
-        return sorted;
+		return sorted;
 	}
 
 	private RowDataPacket[] mergeSort(RowDataPacket[] result) throws Exception {
@@ -46,7 +48,7 @@ public class RowDataPacketSorter {
 		}
 
 		array = result;
-		mergeR(0, result.length - 1); 
+		mergeR(0, result.length - 1);
 
 		return array;
 	}
@@ -65,7 +67,6 @@ public class RowDataPacketSorter {
 
 	private void merge(int startIndex, int midIndex, int endIndex) {
 		resultTemp = new RowDataPacket[(endIndex - startIndex + 1)];
-
 
 		pr = 0;
 		p1 = startIndex;
@@ -99,17 +100,19 @@ public class RowDataPacketSorter {
 	private void compare(int byColumnIndex) {
 
 		if (byColumnIndex == this.orderCols.length) {
-            if(this.orderCols[byColumnIndex - 1].orderType == OrderCol.COL_ORDER_TYPE_ASC){
-        
-                    resultTemp[pr++] = array[p1++];
+			if (this.orderCols[byColumnIndex - 1].orderType == OrderCol.COL_ORDER_TYPE_ASC) {
+
+				resultTemp[pr++] = array[p1++];
 			} else {
-                    resultTemp[pr++] = array[p2++];
+				resultTemp[pr++] = array[p2++];
 			}
 			return;
 		}
 
-		byte[] left = array[p1].fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
-		byte[] right =  array[p2].fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+		byte[] left = array[p1].fieldValues
+				.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+		byte[] right = array[p2].fieldValues
+				.get(this.orderCols[byColumnIndex].colMeta.colIndex);
 
 		if (compareObject(left, right, this.orderCols[byColumnIndex]) <= 0) {
 			if (compareObject(left, right, this.orderCols[byColumnIndex]) < 0) {

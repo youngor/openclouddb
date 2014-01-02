@@ -180,10 +180,10 @@ public class PhysicalDBPool {
 				initSize);
 		// long start=System.currentTimeMillis();
 		// long timeOut=start+5000*1000L;
-		ConnectionMeta conMeta = new ConnectionMeta(null, "UTF-8", -1, true);
+		ConnectionMeta conMeta = new ConnectionMeta(null, "utf8", -1, true);
 		for (int i = 0; i < initSize; i++) {
 			try {
-				ds.getConnection(conMeta, getConHandler, null, null);
+				ds.getConnection(conMeta, getConHandler, null);
 			} catch (Exception e) {
 				LOGGER.warn(getMessage(index, " init connection error."), e);
 			}
@@ -329,7 +329,7 @@ public class PhysicalDBPool {
 			LOGGER.debug("select read source " + theNode.getName()
 					+ " for dataHost:" + this.getHostName());
 		}
-		theNode.getConnection(conMeta, handler, attachment, database);
+		theNode.getConnection(conMeta, handler, attachment);
 	}
 
 	private PhysicalDatasource randomSelect(
