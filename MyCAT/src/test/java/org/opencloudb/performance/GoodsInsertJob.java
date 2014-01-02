@@ -32,10 +32,8 @@ public class GoodsInsertJob implements Runnable {
 		this.failedCount=failedCount;
 	}
 
-	private int insert(List<Map<String, String>> list) {
+	private int insert(List<Map<String, String>> list) throws SQLException {
 		PreparedStatement ps;
-		try {
-
 			String sql = "insert into goods (id,name ,good_type,good_img_url,good_created ,good_desc, price ) values(?,? ,?,?,? ,?, ?)";
 			ps = con.prepareStatement(sql);
 			for (Map<String, String> map : list) {
@@ -49,11 +47,7 @@ public class GoodsInsertJob implements Runnable {
 				ps.addBatch();
 				ps.executeBatch();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-
-		}
+		
 		return list.size();
 	}
 

@@ -34,9 +34,9 @@ public class TravelRecordUpdateJob implements Runnable {
 		this.failedCount = failedCount;
 	}
 
-	private int insert(List<Map<String, String>> list) {
+	private int update(List<Map<String, String>> list) throws SQLException {
 		PreparedStatement ps;
-		try {
+
 
 			String sql = "update travelrecord set user =? ,traveldate=?,fee=?,days=? where id=?";
 			ps = con.prepareStatement(sql);
@@ -50,11 +50,7 @@ public class TravelRecordUpdateJob implements Runnable {
 				ps.addBatch();
 				ps.executeBatch();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
 
-		}
 		return list.size();
 	}
 
@@ -91,7 +87,7 @@ public class TravelRecordUpdateJob implements Runnable {
 		List<Map<String, String>> batch = getNextBatch();
 		while (!batch.isEmpty()) {
 			try {
-				insert(batch);
+				update(batch);
 				finshiedCount.addAndGet(batch.size());
 			} catch (Exception e) {
 				failedCount.addAndGet(batch.size());
