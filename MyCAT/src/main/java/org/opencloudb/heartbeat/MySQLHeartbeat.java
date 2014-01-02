@@ -186,22 +186,22 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	}
 
 	private void setError(MySQLDetector detector) {
-		if (!source.isReadNode()) {
-			// write node maybe switch ,should continues check error status
-			if (++errorCount < maxRetryCount) {
-				isChecking.set(false);
-				if (detector != null && isStop.get()) {
-					detector.quit();
-				} else {
-					heartbeat(); // error count not enough, heart beat again
-				}
-				return;
+		// should continues check error status
+		if (++errorCount < maxRetryCount) {
+			isChecking.set(false);
+			if (detector != null && isStop.get()) {
+				detector.quit();
+			} else {
+				heartbeat(); // error count not enough, heart beat again
 			}
+			return;
 		}
 
 		this.status = ERROR_STATUS;
 		this.errorCount = 0;
 		this.isChecking.set(false);
+		// max error checked ,clear datasource
+		this.source.clearCons("heartbeat err checked,status:" + this.status);
 	}
 
 	private void setTimeout(MySQLDetector detector) {
