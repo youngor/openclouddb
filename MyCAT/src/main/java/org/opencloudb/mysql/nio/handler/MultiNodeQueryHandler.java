@@ -280,7 +280,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				eof[3] = ++packetId;
 				source.write(source.writeToBuffer(eof, buffer));
 			} catch (Exception e) {
-               
+				//fix:SQL异常导致连接被关闭的问题
+				source.write(buffer);
                this.createErrPkg("exception:multiNodeQuery process err,"+e).write(source);
 			} finally {
 				if (dataMergeSvr != null) {

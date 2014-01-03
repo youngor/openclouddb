@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 import org.opencloudb.buffer.BufferPool;
 import org.opencloudb.buffer.BufferQueue;
 import org.opencloudb.config.ErrorCode;
-import org.opencloudb.server.ServerConnection;
 import org.opencloudb.util.TimeUtil;
 
 /**
@@ -163,13 +162,13 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
+			//fix:异常时候不停刷日志的缺陷
+			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
-				close("exeption:" + e.toString());
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
 			} else {
 				error(ErrorCode.ERR_HANDLE_DATA, e);
 			}
-
 		}
 	}
 
