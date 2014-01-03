@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
+import java.util.regex.Pattern;
 
 import org.opencloudb.config.model.rule.RuleAlgorithm;
 
@@ -33,6 +34,7 @@ public class PartitionByPattern implements RuleAlgorithm {
 	private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值
 	private String mapFile;
 	private LongRange[] longRongs;
+	private int defaultNode = 0;// 包含非数值字符，默认存储节点
 
 	@Override
 	public void init() {
@@ -48,8 +50,15 @@ public class PartitionByPattern implements RuleAlgorithm {
 		this.patternValue = patternValue;
 	}
 
+	public void setDefaultNode(int defaultNode) {
+		this.defaultNode = defaultNode;
+	}
+
 	@Override
 	public Integer calculate(String columnValue) {
+		if (!isNumeric(columnValue)) {
+			return defaultNode;
+		}
 		long value = Long.valueOf(columnValue);
 		Integer rst = null;
 		for (LongRange longRang : this.longRongs) {
@@ -59,6 +68,11 @@ public class PartitionByPattern implements RuleAlgorithm {
 			}
 		}
 		return rst;
+	}
+
+	public static boolean isNumeric(String str) {
+		Pattern pattern = Pattern.compile("[0-9]*");
+		return pattern.matcher(str).matches();
 	}
 
 	private void initialize() {
