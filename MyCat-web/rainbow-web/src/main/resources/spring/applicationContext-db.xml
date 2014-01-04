@@ -22,7 +22,33 @@ http://www.springframework.org/schema/context/spring-context-3.0.xsd
 			<value>${jdbc.maxActive}</value>
 		</property>
 	</bean>
-
+	
+   <bean id="mycatdataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName">
+			<value>${mycat.jdbc.driverClassName}</value>
+		</property>
+		<property name="url">
+			<value>${mycat.jdbc.url}</value>
+		</property>
+		<property name="username">
+			<value>${mycat.jdbc.username}</value>
+		</property>
+		<property name="password">
+			<value>${mycat.jdbc.password}</value>
+		</property>
+	</bean>
+	
+ 	<bean id="mycatsqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="mycatdataSource" />
+		<property name="mapperLocations">
+            <list>
+                <value>classpath:mybatis/oc/monitorMapper.xml</value>
+            </list>
+        </property>
+		<property name="typeAliasesPackage" value="org.hx.rainbow.common.dao.handler"/>
+	</bean>
+	
 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
 		<property name="dataSource" ref="dataSource" />
 		<property name="mapperLocations">
@@ -37,6 +63,10 @@ http://www.springframework.org/schema/context/spring-context-3.0.xsd
         <constructor-arg index="0" ref="sqlSessionFactory" />   
     </bean>    
     
+    <bean id="mycatsqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">   
+        <constructor-arg index="0" ref="mycatsqlSessionFactory" />   
+    </bean>
+        
 	<bean id="transactionManager"
 		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
 		<property name="dataSource" ref="dataSource" />

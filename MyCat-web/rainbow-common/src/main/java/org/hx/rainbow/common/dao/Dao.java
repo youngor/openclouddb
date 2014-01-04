@@ -9,6 +9,8 @@ public abstract interface Dao
   
   public abstract List<Map<String,Object>> query(String namespace,String statement);
   
+  public abstract List<Map<String,Object>> queryMycat(String namespace,String statement);
+  
   public abstract List<Map<String,Object>> query(String namespace,String statement,int limit, int offset);
 
   public abstract List<Map<String,Object>> query(String namespace,String statement, Map<String,Object> paramData);

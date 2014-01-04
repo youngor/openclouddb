@@ -26,6 +26,10 @@ public class DaoMybatisImpl implements Dao{
 	@Inject
 	@Named("sqlSessionTemplate")
 	private SqlSessionTemplate dao;
+	
+	@Inject
+	@Named("mycatsqlSessionTemplate")
+	private SqlSessionTemplate myCatdao;
 
 	public List<Map<String, Object>> query(String namespace,String statement) {
 		long bengin = System.currentTimeMillis();
@@ -148,6 +152,14 @@ public class DaoMybatisImpl implements Dao{
 			Map<String, Object> paramData) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public List<Map<String, Object>> queryMycat(String namespace,String statement) {
+		long bengin = System.currentTimeMillis();
+		List<Map<String, Object>> dataList = myCatdao.<Map<String,Object>>selectList(changeStatement(namespace,statement));
+		System.out.println("["+namespace+"."+statement+"] execute, cost:"+(System.currentTimeMillis() - bengin) + "ms");
+		return dataList;
 	}
 	
 	
