@@ -13,42 +13,43 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TravelRecordInsertJob implements Runnable {
-	private final Connection con;
 	private final int endId;
 	private int finsihed;
 	private final int batchSize;
-	private final  AtomicInteger finshiedCount;
-	private final  AtomicInteger failedCount;
+	private final AtomicInteger finshiedCount;
+	private final AtomicInteger failedCount;
 	Calendar date = Calendar.getInstance();
 	DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
+	private final SimpleConPool conPool;
 
-	public TravelRecordInsertJob(Connection con, int totalRecords,
-			int batchSize, int startId,AtomicInteger finshiedCount,AtomicInteger failedCount) {
+	public TravelRecordInsertJob(SimpleConPool conPool, int totalRecords,
+			int batchSize, int startId, AtomicInteger finshiedCount,
+			AtomicInteger failedCount) {
 		super();
-		this.con = con;
+		this.conPool = conPool;
 		this.endId = startId + totalRecords;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
-		this.finshiedCount=finshiedCount;
-		this.failedCount=failedCount;
+		this.finshiedCount = finshiedCount;
+		this.failedCount = failedCount;
 	}
 
-	private int insert(List<Map<String, String>> list) throws SQLException {
+	private int insert(Connection con, List<Map<String, String>> list)
+			throws SQLException {
 		PreparedStatement ps;
 
+		String sql = "insert into travelrecord (id,user,traveldate,fee,days) values(?,?,?,?,?)";
+		ps = con.prepareStatement(sql);
+		for (Map<String, String> map : list) {
+			ps.setLong(1, Long.parseLong(map.get("id")));
+			ps.setString(2, (String) map.get("user"));
+			ps.setString(3, (String) map.get("traveldate"));
+			ps.setString(4, (String) map.get("fee"));
+			ps.setString(5, (String) map.get("days"));
+			ps.addBatch();
+			ps.executeBatch();
+		}
 
-			String sql = "insert into travelrecord (id,user,traveldate,fee,days) values(?,?,?,?,?)";
-			ps = con.prepareStatement(sql);
-			for (Map<String, String> map : list) {
-				ps.setLong(1, Long.parseLong(map.get("id")));
-				ps.setString(2, (String) map.get("user"));
-				ps.setString(3, (String) map.get("traveldate"));
-				ps.setString(4, (String) map.get("fee"));
-				ps.setString(5, (String) map.get("days"));
-				ps.addBatch();
-				ps.executeBatch();
-			}
-		
 		return list.size();
 	}
 
@@ -82,22 +83,30 @@ public class TravelRecordInsertJob implements Runnable {
 
 	@Override
 	public void run() {
-		List<Map<String, String>> batch = getNextBatch();
-		while (!batch.isEmpty()) {
-			try {
-				con.setAutoCommit(true);
-				insert(batch);
-				finshiedCount.addAndGet(batch.size());
-			} catch (Exception e) {
-				failedCount.addAndGet(batch.size());
-				e.printStackTrace();
-			}
-			batch = getNextBatch();
-		}
+		Connection con = null;
 		try {
-			con.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+
+			List<Map<String, String>> batch = getNextBatch();
+			while (!batch.isEmpty()) {
+				try {
+					if (con == null || con.isClosed()) {
+						con = conPool.getConnection();
+						con.setAutoCommit(true);
+					}
+
+					insert(con, batch);
+					finshiedCount.addAndGet(batch.size());
+				} catch (Exception e) {
+					failedCount.addAndGet(batch.size());
+					e.printStackTrace();
+				}
+				batch = getNextBatch();
+			}
+		} finally {
+			if (con != null) {
+				this.conPool.returnCon(con);
+			}
 		}
+
 	}
 }
