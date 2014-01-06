@@ -157,14 +157,18 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 	 * OK数据包处理
 	 */
 	private void handleOkPacket(byte[] data) {
+		if (responseHandler != null) {
 		responseHandler.okResponse(data, source);
+		}
 	}
 
 	/**
 	 * ERROR数据包处理
 	 */
 	private void handleErrorPacket(byte[] data) {
-		responseHandler.errorResponse(data, source);
+		if (responseHandler != null) {
+			responseHandler.errorResponse(data, source);
+		}
 	}
 
 	/**
