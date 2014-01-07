@@ -60,8 +60,9 @@ public class BackendIOErrorHandler implements WriteIOErrorHandlerIntf, ReadIOErr
 
 	/**
 	 * @param args
+	 * @throws Exception 
 	 */
-	public static void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 
 	}
@@ -84,8 +85,9 @@ public class BackendIOErrorHandler implements WriteIOErrorHandlerIntf, ReadIOErr
 				if (e instanceof java.net.ConnectException)
 				{
 					BackendServerConf backendServerConf = BackendExt.getBackendServer(backendChannelContext);
-					
-					if (backendServerConf != null){
+
+					if (backendServerConf != null)
+					{
 						backendServerConf.setConnectable(NetUtils.isConnectable(backendServerConf.getIp(),
 								backendServerConf.getPort()));
 					}
@@ -101,6 +103,8 @@ public class BackendIOErrorHandler implements WriteIOErrorHandlerIntf, ReadIOErr
 		if (frontendChannelContext != null)
 		{
 			Nio.getInstance().removeConnection(frontendChannelContext, reasonString);
+			BackendExt.removeFrontend(backendChannelContext);
+			BackendExt.removeBackendServer(backendChannelContext);
 		}
 	}
 }

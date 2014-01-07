@@ -11,11 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.talent.balance.conf.FrontendConf;
+import com.talent.balance.conf.HttpServerConf;
 import com.talent.balance.frontend.decode.FrontendRequestDecoder;
 import com.talent.balance.frontend.error.FrontendIOErrorHandler;
 import com.talent.balance.frontend.handler.FrontendPacketHandler;
 import com.talent.balance.frontend.listener.FrontendConnectionStateListener;
-import com.talent.balance.frontend.timer.CheckHeartMsgTask;
+import com.talent.balance.frontend.timer.CheckConnectionTask;
+import com.talent.balance.startup.BalanceStartup;
+import com.talent.http.server.HttpServer;
 import com.talent.nio.communicate.ChannelContext;
 import com.talent.nio.communicate.handler.intf.PacketHandlerIntf;
 import com.talent.nio.communicate.server.ChannelContextCompleter;
@@ -61,8 +64,11 @@ public class FrontendStarter
 		String bindIp = frontendConf.getBindIp();
 		int bindPort = frontendConf.getBindPort();
 		String protocol = frontendConf.getProtocol();
-		startServer(bindIp, bindPort, protocol,
-				com.talent.balance.startup.BalanceStartup.getScheduledExecutorService(), frontendConf);
+		startServer(bindIp, bindPort, protocol, BalanceStartup.getScheduledExecutorService(), frontendConf);
+
+		HttpServerConf httpServerConf = frontendConf.getHttpServerConf();
+		HttpServer.startHttpserver(httpServerConf.getBindIp(), httpServerConf.getBindPort(),
+				httpServerConf.getProtocol(), BalanceStartup.getScheduledExecutorService());
 	}
 
 	public static void startServer(String bindIp, int bindPort, String protocol,
@@ -100,8 +106,8 @@ public class FrontendStarter
 	{
 		try
 		{
-			scheduledExecutorService.scheduleAtFixedRate(new CheckHeartMsgTask(), 50000000000L, 5000000000L,
-					TimeUnit.MILLISECONDS);
+//			scheduledExecutorService.scheduleAtFixedRate(new CheckConnectionTask(), CheckConnectionTask.interval,
+//					CheckConnectionTask.interval, TimeUnit.MILLISECONDS);
 		} catch (Exception e)
 		{
 			log.error("", e);

@@ -16,11 +16,12 @@ import com.talent.balance.backend.error.BackendIOErrorHandler;
 import com.talent.balance.backend.ext.BackendExt;
 import com.talent.balance.backend.handler.BackendPacketHandler;
 import com.talent.balance.backend.listener.BackendConnectionStateListener;
-import com.talent.balance.backend.timer.CheckConnectionTask;
+import com.talent.balance.backend.timer.CheckServerTask;
 import com.talent.balance.conf.BackendConf;
 import com.talent.balance.conf.BackendServerConf;
 import com.talent.balance.mapping.Mapping;
 import com.talent.balance.startup.BalanceStartup;
+import com.talent.balance.stat.Stat;
 import com.talent.nio.api.Nio;
 import com.talent.nio.communicate.ChannelContext;
 import com.talent.nio.communicate.RemoteNode;
@@ -28,6 +29,7 @@ import com.talent.nio.communicate.handler.intf.PacketHandlerIntf;
 import com.talent.nio.communicate.intf.DecoderIntf;
 import com.talent.nio.startup.Startup;
 import com.talent.nio.utils.NetUtils;
+import com.talent.nio.utils.SystemTimer;
 
 /**
  * 
@@ -60,10 +62,11 @@ public class BackendStarter
 	 * @param bindIp
 	 * @param bindPort
 	 * @param frontendChannelContext
+	 * @param wait true: 等建链完成，再返回
 	 * @return
 	 */
 	public static ChannelContext addConnection(BackendServerConf backendServer, String bindIp, int bindPort,
-			ChannelContext frontendChannelContext, BackendConf backendConf)
+			ChannelContext frontendChannelContext, BackendConf backendConf, boolean wait, int timeout)
 	{
 		RemoteNode remoteNode = new RemoteNode(backendServer.getIp(), backendServer.getPort());
 
@@ -94,7 +97,24 @@ public class BackendStarter
 		backendChannelContext.setWriteIOErrorHandler(BackendIOErrorHandler.getInstance());
 		backendChannelContext.setReadIOErrorHandler(BackendIOErrorHandler.getInstance());
 
-		Nio.getInstance().addConnection(backendChannelContext);
+		if (wait)
+		{
+			synchronized (backendChannelContext)
+			{
+				try
+				{
+					Nio.getInstance().addConnection(backendChannelContext);
+					backendChannelContext.wait(timeout);
+				} catch (InterruptedException e)
+				{
+					log.error("", e);
+				}
+			}
+		} else
+		{
+			Nio.getInstance().addConnection(backendChannelContext);
+		}
+
 		return backendChannelContext;
 	}
 
@@ -132,6 +152,22 @@ public class BackendStarter
 		for (BackendServerConf backendServerConf : servers)
 		{
 			boolean isConnectable = NetUtils.isConnectable(backendServerConf.getIp(), backendServerConf.getPort());
+			
+			//现在不可达，但是原来是可达的
+			if (!isConnectable && backendServerConf.isConnectable()) {
+				backendServerConf.getStat().setCurrReceivedBytes(0);
+				backendServerConf.getStat().setCurrSentBytes(0);
+			} else if (isConnectable && !backendServerConf.isConnectable()) {  //现在可达，但是原来不可达
+				backendServerConf.getStat().setCurrReceivedBytes(0);
+				backendServerConf.getStat().setCurrSentBytes(0);
+			}
+			
+			if (!isConnectable) {
+				backendServerConf.getStat().setCurrReceivedBytes(0);
+				backendServerConf.getStat().setCurrSentBytes(0);
+				log.warn("{}不可达", backendServerConf);
+			}
+			
 			backendServerConf.setConnectable(isConnectable);
 		}
 	}
@@ -147,7 +183,7 @@ public class BackendStarter
 				for (int i = 0; i < c; i++)
 				{
 					ChannelContext backendChannelContext = addConnection(backendServer, "", 0, null,
-							BackendConf.getInstance());
+							BackendConf.getInstance(), false, 5000);
 					BackendChannelContextCache.add(backendServer, backendChannelContext);
 				}
 			} else
@@ -163,7 +199,7 @@ public class BackendStarter
 	{
 		try
 		{
-			BalanceStartup.getScheduledExecutorService().scheduleAtFixedRate(new CheckConnectionTask(), 60000L, 60000L,
+			BalanceStartup.getScheduledExecutorService().scheduleAtFixedRate(new CheckServerTask(), 60000L, 60000L,
 					TimeUnit.MILLISECONDS);
 		} catch (Exception e)
 		{

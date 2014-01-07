@@ -3,6 +3,9 @@
  */
 package com.talent.balance.backend.handler;
 
+import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -11,6 +14,10 @@ import org.slf4j.LoggerFactory;
 import com.talent.balance.backend.ext.BackendExt;
 import com.talent.balance.common.BalancePacket;
 import com.talent.balance.conf.BackendServerConf;
+import com.talent.mysql.ext.MysqlExt;
+import com.talent.mysql.packet.MysqlRequestPacket;
+import com.talent.mysql.packet.request.AuthPacket;
+import com.talent.mysql.packet.response.HandshakePacket;
 import com.talent.nio.api.Nio;
 import com.talent.nio.api.Packet;
 import com.talent.nio.communicate.ChannelContext;
@@ -70,9 +77,27 @@ public class BackendPacketHandler implements PacketHandlerIntf
 	{
 		BackendServerConf backendServerConf = BackendExt.getBackendServer(channelContext);
 
+		if (MysqlExt.getHandshakePacket(channelContext) == null && BackendExt.PROTOCOL_MYSQL.equals(channelContext.getProtocol()))
+		{
+			HandshakePacket handshakePacket = (HandshakePacket) packet;
+			MysqlExt.setHandshakePacket(channelContext, handshakePacket);
+
+			AuthPacket authPacket = new AuthPacket();
+			authPacket.charsetIndex = 33;//(byte) (handshakePacket.charset & 0xff);
+			authPacket.user = backendServerConf.getProps().get("user").getBytes();
+			authPacket.password = AuthPacket.getPass(backendServerConf.getProps().get("pwd"), handshakePacket);
+			authPacket.passwordLen = (byte) authPacket.password.length;
+			authPacket.database = backendServerConf.getProps().get("db").getBytes();
+			Nio.getInstance().asySend(authPacket, channelContext);
+			return;
+		}
+
 		BalancePacket balancePacket = (BalancePacket) packet;
 
-		byte[] bs = balancePacket.getBuffer().array();
+//		byte[] bs = balancePacket.getBuffer().array();
+//		log.warn("receive from back {}, {}, {}", balancePacket.getBuffer().capacity(), Arrays.toString(bs), new String(
+//				bs, "utf-8"));
+//		FileUtils.writeStringToFile(new File("h:/"+channelContext.hashCode()+"__"+BackendExt.getFrontend(channelContext).hashCode()+"/fromBackend.txt"), Arrays.toString(bs), true);
 
 		backendServerConf.getStat().increSentBytes(balancePacket.getBuffer().capacity());
 
@@ -80,18 +105,12 @@ public class BackendPacketHandler implements PacketHandlerIntf
 		ChannelContext frontendChannelContext = BackendExt.getFrontend(channelContext);
 		if (frontendChannelContext == null)
 		{
-			Nio.getInstance().removeConnection(channelContext, "frontendChannelContext is null");
-			log.warn("{}, frontendChannelContext is null", channelContext);
-			return;
+			throw new IOException("frontendChannelContext is null");
 		}
-		int c = 0;
-		while (frontendChannelContext.getConnectionState() != ConnectionState.APP_ON && c++ < 5000)
-		{
-			Thread.sleep(2);
-		}
+		
 		if (frontendChannelContext.getConnectionState() != ConnectionState.APP_ON)
 		{
-			throw new Exception("frontendChannelContext.getConnectionState() != ConnectionState.APP_ON){");
+			throw new IOException("frontendChannelContext.getConnectionState() = " + frontendChannelContext.getConnectionState());
 		}
 		// check frontendChannelContext end
 
@@ -103,8 +122,19 @@ public class BackendPacketHandler implements PacketHandlerIntf
 	{
 		BalancePacket balancePacket = (BalancePacket) packet;
 
+		if (BackendExt.PROTOCOL_MYSQL.equals(channelContext.getProtocol()))
+		{
+			MysqlRequestPacket mysqlRequestPacket = (MysqlRequestPacket) balancePacket;
+			ByteBuf byteBuf = mysqlRequestPacket.encode();
+			byte[] bs1 = byteBuf.array();
+			log.warn("sent to backend:{}", Arrays.toString(bs1));
+			return bs1;
+		}
+
 		byte[] bs = balancePacket.getBuffer().array();
-		
+//		log.warn("sent to back {}, {}, {}", balancePacket.getBuffer().capacity(), Arrays.toString(bs), new String(bs,
+//				"utf-8"));
+//		FileUtils.writeStringToFile(new File("h:/"+channelContext.hashCode()+"__"+BackendExt.getFrontend(channelContext).hashCode()+"/toBackend.txt"), Arrays.toString(bs), true);
 
 		return bs;
 	}

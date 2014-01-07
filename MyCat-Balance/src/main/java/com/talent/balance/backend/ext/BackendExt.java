@@ -50,6 +50,11 @@ public class BackendExt
 		return (BackendServerConf) backendChannelContext.getProperty(BACKEND_SERVER_KEY);
 	}
 	
+	public static void removeBackendServer(ChannelContext backendChannelContext)
+	{
+		backendChannelContext.removeProperty(BACKEND_SERVER_KEY);
+	}
+	
 
 	public static void setFrontend(ChannelContext backendChannelContext, ChannelContext frontendChannelContext)
 	{
@@ -59,6 +64,11 @@ public class BackendExt
 	public static ChannelContext getFrontend(ChannelContext backendChannelContext)
 	{
 		return (ChannelContext) backendChannelContext.getProperty(FRONTEND_CHANNEL_CONTEXT_KEY);
+	}
+	
+	public static void removeFrontend(ChannelContext backendChannelContext)
+	{
+		backendChannelContext.removeProperty(FRONTEND_CHANNEL_CONTEXT_KEY);
 	}
 
 	/**

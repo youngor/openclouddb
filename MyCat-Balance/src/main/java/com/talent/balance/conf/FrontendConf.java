@@ -41,6 +41,7 @@ public class FrontendConf
 	
 	private byte byteOrder;
 	
+	private HttpServerConf httpServerConf;
 
 	private static FrontendConf instance = null;
 
@@ -118,7 +119,15 @@ public class FrontendConf
 		this.protocol = protocol;
 	}
 
-	
+	public HttpServerConf getHttpServerConf()
+	{
+		return httpServerConf;
+	}
+
+	public void setHttpServerConf(HttpServerConf httpServerConf)
+	{
+		this.httpServerConf = httpServerConf;
+	}
 
 	public byte getByteOrder()
 	{

@@ -13,7 +13,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.talent.balance.backend.ext.BackendExt;
 import com.talent.balance.common.BalancePacket;
+import com.talent.mysql.ext.MysqlExt;
+import com.talent.mysql.packet.response.HandshakePacket;
 import com.talent.nio.api.Packet;
 import com.talent.nio.communicate.ChannelContext;
 import com.talent.nio.communicate.intf.DecoderIntf;
@@ -63,7 +66,15 @@ public class BackendResponseDecoder implements DecoderIntf<Packet>
 	public PacketWithMeta<Packet> decode(ByteBuf buffer, ChannelContext channelContext) throws DecodeException
 	{
 		BalancePacket backendResponsePacket = new BalancePacket();
-
+		
+		if (MysqlExt.getHandshakePacket(channelContext) == null && BackendExt.PROTOCOL_MYSQL.equals(channelContext.getProtocol())) {
+			HandshakePacket handshakePacket = new HandshakePacket();
+			PacketWithMeta<Packet> pwm = handshakePacket.decode(buffer);
+			return pwm;
+		}
+		
+		
+		
 		backendResponsePacket.setBuffer(Unpooled.copiedBuffer(buffer));
 
 		List<Packet> packets = new ArrayList<Packet>();

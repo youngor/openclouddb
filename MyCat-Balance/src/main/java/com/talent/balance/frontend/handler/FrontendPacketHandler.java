@@ -75,45 +75,40 @@ public class FrontendPacketHandler implements PacketHandlerIntf
 		//		}
 
 		int c = 0;
-		while (backendChannelContext == null && c++ < 5000)
+		while (backendChannelContext == null && c++ < 1000)
 		{
 			backendChannelContext = FrontendExt.getBackend(channelContext);
-			Thread.sleep(1);
+			Thread.sleep(5);
 		}
-		if (backendChannelContext == null){
-			throw new Exception("backendChannelContext == null");
+		if (backendChannelContext == null)
+		{
+			throw new IOException("backendChannelContext == null");
 		}
 
-		if (backendChannelContext.isNeedBuildLink(backendChannelContext.getConnectionState()))
-		{
-			NioUtils.buildLink(backendChannelContext);
-		}
+//		if (backendChannelContext.isNeedBuildLink(backendChannelContext.getConnectionState()))
+//		{
+//			NioUtils.buildLink(backendChannelContext);
+//		}
 
 		c = 0;
-		while (backendChannelContext.getConnectionState() != ConnectionState.APP_ON && c++ < 5000)
+		while (backendChannelContext.getConnectionState() != ConnectionState.APP_ON && c++ < 1000)
 		{
-			Thread.sleep(1);
+			Thread.sleep(5);
 		}
-		if (backendChannelContext.getConnectionState() != ConnectionState.APP_ON){
-			throw new Exception("backendChannelContext.getConnectionState() != ConnectionState.APP_ON");
+		if (backendChannelContext.getConnectionState() != ConnectionState.APP_ON)
+		{
+			throw new IOException("backendChannelContext.getConnectionState() != ConnectionState.APP_ON");
 		}
-
-		//		if (backendChannelContext == null)
-		//		{
-		//			Nio.getInstance().removeConnection(channelContext, "can not find available server");
-		//			log.error("can not find available server");
-		//			return;
-		//		}
 
 		BalancePacket balancePacket = (BalancePacket) packet;
-//		log.warn("receive from front {}", balancePacket.getBuffer().capacity());
+		//		log.warn("receive from front {}", balancePacket.getBuffer().capacity());
+		//		
+		//		byte[] bs = balancePacket.getBuffer().array();
+		//		FileUtils.writeStringToFile(new File("h:/"+FrontendExt.getBackend(channelContext).hashCode()+"__"+channelContext.hashCode()+"/fromFront.txt"), Arrays.toString(bs), true);
 
-		//		FileUtils.writeStringToFile(new File("h:/" + channelContext.getRemoteNode().getPort() + ".txt"), new String(
-		//				frontendRequestPacket.getBuffer().array()));
-		
 		BackendServerConf backendServerConf = BackendExt.getBackendServer(backendChannelContext);
 		backendServerConf.getStat().increReceivedBytes(balancePacket.getBuffer().capacity());
-		
+
 		Nio.getInstance().asySend(balancePacket, backendChannelContext);
 	}
 
@@ -125,6 +120,7 @@ public class FrontendPacketHandler implements PacketHandlerIntf
 		try
 		{
 			byte[] bs = balancePacket.getBuffer().array();
+			//			FileUtils.writeStringToFile(new File("h:/"+FrontendExt.getBackend(channelContext).hashCode()+"__"+channelContext.hashCode()+"/toFront.txt"), Arrays.toString(bs), true);
 			return bs;
 		} catch (UnsupportedOperationException e)
 		{

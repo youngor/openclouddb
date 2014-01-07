@@ -40,4 +40,9 @@ public class FrontendExt
 	{
 		return (ChannelContext) myChannelContext.getProperty(BACKEND_CHANNELCONTEXT_KEY);
 	}
+	
+	public static void removeBackend(ChannelContext myChannelContext)
+	{
+		myChannelContext.removeProperty(BACKEND_CHANNELCONTEXT_KEY);
+	}
 }

@@ -95,14 +95,17 @@ public class BackendChannelContextCache
 		ConcurrentLinkedQueue<ChannelContext> queue = queueMap.get(backendServer);
 		ChannelContext channelContext = queue.poll();
 
-		ChannelContext newchannelContext = BackendStarter.addConnection(backendServer, "", 0, frontendChannelContext, BackendConf.getInstance());
+		ChannelContext newBackendChannelContext = BackendStarter.addConnection(backendServer, "", 0,
+				frontendChannelContext, BackendConf.getInstance(), true, 5000);
+
+		
 
 		if (channelContext != null)
 		{
-			add(backendServer, newchannelContext);
+			add(backendServer, newBackendChannelContext);
 		} else
 		{
-			channelContext = newchannelContext;
+			channelContext = newBackendChannelContext;
 		}
 		return channelContext;
 	}

@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.talent.balance.frontend.ext.FrontendExt;
 import com.talent.nio.api.Nio;
 import com.talent.nio.communicate.ChannelContext;
-import com.talent.nio.handler.error.intf.IOErrorHandlerIntf;
 import com.talent.nio.handler.error.intf.ReadIOErrorHandlerIntf;
 import com.talent.nio.handler.error.intf.WriteIOErrorHandlerIntf;
 
@@ -41,10 +40,11 @@ public class FrontendIOErrorHandler implements WriteIOErrorHandlerIntf, ReadIOEr
 	 */
 	private static final long serialVersionUID = -5369456663702756847L;
 	private static Logger log = LoggerFactory.getLogger(FrontendIOErrorHandler.class);
-	
+
 	private static FrontendIOErrorHandler instance = new FrontendIOErrorHandler();
-	
-	public static FrontendIOErrorHandler getInstance(){
+
+	public static FrontendIOErrorHandler getInstance()
+	{
 		return instance;
 	}
 
@@ -89,6 +89,7 @@ public class FrontendIOErrorHandler implements WriteIOErrorHandlerIntf, ReadIOEr
 		if (backendChannelContext != null)
 		{
 			Nio.getInstance().removeConnection(backendChannelContext, reasonString);
+			FrontendExt.removeBackend(frontendChannelContext);
 		}
 	}
 }
