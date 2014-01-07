@@ -7,7 +7,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +29,7 @@ public class TravelRecordInsertJob implements Runnable {
 			AtomicInteger failedCount) {
 		super();
 		this.conPool = conPool;
-		this.endId = startId + totalRecords;
+		this.endId = startId + totalRecords - 1;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
 		this.finshiedCount = finshiedCount;
@@ -54,11 +56,18 @@ public class TravelRecordInsertJob implements Runnable {
 	}
 
 	private List<Map<String, String>> getNextBatch() {
+		if (finsihed >= endId) {
+			return Collections.emptyList();
+		}
 		int end = (finsihed + batchSize) < this.endId ? (finsihed + batchSize)
 				: endId;
+		// the last batch
+		if (end + batchSize > this.endId) {
+			end = this.endId;
+		}
 		List<Map<String, String>> list = new ArrayList<Map<String, String>>(
 				(end - finsihed));
-		for (int i = finsihed; i < end; i++) {
+		for (int i = finsihed; i <= end; i++) {
 			Map<String, String> m = new HashMap<String, String>();
 			m.put("id", i + "");
 			m.put("user", "user " + i);
@@ -67,6 +76,7 @@ public class TravelRecordInsertJob implements Runnable {
 			m.put("days", i % 10000 + "");
 			list.add(m);
 		}
+		//System.out.println("finsihed :" + finsihed + "-" + end);
 		finsihed += list.size();
 		return list;
 	}
@@ -107,6 +117,34 @@ public class TravelRecordInsertJob implements Runnable {
 				this.conPool.returnCon(con);
 			}
 		}
+
+	}
+
+	public static void main(String[] args) {
+		int[][] ranges = { { 0, 20000 }, { 20001, 40000 }, { 40001, 90000 } };
+		HashSet<Long> keys = new HashSet<Long>();
+		int total = 0;
+		for (int i = 0; i < ranges.length; i++) {
+			System.out.println("id:" + ranges[i][0] + "," + ranges[i][1]);
+			for (TravelRecordInsertJob job : TestInsertPerf.createJobs(null,
+					ranges[i][0], ranges[i][1])) {
+				List<Map<String, String>> batch = job.getNextBatch();
+
+				while (!batch.isEmpty()) {
+					for (Map<String, String> map : batch) {
+						Long id = Long.parseLong(map.get("id"));
+						if (keys.contains(id)) {
+							System.out.println("err: duplicate " + id);
+						} else {
+							keys.add(id);
+						}
+						total++;
+					}
+					batch = job.getNextBatch();
+				}
+			}
+		}
+		System.out.println("total " + total);
 
 	}
 }

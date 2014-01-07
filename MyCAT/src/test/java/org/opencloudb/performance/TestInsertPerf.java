@@ -89,7 +89,7 @@ public class TestInsertPerf {
 		System.out.println("tps:" + sucess / usedTime);
 	}
 
-	private static ArrayList<TravelRecordInsertJob> createJobs(
+	public static ArrayList<TravelRecordInsertJob> createJobs(
 			SimpleConPool conPool, int minId, int maxId) {
 		int recordCount = maxId - minId + 1;
 		int batchSize = 10000;
@@ -98,10 +98,13 @@ public class TestInsertPerf {
 				totalBatch);
 		for (int i = 0; i < totalBatch; i++) {
 			int startId = minId + i * batchSize;
-			int endId = (startId + batchSize);
+			int endId = (startId + batchSize-1);
 			if (endId >= maxId) {
 				endId=maxId;
-			} 
+			}else if(i==totalBatch-1)
+			{
+				endId=maxId;
+			}
            int myCount=endId-startId+1;
 			TravelRecordInsertJob job = new TravelRecordInsertJob(conPool,
 					myCount, 100, startId, finshiedCount,
