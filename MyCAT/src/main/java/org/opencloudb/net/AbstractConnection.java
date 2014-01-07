@@ -162,7 +162,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
-			//fix:异常时候不停刷日志的缺陷
+			// fix:异常时候不停刷日志的缺陷
 			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
@@ -391,11 +391,12 @@ public abstract class AbstractConnection implements NIOConnection {
 	@Override
 	public void close(String reason) {
 		if (!isClosed.get()) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("close connection,reason:" + reason + " " + this);
-			}
+			LOGGER.info("close connection,reason:" + reason + " " + this);
 			if (closeSocket()) {
 				isClosed.set(true);
+			}else
+			{
+				LOGGER.warn("close connection failed  "+this);
 			}
 		}
 	}

@@ -544,8 +544,8 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public void error(int errCode, Throwable t) {
 		LOGGER.warn(" error code: " + errCode + " exception: " + t + " con: "
-				+ this,t);
-		
+				+ this, t);
+
 		switch (errCode) {
 		case ErrorCode.ERR_HANDLE_DATA:
 			// handle error ..
@@ -614,8 +614,9 @@ public class MySQLConnection extends BackendConnection implements
 	}
 
 	public void closeNoActive(String reason) {
-		if (isClosed.compareAndSet(false, true)) {
+		if (!isClosed.get()) {
 			close(reason);
+			isClosed.compareAndSet(false, true);
 		}
 	}
 
