@@ -22,7 +22,7 @@ import java.sql.SQLNonTransientException;
 
 import org.opencloudb.MycatServer;
 import org.opencloudb.config.model.SchemaConfig;
-import org.opencloudb.route.ServerRouter;
+import org.opencloudb.route.ServerRouterUtil;
 
 /**
  * @author mycat
@@ -42,7 +42,7 @@ public class ShardingDefaultSpace {
         SchemaConfig schema = this.getSchema();
         String sql = "insert into xoffer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < 1000000; i++) {
-            ServerRouter.route(schema,-1, sql, null, null);
+            ServerRouterUtil.route(schema,-1, sql, null, null);
         }
     }
 

@@ -23,11 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalDBPool;
+import org.opencloudb.cache.CacheService;
 import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.manager.ManagerConnectionFactory;
 import org.opencloudb.net.NIOAcceptor;
 import org.opencloudb.net.NIOConnector;
 import org.opencloudb.net.NIOProcessor;
+import org.opencloudb.route.RouteService;
 import org.opencloudb.server.ServerConnectionFactory;
 import org.opencloudb.statistic.SQLRecorder;
 import org.opencloudb.util.ExecutorUtil;
@@ -43,6 +45,8 @@ public class MycatServer {
 	private static final long TIME_UPDATE_PERIOD = 20L;
 	private static final MycatServer INSTANCE = new MycatServer();
 	private static final Logger LOGGER = Logger.getLogger(MycatServer.class);
+	private final RouteService routerService ;
+	private final CacheService cacheService;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -70,6 +74,12 @@ public class MycatServer {
 				system.getManagerExecutor());
 		this.sqlRecorder = new SQLRecorder(system.getSqlRecordCount());
 		this.isOnline = new AtomicBoolean(true);
+		try {
+			cacheService = new CacheService();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		routerService = new RouteService(cacheService);
 		this.startupTime = TimeUtil.currentTimeMillis();
 	}
 
@@ -152,6 +162,19 @@ public class MycatServer {
 		LOGGER.info("===============================================");
 	}
 
+	
+	public RouteService getRouterService() {
+		return routerService;
+	}
+
+	public CacheService getCacheService() {
+		return cacheService;
+	}
+
+	public RouteService getRouterservice() {
+		return routerService;
+	}
+
 	public NIOProcessor[] getProcessors() {
 		return processors;
 	}
@@ -167,7 +190,6 @@ public class MycatServer {
 	public NameableExecutor getTimerExecutor() {
 		return timerExecutor;
 	}
-
 
 	public SQLRecorder getSqlRecorder() {
 		return sqlRecorder;

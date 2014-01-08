@@ -1,0 +1,15 @@
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="ehcache.xsd"  maxBytesLocalHeap="500M" maxBytesLocalDisk="50G">
+	
+
+	<defaultCache maxElementsInMemory="10000" eternal="false"
+		timeToIdleSeconds="120" timeToLiveSeconds="120" overflowToDisk="false"
+		diskSpoolBufferSizeMB="30" maxElementsOnDisk="10000000"
+		diskPersistent="false" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LRU" />
+
+	<cache name="SQLRouteCache" maxBytesLocalHeap="20M" eternal="false"
+		timeToIdleSeconds="600" timeToLiveSeconds="1800" overflowToDisk="false">
+	</cache>
+
+</ehcache>

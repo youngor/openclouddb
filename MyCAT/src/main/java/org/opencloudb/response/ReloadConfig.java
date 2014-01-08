@@ -101,6 +101,8 @@ public final class ReloadConfig {
 			dn.stopHeartbeat();
 		}
 
+		//清理缓存
+		 MycatServer.getInstance().getCacheService().clearCache();
 		return true;
 	}
 

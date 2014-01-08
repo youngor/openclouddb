@@ -21,7 +21,7 @@ package org.opencloudb.route.perf;
 import java.sql.SQLNonTransientException;
 
 import org.opencloudb.config.model.SchemaConfig;
-import org.opencloudb.route.ServerRouter;
+import org.opencloudb.route.ServerRouterUtil;
 
 /**
  * @author mycat
@@ -43,7 +43,7 @@ public class ShardingTableSpaceMain {
         SchemaConfig schema = getSchema();
         String sql = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < 1000000; i++) {
-            ServerRouter.route(schema, -1,sql, null, null);
+            ServerRouterUtil.route(schema, -1,sql, null, null);
         }
     }
 

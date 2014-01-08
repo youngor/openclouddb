@@ -25,7 +25,6 @@ import org.opencloudb.config.ErrorCode;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.net.FrontendConnection;
 import org.opencloudb.route.RouteResultset;
-import org.opencloudb.route.ServerRouter;
 import org.opencloudb.server.response.Heartbeat;
 import org.opencloudb.server.response.Ping;
 import org.opencloudb.util.TimeUtil;
@@ -138,7 +137,7 @@ public class ServerConnection extends FrontendConnection {
 		RouteResultset rrs = null;
 		try {
 
-			rrs = ServerRouter.route(schema, type, sql, this.charset, this);
+			rrs = MycatServer.getInstance().getRouterservice().route(schema, type, sql, this.charset, this);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
 			LOGGER.warn(s.append(this).append(sql).toString(), e);

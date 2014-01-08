@@ -102,6 +102,8 @@ public final class RollbackConfig {
 			dn.stopHeartbeat();
 		}
 
+		//清理缓存
+		 MycatServer.getInstance().getCacheService().clearCache();
 		return true;
 	}
 
