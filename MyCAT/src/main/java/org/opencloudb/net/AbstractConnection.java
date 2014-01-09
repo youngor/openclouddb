@@ -329,13 +329,22 @@ public abstract class AbstractConnection implements NIOConnection {
 	public void enableRead() {
 		final Lock lock = this.keyLock;
 		lock.lock();
+		/**
+		 * 增加needWakeup参数判断，解决因负载均衡haproxy心跳检测带来的异常(CancelledKeyException)错误
+		 */
+		boolean needWakeup = false;
 		try {
 			SelectionKey key = this.processKey;
 			key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+			needWakeup = true;
+		} catch (Exception e) {
+			processKey.cancel();
 		} finally {
 			lock.unlock();
 		}
-		processKey.selector().wakeup();
+		if (needWakeup) {
+			processKey.selector().wakeup();
+		}
 	}
 
 	/**
