@@ -41,6 +41,8 @@ public class TableConfig {
 	private final String joinKey;
 	private final String parentKey;
 	private final String locateRTableKeySql;
+	//only has one level of parent
+	private final boolean secondLevel;
     private final Random rand=new Random();
 	public TableConfig(String name, int tableType, String dataNode,
 			RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
@@ -76,9 +78,15 @@ public class TableConfig {
 		this.parentKey = parentKey;
 		if (parentTC != null) {
 			locateRTableKeySql = genLocateRootParentSQL();
+			secondLevel=(parentTC.parentTC==null);
 		} else {
 			locateRTableKeySql = null;
+			secondLevel=false;
 		}
+	}
+
+	public boolean isSecondLevel() {
+		return secondLevel;
 	}
 
 	public String getLocateRTableKeySql() {

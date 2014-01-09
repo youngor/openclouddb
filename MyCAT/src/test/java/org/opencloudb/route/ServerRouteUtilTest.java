@@ -54,7 +54,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 	public void testRouteInsertShort() throws Exception {
 		String sql = "inSErt into offer_detail (`offer_id`, gmt) values (123,now())";
 		SchemaConfig schema = schemaMap.get("cndb");
-		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil
+				.route(schema, -1, sql, null, null);
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("detail_dn[15]", rrs.getNodes()[0].getName());
@@ -119,7 +120,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		// company is global table ,route to 3 datanode and ignored in route
 		String sql = "select * from company,customer ,orders where customer.company_id=company.id and orders.customer_id=customer.id and company.name like 'aaa'";
 		SchemaConfig schema = schemaMap.get("TESTDB");
-		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil
+				.route(schema, -1, sql, null, null);
 		Assert.assertEquals(2, rrs.getNodes().length);
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
@@ -201,6 +203,7 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 	private static class RouteNodeAsserter {
 		private NodeNameDeconstructor deconstructor;
 		private SQLAsserter sqlAsserter;
+
 		public RouteNodeAsserter(NodeNameDeconstructor deconstructor,
 				SQLAsserter sqlAsserter) {
 			this.deconstructor = deconstructor;
@@ -278,6 +281,20 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		schema = schemaMap.get("TESTDB");
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals(1, rrs.getNodes().length);
+
+	}
+
+	public void testERRoute() throws Exception {
+		SchemaConfig schema = schemaMap.get("TESTDB");
+		String sql = "insert into orders (id,name,customer_id) values(1,'testonly',1)";
+		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
+
+		sql = "insert into orders (id,name,customer_id) values(1,'testonly',2000001)";
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 	}
 
@@ -363,32 +380,32 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("desc offer", rrs.getNodes()[0].getStatement());
 
 		sql = "desc cndb.offer";
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("desc offer", rrs.getNodes()[0].getStatement());
 
 		sql = "desc cndb.offer col1";
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("desc offer col1", rrs.getNodes()[0].getStatement());
 
 		sql = "SHOW FULL COLUMNS FROM  offer  IN db_name WHERE true";
 		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("SHOW FULL COLUMNS FROM offer WHERE true",
 				rrs.getNodes()[0].getStatement());
 
@@ -396,8 +413,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("SHOW FULL COLUMNS FROM offer WHERE true",
 				rrs.getNodes()[0].getStatement());
 
@@ -405,8 +422,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
-		//random return one node
-		//Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
+		// random return one node
+		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
 		Assert.assertEquals("SHOW INDEX  FROM offer",
 				rrs.getNodes()[0].getStatement());
 
