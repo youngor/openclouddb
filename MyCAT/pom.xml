@@ -25,6 +25,7 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.16</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>mysql</groupId>
@@ -37,6 +38,7 @@
 			<groupId>net.sf.ehcache</groupId>
 			<artifactId>ehcache-core</artifactId>
 			<version>2.6.6</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -55,6 +57,7 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>1.7.3</version>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 
@@ -159,10 +162,8 @@
 					<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
 					<repositoryLayout>flat</repositoryLayout>
 					<useWildcardClassPath>true</useWildcardClassPath>
-
 					<daemons>
 						<daemon>
-
 							<id>mycat</id>
 							<mainClass>org.opencloudb.MycatStartup</mainClass>
 							<commandLineArguments>
@@ -195,15 +196,23 @@
 								<generatorConfiguration>
 									<generator>jsw</generator>
 									<includes>
+										<include>aix-ppc-32</include>
+										<include>aix-ppc-64</include>
+										<include>hpux-parisc-64</include>
 										<include>linux-x86-32</include>
 										<include>linux-x86-64</include>
 										<include>linux-ppc-64</include>
+										<include>macosx-ppc-32</include>
 										<include>macosx-x86-universal-32</include>
 										<include>macosx-universal-32</include>
 										<include>macosx-universal-64</include>
+										<include>solaris-sparc-32</include>
+										<include>solaris-sparc-64</include>
+										<include>solaris-x86-32</include>
 										<include>windows-x86-32</include>
 										<include>windows-x86-64</include>
 									</includes>
+
 									<configuration>
 										<property>
 											<name>configuration.directory.in.classpath.first</name>
@@ -222,6 +231,7 @@
 								</generatorConfiguration>
 							</generatorConfigurations>
 						</daemon>
+
 					</daemons>
 				</configuration>
 				<executions>
@@ -237,7 +247,14 @@
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
-					<descriptor>src/main/assembly/assembly.xml</descriptor>
+					<descriptors>
+						<descriptor>src/main/assembly/assembly-win.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-linux.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-mac.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-solaris.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-unix.xml</descriptor>
+						<descriptor>src/main/assembly/assembly-testtool.xml</descriptor>
+					</descriptors>
 				</configuration>
 				<executions>
 					<execution>
@@ -270,9 +287,9 @@
 					</items>
 					<doCheck>false</doCheck>
 					<doUpdate>false</doUpdate>
-					<providerImplementations> <svn>javasvn</svn> </providerImplementations>
+					 <providerImplementations> <svn>javasvn</svn> </providerImplementations> 
 				</configuration>
-				<dependencies> <dependency> <groupId>com.google.code.maven-scm-provider-svnjava</groupId> 
+				 <dependencies> <dependency> <groupId>com.google.code.maven-scm-provider-svnjava</groupId> 
 					<artifactId>maven-scm-provider-svnjava</artifactId> <version>2.0.6</version> 
 					</dependency> <dependency> <groupId>org.tmatesoft.svnkit</groupId> <artifactId>svnkit</artifactId> 
 					<version>1.7.8</version> </dependency> </dependencies>
