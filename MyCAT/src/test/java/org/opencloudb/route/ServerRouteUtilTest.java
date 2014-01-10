@@ -18,6 +18,7 @@
  */
 package org.opencloudb.route;
 
+import java.sql.SQLNonTransientException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -294,6 +295,43 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		sql = "insert into orders (id,name,customer_id) values(1,'testonly',2000001)";
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
+
+		// can't update join key
+		sql = "update orders set id=1 ,name='aaa' , customer_id=2000001";
+		String err = null;
+		try {
+			rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		} catch (SQLNonTransientException e) {
+			err = e.getMessage();
+		}
+		Assert.assertEquals(
+				true,
+				err.startsWith("parent relation column can't be updated ORDERS->CUSTOMER_ID"));
+
+		// route by parent rule ,update sql
+		sql = "update orders set id=1 ,name='aaa' where customer_id=2000001";
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
+
+		// route by parent rule but can't find datanode
+		sql = "update orders set id=1 ,name='aaa' where customer_id=-1";
+		try {
+			rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		} catch (Exception e) {
+			err = e.getMessage();
+		}
+		Assert.assertEquals(true,
+				err.startsWith("can't find datanode for sharding column:"));
+
+		// route by parent rule ,select sql
+		sql = "select * from orders  where customer_id=2000001";
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
+
+		// route by parent rule ,delete sql
+		sql = "delete from orders  where customer_id=2000001";
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 	}

@@ -155,33 +155,12 @@ public final class ServerRouterUtil {
 						LOGGER.warn(inf);
 						throw new SQLNonTransientException(inf);
 					}
-					// only has one parent level and ER parent key is parent
-					// table's partition key
-					if (tc.isSecondLevel()
-							&& tc.getParentTC().getPartitionColumn()
-									.equals(tc.getParentKey())) { // using
-																	// parent
-																	// rule to
-																	// find
-																	// datanode
-						Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(
-								1);
-						ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
-						parentColVal.add(pair);
-						Set<String> dataNodeSet = ruleCalculate(
-								tc.getParentTC(), parentColVal);
-						if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
-							throw new SQLNonTransientException(
-									"parent key can't find  valid datanode ,expect 1 but found: "
-											+ dataNodeSet.size());
-						}
-						String dn = dataNodeSet.iterator().next();
-						if (LOGGER.isDebugEnabled()) {
-							LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  "
-									+ dn + " sql :" + stmt);
-						}
-						return routeToSingleNode(rrs, dn, stmt);
+					// try to route by ER parent partion key
+					rrs = routeByERParentKey(stmt, rrs, tc, joinKeyVal);
+					if (rrs != null) {
+						return rrs;
 					}
+					// route by sql query root parent's datanode
 					String findRootTBSql = tc.getLocateRTableKeySql()
 							+ joinKeyVal;
 					FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
@@ -214,7 +193,7 @@ public final class ServerRouterUtil {
 			}
 			return tryRouteForTable(ast, schema, rrs, false, stmt, tc, col2Val);
 		} else if (ast.getNodeType() == NodeTypes.UPDATE_NODE) {
-			// todo ,child and parent tables relation column can't be updated
+
 			UpdateParsInf parsInf = UpdateSQLAnalyser.analyse(ast);
 			// check if sharding columns is updated
 			TableConfig tc = getTableConfig(schema, parsInf.tableName);
@@ -222,10 +201,14 @@ public final class ServerRouterUtil {
 				throw new SQLNonTransientException(
 						"partion key can't be updated " + parsInf.tableName
 								+ "->" + tc.getPartitionColumn());
+			} else if (parsInf.columnPairMap.containsKey(tc.getJoinKey())) {
+				// ,child and parent tables relation column can't be updated
+				throw new SQLNonTransientException(
+						"parent relation column can't be updated "
+								+ parsInf.tableName + "->" + tc.getJoinKey());
 			}
 			if (parsInf.ctx == null) {// no where condtion
 				return tryRouteForTable(ast, schema, rrs, false, stmt, tc, null);
-
 			} else if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE) {
 				if (parsInf.ctx.tablesAndCondtions.size() > 1) {
 					throw new SQLNonTransientException(
@@ -236,6 +219,7 @@ public final class ServerRouterUtil {
 				return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
 						stmt);
 			} else {
+
 				return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
 						stmt);
 			}
@@ -262,6 +246,38 @@ public final class ServerRouterUtil {
 			return rrs;
 		}
 
+	}
+
+	private static RouteResultset routeByERParentKey(String stmt,
+			RouteResultset rrs, TableConfig tc, String joinKeyVal)
+			throws SQLNonTransientException {
+		// only has one parent level and ER parent key is parent
+		// table's partition key
+		if (tc.isSecondLevel()
+				&& tc.getParentTC().getPartitionColumn()
+						.equals(tc.getParentKey())) { // using
+														// parent
+														// rule to
+														// find
+														// datanode
+			Set<ColumnRoutePair> parentColVal = new HashSet<ColumnRoutePair>(1);
+			ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
+			parentColVal.add(pair);
+			Set<String> dataNodeSet = ruleCalculate(tc.getParentTC(),
+					parentColVal);
+			if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
+				throw new SQLNonTransientException(
+						"parent key can't find  valid datanode ,expect 1 but found: "
+								+ dataNodeSet.size());
+			}
+			String dn = dataNodeSet.iterator().next();
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  "
+						+ dn + " sql :" + stmt);
+			}
+			return routeToSingleNode(rrs, dn, stmt);
+		}
+		return null;
 	}
 
 	private static int[] getSpecPos(String upStmt, int start) {
@@ -411,6 +427,35 @@ public final class ServerRouterUtil {
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();
 			TableConfig tc = getTableConfig(schema, entry.getKey());
+
+			// for ER relation table with where condition,try route by
+			// relation
+			if (tc.isSecondLevel()
+					&& tc.getParentTC().getPartitionColumn()
+							.equals(tc.getParentKey())) {
+				Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();
+				if (colConds.size() == 1) {// only one where condion column
+					Set<ColumnRoutePair> joinKeyPairs = colConds.get(tc
+							.getJoinKey());
+					if (joinKeyPairs != null) {
+						Set<String> dataNodeSet = ruleCalculate(
+								tc.getParentTC(), joinKeyPairs);
+						if (dataNodeSet.isEmpty()) {
+							throw new SQLNonTransientException(
+									"parent key can't find any valid datanode ");
+						}
+						if (LOGGER.isDebugEnabled()) {
+							LOGGER.debug("found partion nodes (using parent partion rule directly) for child table to update  "
+									+ Arrays.toString(dataNodeSet.toArray())
+									+ " sql :" + sql);
+						}
+						return routeToMultiNode(false, ast, rrs, dataNodeSet,
+								sql);
+					}
+				}
+
+			}
+
 			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc, entry
 					.getValue().get(tc.getPartitionColumn()));
 		} else if (!ctx.joinList.isEmpty()) {
