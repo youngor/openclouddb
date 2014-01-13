@@ -18,7 +18,8 @@ public class TravelRecordSelectJob implements Runnable {
 	Random random = new Random();
 	private final AtomicInteger finshiedCount;
 	private final AtomicInteger failedCount;
-
+	private volatile long usedTime;
+	private volatile long success;
 	public TravelRecordSelectJob(Connection con, long maxId, int executeTimes,
 			AtomicInteger finshiedCount, AtomicInteger failedCount) {
 		super();
@@ -37,6 +38,7 @@ public class TravelRecordSelectJob implements Runnable {
 					+ Math.abs(random.nextLong()) % maxId;
 			rs = con.createStatement().executeQuery(sql);
 			finshiedCount.addAndGet(1);
+			success++;
 		} catch (Exception e) {
 			failedCount.addAndGet(1);
 			e.printStackTrace();
@@ -54,8 +56,10 @@ public class TravelRecordSelectJob implements Runnable {
 
 	@Override
 	public void run() {
+		long start = System.currentTimeMillis();
 		for (int i = 0; i < executeTimes; i++) {
 			this.select();
+			usedTime = System.currentTimeMillis() - start;
 		}
 		try {
 			con.close();
@@ -63,4 +67,19 @@ public class TravelRecordSelectJob implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
+	public long getUsedTime() {
+		return this.usedTime;
+	}
+	public int getTPS()
+	{
+		if(usedTime>0)
+		{
+		return (int) (this.success*1000/this.usedTime);
+		}else
+		{
+			return 0;
+		}
+	}
+	
 }

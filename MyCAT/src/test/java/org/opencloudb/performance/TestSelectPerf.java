@@ -48,48 +48,58 @@ public class TestSelectPerf {
 		System.out.println("execute sql times:" + executetimes);
 		System.out.println("maxId:" + maxId);
 		ArrayList<Thread> threads = new ArrayList<Thread>(threadCount);
+		ArrayList<TravelRecordSelectJob> jobs = new ArrayList<TravelRecordSelectJob>(
+				threadCount);
 		for (int i = 0; i < threadCount; i++) {
 			try {
 
 				Connection con = getCon(url, user, password);
 				System.out.println("create thread " + i);
 				TravelRecordSelectJob job = new TravelRecordSelectJob(con,
-						maxId, executetimes,finshiedCount,failedCount);
+						maxId, executetimes, finshiedCount, failedCount);
 				Thread thread = new Thread(job);
 				threads.add(thread);
+				jobs.add(job);
 			} catch (Exception e) {
 				System.out.println("failed create thread " + i + " err "
 						+ e.toString());
 			}
 		}
-
 		System.out.println("success create thread count: " + threads.size());
 		for (Thread thread : threads) {
 			thread.start();
 		}
-		long start = System.currentTimeMillis();
 		System.out.println("all thread started,waiting finsh...");
+		long start=System.currentTimeMillis();
 		boolean notFinished = true;
+		int remainThread=0;
 		while (notFinished) {
 			notFinished = false;
+			remainThread=0;
 			for (Thread thread : threads) {
 				if (thread.isAlive()) {
 					notFinished = true;
-					break;
+					remainThread++;
 				}
 			}
-			long sucess = finshiedCount.get() - failedCount.get();
-			System.out.println("finished records :" + finshiedCount.get()
-					+ " failed:" + failedCount.get() + " speed:" + sucess
-					* 1000.0 / (System.currentTimeMillis() - start));
+			if(remainThread<threads.size()/2)
+			{
+				System.out.println("warning many test threads finished ,tps may NOT Accurate ,alive threads:"+remainThread);
+			}
+			report(jobs);
 			Thread.sleep(1000);
 		}
-		long usedTime = (System.currentTimeMillis() - start)/1000;
+		report(jobs);
+		System.out.println("total time :" +(System.currentTimeMillis()-start)/1000);
+	}
+	
+	public static void report(ArrayList<TravelRecordSelectJob> jobs) {
+		int tps = 0;
+		for (TravelRecordSelectJob job : jobs) {
+			tps += job.getTPS();
+		}
 		System.out.println("finishend:" + finshiedCount.get() + " failed:"
 				+ failedCount.get());
-		long sucess = finshiedCount.get() - failedCount.get();
-		System.out.println("used time total:" + usedTime  + "seconds");
-		System.out.println("tps:" + sucess * 1.0 / usedTime);
+		System.out.println("tps:" +tps);
 	}
 }
-

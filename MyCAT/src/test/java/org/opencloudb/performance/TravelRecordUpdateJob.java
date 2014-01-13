@@ -7,59 +7,67 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TravelRecordUpdateJob implements Runnable {
-	private final Connection con;
-	private final int totalRecords;
+	private final int endId;
 	private int finsihed;
 	private final int batchSize;
 	private final AtomicInteger finshiedCount;
 	private final AtomicInteger failedCount;
 	Calendar date = Calendar.getInstance();
+	final SimpleConPool conPool;
 	DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
 
-	public TravelRecordUpdateJob(Connection con, int totalRecords,
+	public TravelRecordUpdateJob(SimpleConPool conPool, int totalRecords,
 			int batchSize, int startId, AtomicInteger finshiedCount,
 			AtomicInteger failedCount) {
 		super();
-		this.con = con;
-		this.totalRecords = startId + totalRecords;
+		this.conPool = conPool;
+		this.endId = startId + totalRecords - 1;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
 		this.finshiedCount = finshiedCount;
 		this.failedCount = failedCount;
 	}
 
-	private int update(List<Map<String, String>> list) throws SQLException {
+	private int update(Connection con, List<Map<String, String>> list)
+			throws SQLException {
 		PreparedStatement ps;
 
+		String sql = "update travelrecord set user =? ,traveldate=?,fee=?,days=? where id=?";
+		ps = con.prepareStatement(sql);
+		for (Map<String, String> map : list) {
 
-			String sql = "update travelrecord set user =? ,traveldate=?,fee=?,days=? where id=?";
-			ps = con.prepareStatement(sql);
-			for (Map<String, String> map : list) {
-
-				ps.setString(1, (String) map.get("user"));
-				ps.setString(2, (String) map.get("traveldate"));
-				ps.setString(3, (String) map.get("fee"));
-				ps.setString(4, (String) map.get("days"));
-				ps.setLong(5, Long.parseLong(map.get("id")));
-				ps.addBatch();
-				ps.executeBatch();
-			}
+			ps.setString(1, (String) map.get("user"));
+			ps.setString(2, (String) map.get("traveldate"));
+			ps.setString(3, (String) map.get("fee"));
+			ps.setString(4, (String) map.get("days"));
+			ps.setLong(5, Long.parseLong(map.get("id")));
+			ps.addBatch();
+			ps.executeBatch();
+		}
 
 		return list.size();
 	}
 
 	private List<Map<String, String>> getNextBatch() {
-		int end = (finsihed + batchSize) < this.totalRecords ? (finsihed + batchSize)
-				: totalRecords;
+		if (finsihed >= endId) {
+			return Collections.emptyList();
+		}
+		int end = (finsihed + batchSize) < this.endId ? (finsihed + batchSize)
+				: endId;
+		// the last batch
+		if (end + batchSize > this.endId) {
+			end = this.endId;
+		}
 		List<Map<String, String>> list = new ArrayList<Map<String, String>>(
 				(end - finsihed));
-		for (int i = finsihed; i < end; i++) {
+		for (int i = finsihed; i <= end; i++) {
 			Map<String, String> m = new HashMap<String, String>();
 			m.put("id", i + "");
 			m.put("user", "user " + i);
@@ -84,21 +92,29 @@ public class TravelRecordUpdateJob implements Runnable {
 
 	@Override
 	public void run() {
-		List<Map<String, String>> batch = getNextBatch();
-		while (!batch.isEmpty()) {
-			try {
-				update(batch);
-				finshiedCount.addAndGet(batch.size());
-			} catch (Exception e) {
-				failedCount.addAndGet(batch.size());
-				e.printStackTrace();
-			}
-			batch = getNextBatch();
-		}
+		Connection con = null;
 		try {
-			con.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+
+			List<Map<String, String>> batch = getNextBatch();
+			while (!batch.isEmpty()) {
+				try {
+					if (con == null || con.isClosed()) {
+						con = conPool.getConnection();
+						con.setAutoCommit(true);
+					}
+
+					update(con, batch);
+					finshiedCount.addAndGet(batch.size());
+				} catch (Exception e) {
+					failedCount.addAndGet(batch.size());
+					e.printStackTrace();
+				}
+				batch = getNextBatch();
+			}
+		} finally {
+			if (con != null) {
+				this.conPool.returnCon(con);
+			}
 		}
 	}
 }

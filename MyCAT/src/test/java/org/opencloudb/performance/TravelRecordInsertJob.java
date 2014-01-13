@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,34 +116,6 @@ public class TravelRecordInsertJob implements Runnable {
 				this.conPool.returnCon(con);
 			}
 		}
-
-	}
-
-	public static void main(String[] args) {
-		int[][] ranges = { { 0, 20000 }, { 20001, 40000 }, { 40001, 90000 } };
-		HashSet<Long> keys = new HashSet<Long>();
-		int total = 0;
-		for (int i = 0; i < ranges.length; i++) {
-			System.out.println("id:" + ranges[i][0] + "," + ranges[i][1]);
-			for (TravelRecordInsertJob job : TestInsertPerf.createJobs(null,
-					ranges[i][0], ranges[i][1])) {
-				List<Map<String, String>> batch = job.getNextBatch();
-
-				while (!batch.isEmpty()) {
-					for (Map<String, String> map : batch) {
-						Long id = Long.parseLong(map.get("id"));
-						if (keys.contains(id)) {
-							System.out.println("err: duplicate " + id);
-						} else {
-							keys.add(id);
-						}
-						total++;
-					}
-					batch = job.getNextBatch();
-				}
-			}
-		}
-		System.out.println("total " + total);
 
 	}
 }
