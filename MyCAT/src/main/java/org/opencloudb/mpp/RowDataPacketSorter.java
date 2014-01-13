@@ -31,7 +31,7 @@ public class RowDataPacketSorter {
 		try {
 			this.mergeSort(sorted.toArray(new RowDataPacket[sorted.size()]));
 		} catch (Exception e) {
-
+			e.printStackTrace();
 		}
 		if (array != null) {
 			Collections.addAll(this.sorted, array);
@@ -147,7 +147,12 @@ public class RowDataPacketSorter {
 			return CompareUtil.compareInt(ByteUtil.getInt(left),
 					ByteUtil.getInt(right));
 		case ColMeta.COL_TYPE_LONG:
+		case ColMeta.COL_TYPE_LONGLONG:
 		case ColMeta.COL_TYPE_NEWDECIMAL:
+			if(left.length!=right.length)
+			{
+				return (left.length>right.length)?1:-1;
+			}
 			return CompareUtil.compareLong(ByteUtil.getLong(left),
 					ByteUtil.getLong(right));
 		case ColMeta.COL_TYPE_VAR_STRING:

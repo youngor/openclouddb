@@ -76,9 +76,6 @@ public class DataMergeService {
 		}
 		int[] groupColumnIndexs = null;
 		this.fieldCount = fieldCount;
-		if (rrs.getOrderByCols() != null) {
-
-		}
 		if (rrs.getGroupByCols() != null) {
 			groupColumnIndexs = (toColumnIndex(rrs.getGroupByCols(),
 					columToIndx));
