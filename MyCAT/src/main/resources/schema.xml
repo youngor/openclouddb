@@ -8,19 +8,19 @@
 
 		<!-- global table is auto cloned to all defined data nodes ,so can join 
 			with any table whose sharding node is in the same data node -->
-		<table name="company" type="global" dataNode="dn1,dn2,dn3" />
-		<table name="goods" type="global" dataNode="dn1,dn2" />
+		<table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3" />
+		<table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2" />
 
 		<!-- random sharding using mod sharind rule -->
-		<table name="hotnews" dataNode="dn1,dn2,dn3" rule="mod-long" />
+		<table name="hotnews" primaryKey="ID" dataNode="dn1,dn2,dn3" rule="mod-long" />
 
-		<table name="employee" dataNode="dn1,dn2" rule="sharding-by-intfile" />
-		<table name="customer" dataNode="dn1,dn2" rule="sharding-by-intfile">
-			<childTable name="orders" joinKey="customer_id" parentKey="id">
+		<table name="employee" primaryKey="ID" dataNode="dn1,dn2" rule="sharding-by-intfile" />
+		<table name="customer" primaryKey="ID" dataNode="dn1,dn2" rule="sharding-by-intfile">
+			<childTable name="orders" primaryKey="ID" joinKey="customer_id" parentKey="id">
 				<childTable name="order_items" joinKey="order_id"
 					parentKey="id" />
 			</childTable>
-			<childTable name="customer_addr" joinKey="customer_id"
+			<childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
 				parentKey="id" />
 		</table>
 	</schema>

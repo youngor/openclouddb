@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.opencloudb.cache.CachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.TableConfig;
 import org.opencloudb.config.model.rule.RuleAlgorithm;
@@ -67,7 +68,7 @@ public final class ServerRouterUtil {
 			.getLogger(ServerRouterUtil.class);
 
 	public static RouteResultset route(SchemaConfig schema, int sqlType,
-			String stmt, String charset, Object info)
+			String stmt, String charset, Object info, CachePool cachePool)
 			throws SQLNonTransientException {
 		stmt = stmt.trim();
 		stmt = removeSchema(stmt, schema.getName());
@@ -126,7 +127,8 @@ public final class ServerRouterUtil {
 			SelectParseInf parsInf = new SelectParseInf();
 			parsInf.ctx = new ShardingParseInfo();
 			SelectSQLAnalyser.analyse(parsInf, ast);
-			return tryRouteForTables(ast, true, rrs, schema, parsInf.ctx, stmt);
+			return tryRouteForTables(ast, true, rrs, schema, parsInf.ctx, stmt,
+					cachePool);
 
 		} else if (ast.getNodeType() == NodeTypes.INSERT_NODE) {
 			InsertParsInf parsInf = InsertSQLAnalyser.analyse(ast);
@@ -191,7 +193,8 @@ public final class ServerRouterUtil {
 					}
 				}
 			}
-			return tryRouteForTable(ast, schema, rrs, false, stmt, tc, col2Val);
+			return tryRouteForTable(ast, schema, rrs, false, stmt, tc, col2Val,
+					null, cachePool);
 		} else if (ast.getNodeType() == NodeTypes.UPDATE_NODE) {
 
 			UpdateParsInf parsInf = UpdateSQLAnalyser.analyse(ast);
@@ -208,37 +211,36 @@ public final class ServerRouterUtil {
 								+ parsInf.tableName + "->" + tc.getJoinKey());
 			}
 			if (parsInf.ctx == null) {// no where condtion
-				return tryRouteForTable(ast, schema, rrs, false, stmt, tc, null);
+				return tryRouteForTable(ast, schema, rrs, false, stmt, tc,
+						null, null, cachePool);
 			} else if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE) {
 				if (parsInf.ctx.tablesAndCondtions.size() > 1) {
 					throw new SQLNonTransientException(
 							"global table not supported multi table related update "
 									+ parsInf.tableName);
 				}
-
-				return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
-						stmt);
-			} else {
-
-				return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
-						stmt);
 			}
+
+			return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
+					stmt, cachePool);
 
 		} else if (ast.getNodeType() == NodeTypes.DELETE_NODE) {
 			DeleteParsInf parsInf = DeleteSQLAnalyser.analyse(ast);
 			if (parsInf.ctx != null) {
 				return tryRouteForTables(ast, false, rrs, schema, parsInf.ctx,
-						stmt);
+						stmt, cachePool);
 			} else {
 				// no where condtion
 				TableConfig tc = getTableConfig(schema, parsInf.tableName);
-				return tryRouteForTable(ast, schema, rrs, false, stmt, tc, null);
+				return tryRouteForTable(ast, schema, rrs, false, stmt, tc,
+						null, null, cachePool);
 			}
 
 		} else if (ast instanceof DDLStatementNode) {
 			DDLParsInf parsInf = DDLSQLAnalyser.analyse(ast);
 			TableConfig tc = getTableConfig(schema, parsInf.tableName);
-			return routeToMultiNode(false, ast, rrs, tc.getDataNodes(), stmt);
+			return routeToMultiNode(false, false, ast, rrs, tc.getDataNodes(),
+					stmt);
 
 		} else {
 			LOGGER.info("TODO ,support sql type "
@@ -325,7 +327,7 @@ public final class ServerRouterUtil {
 
 		int atSginInd = upStmt.indexOf(" @@");
 		if (atSginInd > 0) {
-			return routeToMultiNode(false, null, rrs,
+			return routeToMultiNode(false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
 		}
 
@@ -346,7 +348,7 @@ public final class ServerRouterUtil {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
-			return routeToMultiNode(false, null, rrs,
+			return routeToMultiNode(false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
 		}
 		// show index or column
@@ -396,7 +398,8 @@ public final class ServerRouterUtil {
 
 	private static RouteResultset tryRouteForTable(QueryTreeNode ast,
 			SchemaConfig schema, RouteResultset rrs, boolean isSelect,
-			String sql, TableConfig tc, Set<ColumnRoutePair> col2Val)
+			String sql, TableConfig tc, Set<ColumnRoutePair> ruleCol2Val,
+			Map<String, Set<ColumnRoutePair>> allColConds, CachePool cachePool)
 			throws SQLNonTransientException {
 
 		if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE && isSelect) {
@@ -405,37 +408,18 @@ public final class ServerRouterUtil {
 
 		// no partion define or no where condtion for this table or no
 		// partion column condtions
-		if (col2Val == null || col2Val.isEmpty()) {
+		boolean cache = isSelect;
+		if (ruleCol2Val == null || ruleCol2Val.isEmpty()) {
 			if (tc.isRuleRequired()) {
 				throw new IllegalArgumentException("route rule for table "
 						+ tc.getName() + " is required: " + sql);
-			}
-			// all datanode of this table should route
-			return routeToMultiNode(isSelect, ast, rrs, tc.getDataNodes(), sql);
-		}
-		// match table with where condtion of partion colum values
-		Set<String> dataNodeSet = ruleCalculate(tc, col2Val);
-		return routeToMultiNode(isSelect, ast, rrs, dataNodeSet, sql);
-	}
 
-	private static RouteResultset tryRouteForTables(QueryTreeNode ast,
-			boolean isSelect, RouteResultset rrs, SchemaConfig schema,
-			ShardingParseInfo ctx, String sql) throws SQLNonTransientException {
-		Map<String, TableConfig> tables = schema.getTables();
-		Map<String, Map<String, Set<ColumnRoutePair>>> tbCondMap = ctx.tablesAndCondtions;
-		if (tbCondMap.size() == 1) {
-			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
-					.entrySet().iterator().next();
-			TableConfig tc = getTableConfig(schema, entry.getKey());
-
-			// for ER relation table with where condition,try route by
-			// relation
-			if (tc.isSecondLevel()
-					&& tc.getParentTC().getPartitionColumn()
-							.equals(tc.getParentKey())) {
-				Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();
-				if (colConds.size() == 1) {// only one where condion column
-					Set<ColumnRoutePair> joinKeyPairs = colConds.get(tc
+			} else if (allColConds != null && allColConds.size() == 1) {
+				// try if can route by ER relation
+				if (tc.isSecondLevel()
+						&& tc.getParentTC().getPartitionColumn()
+								.equals(tc.getParentKey())) {
+					Set<ColumnRoutePair> joinKeyPairs = allColConds.get(tc
 							.getJoinKey());
 					if (joinKeyPairs != null) {
 						Set<String> dataNodeSet = ruleCalculate(
@@ -449,15 +433,64 @@ public final class ServerRouterUtil {
 									+ Arrays.toString(dataNodeSet.toArray())
 									+ " sql :" + sql);
 						}
-						return routeToMultiNode(false, ast, rrs, dataNodeSet,
-								sql);
+						return routeToMultiNode(isSelect, isSelect, ast, rrs,
+								dataNodeSet, sql);
+					}
+
+				}
+				// try by primary key if found in cache
+				Set<ColumnRoutePair> primaryKeyPairs = allColConds.get(tc
+						.getPrimaryKey());
+				if (primaryKeyPairs != null) {
+					cache = false;
+					Set<String> dataNodes = new HashSet<String>(
+							primaryKeyPairs.size());
+					boolean allFound = true;
+					for (ColumnRoutePair pair : primaryKeyPairs) {
+						String cacheKey = tc.getName() + '_' + pair.colValue;
+						String dataNode = (String) cachePool.get(cacheKey);
+						if (dataNode == null) {
+							allFound = false;
+							break;
+						} else {
+							dataNodes.add(dataNode);
+						}
+					}
+					if (allFound) {
+						return routeToMultiNode(isSelect, isSelect, ast, rrs,
+								dataNodes, sql);
+					}
+					// need cache primary key ->datanode relation
+					if (isSelect && tc.getPrimaryKey() != null) {
+						rrs.setPrimaryKey(tc.getName() + '.'
+								+ tc.getPrimaryKey());
 					}
 				}
 
 			}
+			return routeToMultiNode(isSelect, cache, ast, rrs,
+					tc.getDataNodes(), sql);
+		}
+		// match table with where condtion of partion colum values
+		Set<String> dataNodeSet = ruleCalculate(tc, ruleCol2Val);
+		return routeToMultiNode(isSelect, isSelect, ast, rrs, dataNodeSet, sql);
+	}
 
-			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc, entry
-					.getValue().get(tc.getPartitionColumn()));
+	private static RouteResultset tryRouteForTables(QueryTreeNode ast,
+			boolean isSelect, RouteResultset rrs, SchemaConfig schema,
+			ShardingParseInfo ctx, String sql, CachePool cachePool)
+			throws SQLNonTransientException {
+		Map<String, TableConfig> tables = schema.getTables();
+		Map<String, Map<String, Set<ColumnRoutePair>>> tbCondMap = ctx.tablesAndCondtions;
+		if (tbCondMap.size() == 1) {
+			// only one table in this sql
+			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
+					.entrySet().iterator().next();
+			TableConfig tc = getTableConfig(schema, entry.getKey());
+			Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();
+
+			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc,
+					colConds.get(tc.getPartitionColumn()), colConds, cachePool);
 		} else if (!ctx.joinList.isEmpty()) {
 			for (JoinRel joinRel : ctx.joinList) {
 				TableConfig rootc = schema.getJoinRel2TableMap().get(
@@ -561,13 +594,16 @@ public final class ServerRouterUtil {
 					}
 				}
 			}
-			return routeToMultiNode(isSelect, ast, rrs, curRNodeSet, sql);
+			return routeToMultiNode(isSelect, isSelect, ast, rrs, curRNodeSet,
+					sql);
 		} else {// only one table
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();
+			Map<String, Set<ColumnRoutePair>> allColValues = entry.getValue();
 			TableConfig tc = getTableConfig(schema, entry.getKey());
-			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc, entry
-					.getValue().get(tc.getPartitionColumn()));
+			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc,
+					allColValues.get(tc.getPartitionColumn()), allColValues,
+					cachePool);
 		}
 	}
 
@@ -599,7 +635,7 @@ public final class ServerRouterUtil {
 	}
 
 	private static RouteResultset routeToMultiNode(boolean isSelect,
-			QueryTreeNode ast, RouteResultset rrs,
+			boolean cache, QueryTreeNode ast, RouteResultset rrs,
 			Collection<String> dataNodes, String stmt)
 			throws SQLSyntaxErrorException {
 		if (isSelect) {
@@ -615,8 +651,8 @@ public final class ServerRouterUtil {
 			nodes[i++] = new RouteResultsetNode(dataNode, rrs.getSqlType(),
 					stmt);
 		}
+		rrs.setCacheAble(cache);
 		rrs.setNodes(nodes);
-
 		return rrs;
 	}
 

@@ -27,7 +27,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import junit.framework.Assert;
+import junit.framework.TestCase;
 
+import org.opencloudb.SimpleCachePool;
+import org.opencloudb.cache.CachePool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
@@ -36,9 +39,10 @@ import org.opencloudb.server.parser.ServerParse;
 /**
  * @author mycat
  */
-public class ServerRouteUtilTest extends AbstractAliasConvert {
+public class ServerRouteUtilTest extends TestCase {
 
 	protected Map<String, SchemaConfig> schemaMap;
+	protected CachePool cachePool = new SimpleCachePool();
 
 	public ServerRouteUtilTest() {
 		String schemaFile = "/route/schema.xml";
@@ -55,9 +59,10 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 	public void testRouteInsertShort() throws Exception {
 		String sql = "inSErt into offer_detail (`offer_id`, gmt) values (123,now())";
 		SchemaConfig schema = schemaMap.get("cndb");
-		RouteResultset rrs = ServerRouterUtil
-				.route(schema, -1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null,
+				null, cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("detail_dn[15]", rrs.getNodes()[0].getName());
 		Assert.assertEquals(
@@ -67,15 +72,17 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		sql = "inSErt into offer_detail ( gmt) values (now())";
 		schema = schemaMap.get("cndb");
 		try {
-			rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+			rrs = ServerRouterUtil
+					.route(schema, -1, sql, null, null, cachePool);
 		} catch (Exception e) {
 			String msg = "bad insert sql (sharding column:";
 			Assert.assertTrue(e.getMessage().contains(msg));
 		}
 		sql = "inSErt into offer_detail (offer_id, gmt) values (123,now())";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("detail_dn[15]", rrs.getNodes()[0].getName());
 		Assert.assertEquals(
@@ -84,8 +91,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		sql = "insert into offer(group_id,offer_id,member_id)values(234,123,'abc')";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("offer_dn[12]", rrs.getNodes()[0].getName());
 		Assert.assertEquals(
@@ -101,19 +109,35 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		// select of global table route to only one datanode defined
 		sql = "select * from company where company.name like 'aaa'";
 		schema = schemaMap.get("TESTDB");
-		rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		// query of global table only route to one datanode
 		sql = "insert into company (id,name,level) values(111,'company1',3)";
 		schema = schemaMap.get("TESTDB");
-		rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(3, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 
 		// update of global table route to every datanode defined
 		sql = "update company set name=name+aaa";
 		schema = schemaMap.get("TESTDB");
-		rrs = ServerRouterUtil.route(schema, -1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(3, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
+
+		// company is global table ,will route to differnt tables
+		schema = schemaMap.get("TESTDB");
+		sql = "select * from  company A where a.sharding_id=10001 union select * from  company B where B.sharding_id =10010";
+		Set<String> nodeSet = new HashSet<String>();
+		for (int i = 0; i < 10; i++) {
+			rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+			Assert.assertEquals(false, rrs.isCacheAble());
+			Assert.assertEquals(1, rrs.getNodes().length);
+			nodeSet.add(rrs.getNodes()[0].getName());
+
+		}
+		Assert.assertEquals(true, nodeSet.size() > 1);
 
 	}
 
@@ -121,12 +145,54 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		// company is global table ,route to 3 datanode and ignored in route
 		String sql = "select * from company,customer ,orders where customer.company_id=company.id and orders.customer_id=customer.id and company.name like 'aaa'";
 		SchemaConfig schema = schemaMap.get("TESTDB");
-		RouteResultset rrs = ServerRouterUtil
-				.route(schema, -1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null,
+				null, cachePool);
 		Assert.assertEquals(2, rrs.getNodes().length);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
 		Assert.assertEquals("dn2", rrs.getNodes()[1].getName());
+
+	}
+
+	public void testRouteCache() throws Exception {
+		// select cache ID
+		String key = "EMPLOYEE_88";
+		String dn = "dn2";
+		this.cachePool.putIfAbsent(key, dn);
+		
+		SchemaConfig schema = schemaMap.get("TESTDB");
+		String sql = "select * from employee where id=88";
+		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null,
+				null, cachePool);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(true, rrs.isCacheAble());
+		Assert.assertEquals(null, rrs.getPrimaryKey());
+		Assert.assertEquals(-1l, rrs.getLimitSize());
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
+
+		// select cache ID not found ,return all node and rrst not cached
+		sql = "select * from employee where id=89";
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
+		Assert.assertEquals(2, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals("EMPLOYEE.ID", rrs.getPrimaryKey());
+		Assert.assertEquals(-1l, rrs.getLimitSize());
+
+		// update cache ID found
+		sql = "update employee  set name='aaa' where id=88";
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(null, rrs.getPrimaryKey());
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
+
+		// delete cache ID found
+		sql = "delete from  employee  where id=88";
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 	}
 
@@ -246,7 +312,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		String sql = "select * from independent where member='abc'";
 
-		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null,
+				cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 128);
 		IndexedNodeNameAsserter nameAsserter = new IndexedNodeNameAsserter(
 				"independent_dn", 0, 128);
@@ -265,7 +333,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		// include database schema ,should remove
 		sql = "select * from cndb.independent A  where a.member='abc'";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		nodeMap = getNodeMap(rrs, 128);
 		nameAsserter = new IndexedNodeNameAsserter("independent_dn", 0, 128);
 		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
@@ -278,22 +347,21 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		for (RouteResultsetNode node : nodeMap.values()) {
 			asserter.assertNode(node);
 		}
-		sql = "select * from  company A where a.sharding_id=10001 union select * from  company B where B.sharding_id =10010";
-		schema = schemaMap.get("TESTDB");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(1, rrs.getNodes().length);
 
 	}
 
 	public void testERRoute() throws Exception {
 		SchemaConfig schema = schemaMap.get("TESTDB");
 		String sql = "insert into orders (id,name,customer_id) values(1,'testonly',1)";
-		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null,
+				cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
 
 		sql = "insert into orders (id,name,customer_id) values(1,'testonly',2000001)";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
@@ -301,7 +369,7 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		sql = "update orders set id=1 ,name='aaa' , customer_id=2000001";
 		String err = null;
 		try {
-			rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+			rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 		} catch (SQLNonTransientException e) {
 			err = e.getMessage();
 		}
@@ -311,13 +379,14 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		// route by parent rule ,update sql
 		sql = "update orders set id=1 ,name='aaa' where customer_id=2000001";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 		// route by parent rule but can't find datanode
 		sql = "update orders set id=1 ,name='aaa' where customer_id=-1";
 		try {
-			rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+			rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 		} catch (Exception e) {
 			err = e.getMessage();
 		}
@@ -326,12 +395,13 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		// route by parent rule ,select sql
 		sql = "select * from orders  where customer_id=2000001";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 		// route by parent rule ,delete sql
 		sql = "delete from orders  where customer_id=2000001";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 	}
@@ -343,7 +413,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		sql = "select * from cndb.offer where (offer_id, group_id ) In (123,234)";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 		Assert.assertEquals(128, rrs.getNodes().length);
 		for (int i = 0; i < 128; i++) {
@@ -356,7 +427,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		sql = "SELECT * FROM offer WHERE FALSE OR offer_id = 123 AND member_id = 123 OR member_id = 123 AND member_id = 234 OR member_id = 123 AND member_id = 345 OR member_id = 123 AND member_id = 456 OR offer_id = 234 AND group_id = 123 OR offer_id = 234 AND group_id = 234 OR offer_id = 234 AND group_id = 345 OR offer_id = 234 AND group_id = 456 OR offer_id = 345 AND group_id = 123 OR offer_id = 345 AND group_id = 234 OR offer_id = 345 AND group_id = 345 OR offer_id = 345 AND group_id = 456 OR offer_id = 456 AND group_id = 123 OR offer_id = 456 AND group_id = 234 OR offer_id = 456 AND group_id = 345 OR offer_id = 456 AND group_id = 456";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		getNodeMap(rrs, 4);
 
 		sql = "select * from  offer where false"
@@ -365,7 +437,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 				+ " or offer_id=123 and group_id=345"
 				+ " or offer_id=123 and group_id=456  ";
 		schema = schemaMap.get("cndb");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 
 	}
@@ -378,7 +451,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		sql = "select count(*) from (select * from(select * from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
 				+ " where w.member_id ='pavarotti17' limit 99";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		// Assert.assertEquals(88L, rrs.getLimitSize());
 		// Assert.assertEquals(RouteResultset.SUM_FLAG, rrs.getFlag());
 		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
@@ -388,21 +462,24 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		sql = "select count(*) from (select * from(select max(id) from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
 				+ " where w.member_id ='pavarotti17' limit 99";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		nodeMap = getNodeMap(rrs, 2);
 		nameAsserter = new NodeNameAsserter("detail_dn[29]", "detail_dn[15]");
 		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
 
 		sql = "select * from (select * from(select max(id) from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
 				+ " where w.member_id ='pavarotti17' limit 99";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		nodeMap = getNodeMap(rrs, 2);
 		nameAsserter = new NodeNameAsserter("detail_dn[29]", "detail_dn[15]");
 		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
 
 		sql = "select * from (select count(*) from(select * from offer_detail where offer_id='123' or offer_id='234' limit 88)offer  where offer.member_id='abc' limit 60) w "
 				+ " where w.member_id ='pavarotti17' limit 99";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
 		// Assert.assertEquals(88L, rrs.getLimitSize());
 		// Assert.assertEquals(RouteResultset.SUM_FLAG, rrs.getFlag());
 		nodeMap = getNodeMap(rrs, 2);
@@ -415,7 +492,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		final SchemaConfig schema = schemaMap.get("cndb");
 
 		String sql = "desc offer";
-		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
@@ -423,7 +502,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		Assert.assertEquals("desc offer", rrs.getNodes()[0].getStatement());
 
 		sql = "desc cndb.offer";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
@@ -431,7 +511,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		Assert.assertEquals("desc offer", rrs.getNodes()[0].getStatement());
 
 		sql = "desc cndb.offer col1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
@@ -439,7 +520,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		Assert.assertEquals("desc offer col1", rrs.getNodes()[0].getStatement());
 
 		sql = "SHOW FULL COLUMNS FROM  offer  IN db_name WHERE true";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
@@ -448,8 +531,10 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 				rrs.getNodes()[0].getStatement());
 
 		sql = "SHOW FULL COLUMNS FROM  db.offer  IN db_name WHERE true";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
 		Assert.assertEquals(-1L, rrs.getLimitSize());
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
 		// Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
@@ -457,7 +542,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 				rrs.getNodes()[0].getStatement());
 
 		sql = "SHOW INDEX  IN offer FROM  db_name";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		// random return one node
@@ -466,7 +553,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 				rrs.getNodes()[0].getStatement());
 
 		sql = "SHOW TABLES from db_name like 'solo'";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 3);
 		NodeNameAsserter nameAsserter = new NodeNameAsserter("detail_dn[0]",
@@ -484,7 +573,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		}
 
 		sql = "SHOW TABLES in db_name ";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		nodeMap = getNodeMap(rrs, 3);
 		nameAsserter = new NodeNameAsserter("detail_dn[0]", "offer_dn[0]",
@@ -500,7 +591,9 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		}
 
 		sql = "SHOW TABLeS ";
-		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		nodeMap = getNodeMap(rrs, 3);
 		nameAsserter = new NodeNameAsserter("detail_dn[0]", "offer_dn[0]",
@@ -520,21 +613,21 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		try {
 			SchemaConfig schema = schemaMap.get("config");
 			String sql = "select * from offer where offer_id=1";
-			ServerRouterUtil.route(schema, 1, sql, null, null);
+			ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 			Assert.assertFalse(true);
 		} catch (Exception e) {
 		}
 		try {
 			SchemaConfig schema = schemaMap.get("config");
 			String sql = "select * from offer where col11111=1";
-			ServerRouterUtil.route(schema, 1, sql, null, null);
+			ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 			Assert.assertFalse(true);
 		} catch (Exception e) {
 		}
 		try {
 			SchemaConfig schema = schemaMap.get("config");
 			String sql = "select * from offer ";
-			ServerRouterUtil.route(schema, 1, sql, null, null);
+			ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 			Assert.assertFalse(true);
 		} catch (Exception e) {
 		}
@@ -543,56 +636,27 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 	public void testIgnoreSchema() throws Exception {
 		SchemaConfig schema = schemaMap.get("ignoreSchemaTest");
 		String sql = "select * from offer where offer_id=1";
-		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		RouteResultset rrs = ServerRouterUtil.route(schema, 1, sql, null, null,
+				cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("cndb_dn", rrs.getNodes()[0].getName());
 		Assert.assertEquals(sql, rrs.getNodes()[0].getStatement());
 		sql = "select * from ignoreSchemaTest.offer1 where ignoreSchemaTest.offer1.offer_id=1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("select * from offer1 where offer1.offer_id=1",
 				rrs.getNodes()[0].getStatement());
 		sql = "select * from ignoreSchemaTest2.offer where ignoreSchemaTest2.offer.offer_id=1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(sql, rrs.getNodes()[0].getStatement());
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(sql, rrs.getNodes()[0].getStatement(), sql);
 		sql = "select * from ignoreSchemaTest2.offer a,offer b  where ignoreSchemaTest2.offer.offer_id=1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(
 				"select * from ignoreSchemaTest2.offer a,offer b  where ignoreSchemaTest2.offer.offer_id=1",
 				rrs.getNodes()[0].getStatement());
 
-		schema = schemaMap.get("ignoreSchemaTest0");
-		sql = "select * from offer where offer_id=1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(sql, rrs.getNodes()[0].getStatement());
-		sql = "select * from ignoreSchemaTest0.offer where ignoreSchemaTest.offer.offer_id=1";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(
-				"select * from offer where ignoreSchemaTest.offer.offer_id=1",
-				rrs.getNodes()[0].getStatement());
-		sql = "insert into offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())";
-		schema = schemaMap.get("ignoreSchemaTest0");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(1, rrs.getNodes().length);
-		Assert.assertEquals(-1l, rrs.getLimitSize());
-		Assert.assertEquals("offer_dn[62]", rrs.getNodes()[0].getName());
-		Assert.assertEquals(
-				"insert into offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())",
-				rrs.getNodes()[0].getStatement());
-		sql = "insert into ignoreSchemaTest0.offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())";
-		schema = schemaMap.get("ignoreSchemaTest0");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals(1, rrs.getNodes().length);
-		Assert.assertEquals(-1l, rrs.getLimitSize());
-		Assert.assertEquals("offer_dn[62]", rrs.getNodes()[0].getName());
-		Assert.assertEquals(
-				"insert into offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())",
-				rrs.getNodes()[0].getStatement());
-		sql = "insert into ignoreSchemaTest0.offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())";
-		schema = schemaMap.get("ignoreSchemaTest0");
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
-		Assert.assertEquals("offer_dn[62]", rrs.getNodes()[0].getName());
-		Assert.assertEquals(
-				"insert into offer (group_id, offer_id,MEMBER_ID, gmt) values (234,123,222,now())",
-				rrs.getNodes()[0].getStatement());
 	}
 
 	public void testNonPartitionSQL() throws Exception {
@@ -600,37 +664,10 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 		SchemaConfig schema = schemaMap.get("cndb");
 		String sql = null;
 		RouteResultset rrs = null;
-		// sql="  select * from `dual`";
-		// rrs=ServerRouter.route(schema, 1, sql, null, null);
-		// Assert.assertEquals(1, rrs.getNodes().length);
-		// Assert.assertEquals((int) RouteResultsetNode.DEFAULT_REPLICA_INDEX,
-		// rrs.getNodes()[0].getReplicaIndex());
-		// Assert.assertEquals("cndb_dn", rrs.getNodes()[0].getName());
-		// Assert.assertEquals("select * from `dual`",
-		// rrs.getNodes()[0].getStatement());
-		//
-		// schema = schemaMap.get("dubbo");
-		// sql = "  select * from `dual`";
-		// rrs = ServerRouter.route(schema, 1, sql, null, null);
-		// Assert.assertEquals(1, rrs.getNodes().length);
-		// Assert.assertEquals((int) RouteResultsetNode.DEFAULT_REPLICA_INDEX,
-		// rrs.getNodes()[0].getReplicaIndex());
-		// Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
-		// Assert.assertEquals("select * from `dual`",
-		// rrs.getNodes()[0].getStatement());
-		//
-		// schema = schemaMap.get("dubbo");
-		// sql = "  select * from dubbo.`dual`";
-		// rrs = ServerRouter.route(schema, 1, sql, null, null);
-		// Assert.assertEquals(1, rrs.getNodes().length);
-		// Assert.assertEquals((int) RouteResultsetNode.DEFAULT_REPLICA_INDEX,
-		// rrs.getNodes()[0].getReplicaIndex());
-		// Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
-		// Assert.assertEquals("select * from `dual`",
-		// rrs.getNodes()[0].getStatement());
 		schema = schemaMap.get("dubbo");
 		sql = "SHOW TABLES from db_name like 'solo'";
-		rrs = ServerRouterUtil.route(schema, 9, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 9, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
@@ -638,7 +675,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 				rrs.getNodes()[0].getStatement());
 
 		sql = "desc cndb.offer";
-		rrs = ServerRouterUtil.route(schema, 1, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals("dubbo_dn", rrs.getNodes()[0].getName());
@@ -646,7 +684,8 @@ public class ServerRouteUtilTest extends AbstractAliasConvert {
 
 		schema = schemaMap.get("cndb");
 		sql = "SHOW fulL TaBLES from db_name like 'solo'";
-		rrs = ServerRouterUtil.route(schema, 9, sql, null, null);
+		rrs = ServerRouterUtil.route(schema, 9, sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
 		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 3);
 		NodeNameAsserter nameAsserter = new NodeNameAsserter("detail_dn[0]",
 				"offer_dn[0]", "independent_dn[0]");

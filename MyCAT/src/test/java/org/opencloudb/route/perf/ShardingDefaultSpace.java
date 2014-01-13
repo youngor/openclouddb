@@ -21,6 +21,10 @@ package org.opencloudb.route.perf;
 import java.sql.SQLNonTransientException;
 
 import org.opencloudb.MycatServer;
+import org.opencloudb.SimpleCachePool;
+import org.opencloudb.cache.CachePool;
+import org.opencloudb.config.loader.SchemaLoader;
+import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.route.ServerRouterUtil;
 
@@ -29,10 +33,13 @@ import org.opencloudb.route.ServerRouterUtil;
  */
 public class ShardingDefaultSpace {
     private SchemaConfig schema;
-
+    private static int total=1000000;
+    protected CachePool cachePool = new SimpleCachePool();
     public ShardingDefaultSpace() throws InterruptedException {
-         schema =
-         MycatServer.getInstance().getConfig().getSchemas().get("cndb");
+         String schemaFile = "/route/schema.xml";
+ 		String ruleFile = "/route/rule.xml";
+ 		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+ 		schema = schemaLoader.getSchemas().get("cndb");
     }
 
     /**
@@ -40,9 +47,9 @@ public class ShardingDefaultSpace {
      */
     public void testDefaultSpace() throws SQLNonTransientException {
         SchemaConfig schema = this.getSchema();
-        String sql = "insert into xoffer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
-        for (int i = 0; i < 1000000; i++) {
-            ServerRouterUtil.route(schema,-1, sql, null, null);
+        String sql = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
+        for (int i = 0; i < total; i++) {
+            ServerRouterUtil.route(schema,-1, sql, null, null,cachePool);
         }
     }
 
@@ -57,6 +64,6 @@ public class ShardingDefaultSpace {
         long start = System.currentTimeMillis();
         test.testDefaultSpace();
         long end = System.currentTimeMillis();
-        System.out.println("take " + (end - start) + " ms.");
+        System.out.println("take " + (end - start) + " ms. avg "+(end-start+0.0)/total);
     }
 }

@@ -32,12 +32,14 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
+import org.opencloudb.cache.CachePool;
 import org.opencloudb.mpp.ColMeta;
 import org.opencloudb.mpp.DataMergeService;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.FieldPacket;
 import org.opencloudb.net.mysql.OkPacket;
 import org.opencloudb.net.mysql.RowDataPacket;
+import org.opencloudb.route.RouteResultset;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.NonBlockingSession;
 import org.opencloudb.server.ServerConnection;
@@ -49,40 +51,41 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	private static final Logger LOGGER = Logger
 			.getLogger(MultiNodeQueryHandler.class);
 
-	private final RouteResultsetNode[] route;
+	private final RouteResultset rrs;
 	private final NonBlockingSession session;
 	// private final CommitNodeHandler icHandler;
 	private final DataMergeService dataMergeSvr;
 	private volatile boolean mergeOutputed;
 	private final boolean autocommit;
-
-	public MultiNodeQueryHandler(RouteResultsetNode[] route,
-			boolean autocommit, NonBlockingSession session,
-			DataMergeService dataMergeSvr) {
-		super(session);
-		if (route == null) {
-			throw new IllegalArgumentException("routeNode is null!");
-		}
-		this.autocommit = session.getSource().isAutocommit();
-		this.session = session;
-		this.route = route;
-		this.lock = new ReentrantLock();
-		// this.icHandler = new CommitNodeHandler(session);
-		this.dataMergeSvr = dataMergeSvr;
-	}
-
+	private String priamaryKeyTable = null;
+	private int primaryKeyIndex = -1;
+	private int fieldCount = 0;
 	private final ReentrantLock lock;
 	private long affectedRows;
 	private long insertId;
 	private ByteBuffer buffer;
 	private boolean fieldsReturned;
 
+	public MultiNodeQueryHandler(RouteResultset rrs, boolean autocommit,
+			NonBlockingSession session, DataMergeService dataMergeSvr) {
+		super(session);
+		if (rrs.getNodes() == null) {
+			throw new IllegalArgumentException("routeNode is null!");
+		}
+		this.rrs = rrs;
+		this.autocommit = session.getSource().isAutocommit();
+		this.session = session;
+		this.lock = new ReentrantLock();
+		// this.icHandler = new CommitNodeHandler(session);
+		this.dataMergeSvr = dataMergeSvr;
+	}
+
 	public void execute() throws Exception {
 		ServerConnection sc = session.getSource();
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			this.reset(route.length);
+			this.reset(rrs.getNodes().length);
 			this.fieldsReturned = false;
 			this.affectedRows = 0L;
 			this.insertId = 0L;
@@ -91,7 +94,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		}
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 
-		for (final RouteResultsetNode node : route) {
+		for (final RouteResultsetNode node : rrs.getNodes()) {
 			final PhysicalConnection conn = session.getTarget(node);
 			if (session.tryExistsCon(conn, node, new Runnable() {
 				@Override
@@ -280,9 +283,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				eof[3] = ++packetId;
 				source.write(source.writeToBuffer(eof, buffer));
 			} catch (Exception e) {
-				//fix:SQL异常导致连接被关闭的问题
+				// fix:SQL异常导致连接被关闭的问题
 				source.write(buffer);
-               this.createErrPkg("exception:multiNodeQuery process err,"+e).write(source);
+				this.createErrPkg("exception:multiNodeQuery process err," + e)
+						.write(source);
 			} finally {
 				if (dataMergeSvr != null) {
 					dataMergeSvr.clear();
@@ -306,8 +310,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			header[3] = ++packetId;
 			ServerConnection source = session.getSource();
 			buffer = source.writeToBuffer(header, buffer);
-			int fieldCount = fields.size();
+			fieldCount = fields.size();
 
+			String primaryKey = null;
+			if (rrs.hasPrimaryKeyToCache()) {
+				String[] items = rrs.getPrimaryKeyItems();
+				priamaryKeyTable = items[0];
+				primaryKey = items[1];
+			}
 			Map<String, ColMeta> columToIndx = new HashMap<String, ColMeta>(
 					fieldCount);
 			boolean needMerg = (dataMergeSvr != null)
@@ -323,6 +333,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 
 						columToIndx.put(fieldName,
 								new ColMeta(i, fieldPkg.type));
+					}
+				} else if (primaryKey != null && primaryKeyIndex == -1) {
+					// find primary key index
+					FieldPacket fieldPkg = new FieldPacket();
+					fieldPkg.read(field);
+					String fieldName = new String(fieldPkg.name);
+					if (primaryKey.equalsIgnoreCase(fieldName)) {
+						primaryKeyIndex = i;
+						fieldCount = fields.size();
 					}
 				}
 
@@ -350,6 +369,25 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 						((RouteResultsetNode) conn.getAttachment()).getName(),
 						row);
 			} else {
+				if (primaryKeyIndex != -1) {// cache
+											// primaryKey->
+											// dataNode
+					RowDataPacket rowDataPkg = new RowDataPacket(fieldCount);
+					rowDataPkg.read(row);
+					String primaryKey = new String(
+							rowDataPkg.fieldValues.get(primaryKeyIndex));
+					CachePool pool = MycatServer.getInstance()
+							.getRouterservice().getTableId2DataNodeCache();
+
+					String cacheKey = priamaryKeyTable + '_' + primaryKey;
+					String dataNode = ((RouteResultsetNode) conn
+							.getAttachment()).getName();
+					pool.putIfAbsent(cacheKey, dataNode);
+					if(LOGGER.isDebugEnabled())
+					{
+						LOGGER.debug("cache primary key for table: "+priamaryKeyTable+" primary key value:"+primaryKey+" in datanode:"+dataNode);
+					}
+				}
 				row[3] = ++packetId;
 				buffer = session.getSource().writeToBuffer(row, buffer);
 			}

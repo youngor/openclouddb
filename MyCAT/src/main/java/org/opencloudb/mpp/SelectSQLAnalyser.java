@@ -95,7 +95,10 @@ public class SelectSQLAnalyser {
 			if (!aggrColumns.isEmpty()) {
 				rrs.setMergeCols(aggrColumns);
 			}
-			rrs.setHasAggrColumn(hasAggrColumn);
+			if (hasAggrColumn) {
+				rrs.setHasAggrColumn(true);
+			}
+
 			GroupByList groupL = selNode.getGroupByList();
 			if (groupL != null && !groupL.isEmpty()) {
 				String[] groupCols = new String[groupL.size()];
@@ -416,8 +419,7 @@ public class SelectSQLAnalyser {
 			String method, SelectParseInf parsInf, String defaultTableName,
 			boolean notOpt) throws StandardException {
 		String upMethod = method.toUpperCase();
-		if(notOpt)
-		{
+		if (notOpt) {
 			return;
 		}
 		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN"))) {

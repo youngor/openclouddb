@@ -20,6 +20,10 @@ package org.opencloudb.route.perf;
 
 import java.sql.SQLNonTransientException;
 
+import org.opencloudb.SimpleCachePool;
+import org.opencloudb.cache.CachePool;
+import org.opencloudb.config.loader.SchemaLoader;
+import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.route.ServerRouterUtil;
 
@@ -28,10 +32,13 @@ import org.opencloudb.route.ServerRouterUtil;
  */
 public class ShardingMultiTableSpace {
     private SchemaConfig schema;
-
-    public ShardingMultiTableSpace() {
-        // schema =
-        // CobarServer.getInstance().getConfig().getSchemas().get("cndb");
+    private static int total=1000000;
+    protected CachePool cachePool = new SimpleCachePool();
+    public ShardingMultiTableSpace() throws InterruptedException {
+         String schemaFile = "/route/schema.xml";
+ 		String ruleFile = "/route/rule.xml";
+ 		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+ 		schema = schemaLoader.getSchemas().get("cndb");
     }
 
     /**
@@ -42,8 +49,8 @@ public class ShardingMultiTableSpace {
     public void testTableSpace() throws SQLNonTransientException {
         SchemaConfig schema = getSchema();
         String sql = "select id,member_id,gmt_create from offer where member_id in ('1','22','333','1124','4525')";
-        for (int i = 0; i < 100000; i++) {
-            ServerRouterUtil.route(schema, -1,sql, null, null);
+        for (int i = 0; i < total; i++) {
+            ServerRouterUtil.route(schema, -1,sql, null, null,cachePool);
         }
     }
 
@@ -58,6 +65,6 @@ public class ShardingMultiTableSpace {
         long start = System.currentTimeMillis();
         test.testTableSpace();
         long end = System.currentTimeMillis();
-        System.out.println("take " + (end - start) + " ms.");
+        System.out.println("take " + (end - start) + " ms. avg "+(end-start+0.0)/total);
     }
 }

@@ -27,22 +27,36 @@ public final class RouteResultset {
 	private final String statement; // 原始语句
 	private final int sqlType;
 	private RouteResultsetNode[] nodes; // 路由结果节点
-	private LinkedHashMap<String, Integer> orderByCols;
-	private Map<String, Integer> mergeCols;
-	private String[] groupByCols;
+
 	private int limitStart;
+	private boolean cacheAble;
+	// used to store table's ID->datanodes cache
+	// format is table.primaryKey
+	private String primaryKey;
 	// limit output total
 	private int limitSize;
-	private boolean hasAggrColumn;
-	
-	public RouteResultset(String stmt,int sqlType) {
+	private SQLMerge sqlMerge;
+
+	public RouteResultset(String stmt, int sqlType) {
 		this.statement = stmt;
 		this.limitSize = -1;
-		this.sqlType=sqlType;
+		this.sqlType = sqlType;
 	}
-	
+
+	public SQLMerge getSqlMerge() {
+		return sqlMerge;
+	}
+
+	public boolean isCacheAble() {
+		return cacheAble;
+	}
+
+	public void setCacheAble(boolean cacheAble) {
+		this.cacheAble = cacheAble;
+	}
+
 	public boolean needMerge() {
-		return limitSize > 0 || orderByCols != null || groupByCols != null||hasAggrColumn;
+		return limitSize > 0 || sqlMerge != null;
 	}
 
 	public int getSqlType() {
@@ -50,7 +64,7 @@ public final class RouteResultset {
 	}
 
 	public boolean isHasAggrColumn() {
-		return hasAggrColumn;
+		return (sqlMerge != null) && sqlMerge.isHasAggrColumn();
 	}
 
 	public int getLimitStart() {
@@ -58,35 +72,77 @@ public final class RouteResultset {
 	}
 
 	public String[] getGroupByCols() {
-		return groupByCols;
+		return (sqlMerge != null) ? sqlMerge.getGroupByCols() : null;
 	}
 
-	public void setGroupByCols(String[] groupByCols) {
-		this.groupByCols = groupByCols;
+	private SQLMerge createSQLMergeIfNull() {
+		if (sqlMerge == null) {
+			sqlMerge = new SQLMerge();
+		}
+		return sqlMerge;
 	}
 
-	
 	public Map<String, Integer> getMergeCols() {
-		return mergeCols;
+		return (sqlMerge != null) ? sqlMerge.getMergeCols() : null;
 	}
 
-	public void setMergeCols(Map<String, Integer> mergeCols) {
-		this.mergeCols = mergeCols;
-	}
-
-	
 	public void setLimitStart(int limitStart) {
 		this.limitStart = limitStart;
 	}
 
-	
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+
+	public boolean hasPrimaryKeyToCache() {
+		return primaryKey != null;
+	}
+
+	public void setPrimaryKey(String primaryKey) {
+		if (!primaryKey.contains(".")) {
+			throw new java.lang.IllegalArgumentException(
+					"must be table.primarykey fomat :" + primaryKey);
+		}
+		this.primaryKey = primaryKey;
+	}
+
+	/**
+	 * return primary key items ,first is table name ,seconds is primary key
+	 * 
+	 * @return
+	 */
+	public String[] getPrimaryKeyItems() {
+		return primaryKey.split("\\.");
+	}
 
 	public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
-		this.orderByCols = orderByCols;
+		if (orderByCols != null && !orderByCols.isEmpty()) {
+			createSQLMergeIfNull().setOrderByCols(orderByCols);
+		}
+	}
+
+	public void setHasAggrColumn(boolean hasAggrColumn) {
+		if (hasAggrColumn) {
+			createSQLMergeIfNull().setHasAggrColumn(true);
+		}
+	}
+
+	public void setGroupByCols(String[] groupByCols) {
+		if (groupByCols != null && groupByCols.length > 0) {
+			createSQLMergeIfNull().setGroupByCols(groupByCols);
+		}
+	}
+
+	public void setMergeCols(Map<String, Integer> mergeCols) {
+		if (mergeCols != null && !mergeCols.isEmpty()) {
+			createSQLMergeIfNull().setMergeCols(mergeCols);
+		}
+
 	}
 
 	public LinkedHashMap<String, Integer> getOrderByCols() {
-		return orderByCols;
+		return (sqlMerge != null) ? sqlMerge.getOrderByCols() : null;
+
 	}
 
 	public String getStatement() {
@@ -101,7 +157,6 @@ public final class RouteResultset {
 		this.nodes = nodes;
 	}
 
-	
 	/**
 	 * @return -1 if no limit
 	 */
@@ -125,11 +180,6 @@ public final class RouteResultset {
 		}
 		s.append("\n}");
 		return s.toString();
-	}
-
-	public void setHasAggrColumn(boolean hasAggrColumn) {
-		this.hasAggrColumn=hasAggrColumn;
-		
 	}
 
 }

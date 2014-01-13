@@ -152,6 +152,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Element tableElement = (Element) nodeList.item(i);
 			String tableName = tableElement.getAttribute("name").toUpperCase();
+			String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement
+					.getAttribute("primaryKey").toUpperCase() : null;
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement
 					.getAttribute("type") : null;
 			int tableType = TableConfig.TYPE_GLOBAL_DEFAULT;
@@ -174,7 +176,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 						.getAttribute("ruleRequired"));
 			}
 
-			TableConfig table = new TableConfig(tableName, tableType, dataNode,
+			TableConfig table = new TableConfig(tableName, primaryKey,
+					tableType, dataNode,
 					(tableRule != null) ? tableRule.getRule() : null,
 					ruleRequired, null, false, null, null);
 			checkDataNodeExists(table.getDataNodes());
@@ -200,12 +203,13 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element childTbElement = (Element) theNode;
 
 			String cdTbName = childTbElement.getAttribute("name").toUpperCase();
-			// System.out.println("create child table " + cdTbName);
+			String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement
+					.getAttribute("primaryKey").toUpperCase() : null;
 			String joinKey = childTbElement.getAttribute("joinKey")
 					.toUpperCase();
 			String parentKey = childTbElement.getAttribute("parentKey")
 					.toUpperCase();
-			TableConfig table = new TableConfig(cdTbName,
+			TableConfig table = new TableConfig(cdTbName, primaryKey,
 					TableConfig.TYPE_GLOBAL_DEFAULT, dataNodes, null, false,
 					parentTable, true, joinKey, parentKey);
 			if (tables.containsKey(table.getName())) {

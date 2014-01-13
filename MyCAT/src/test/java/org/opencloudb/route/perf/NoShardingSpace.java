@@ -20,6 +20,10 @@ package org.opencloudb.route.perf;
 
 import java.sql.SQLNonTransientException;
 
+import org.opencloudb.SimpleCachePool;
+import org.opencloudb.cache.CachePool;
+import org.opencloudb.config.loader.SchemaLoader;
+import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.route.ServerRouterUtil;
 
@@ -28,17 +32,20 @@ import org.opencloudb.route.ServerRouterUtil;
  */
 public class NoShardingSpace {
     private SchemaConfig schema;
-
+    private static int total=1000000;
+    protected CachePool cachePool = new SimpleCachePool();
     public NoShardingSpace() {
-        // CobarConfig conf = CobarServer.getInstance().getConfig();
-        // schema = conf.getSchemas().get("dubbo");
+    	String schemaFile = "/route/schema.xml";
+		String ruleFile = "/route/rule.xml";
+		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+		schema = schemaLoader.getSchemas().get("dubbo");
     }
 
     public void testDefaultSpace() throws SQLNonTransientException {
         SchemaConfig schema = this.schema;
         String stmt = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
-        for (int i = 0; i < 1000000; i++) {
-            ServerRouterUtil.route(schema, -1,stmt, null, null);
+        for (int i = 0; i < total; i++) {
+            ServerRouterUtil.route(schema, -1,stmt, null, null,cachePool);
         }
     }
 
@@ -49,6 +56,6 @@ public class NoShardingSpace {
         long start = System.currentTimeMillis();
         test.testDefaultSpace();
         long end = System.currentTimeMillis();
-        System.out.println("take " + (end - start) + " ms.");
+        System.out.println("take " + (end - start) + " ms. avg "+(end-start+0.0)/total);
     }
 }

@@ -25,12 +25,14 @@
 <!ATTLIST table dataNode CDATA #REQUIRED>
 <!ATTLIST table rule NMTOKEN #IMPLIED>
 <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
+<!ATTLIST table primaryKey NMTOKEN #IMPLIED>
 <!ATTLIST table type NMTOKEN #IMPLIED>
 
 <!ELEMENT childTable (property*,(childTable*))>
 <!ATTLIST childTable name NMTOKEN #REQUIRED>
 <!ATTLIST childTable joinKey NMTOKEN #REQUIRED>
 <!ATTLIST childTable parentKey NMTOKEN #REQUIRED>
+<!ATTLIST childTable primaryKey NMTOKEN #IMPLIED>
 
 
 <!ELEMENT dataNode (property*)>

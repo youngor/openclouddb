@@ -9,10 +9,16 @@ import org.opencloudb.server.parser.ServerParse;
 
 public class RouteService {
 	private final CachePool sqlRouteCache;
+	private final CachePool tableId2DataNodeCache;
 
 	public RouteService(CacheService cachService) {
 		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
+		tableId2DataNodeCache = cachService
+				.getCachePool("TableID2DataNodeCache");
+	}
 
+	public CachePool getTableId2DataNodeCache() {
+		return tableId2DataNodeCache;
 	}
 
 	public RouteResultset route(SchemaConfig schema, int sqlType, String stmt,
@@ -27,8 +33,9 @@ public class RouteService {
 			}
 		}
 
-		rrs = ServerRouterUtil.route(schema, sqlType, stmt, charset, info);
-		if (sqlType == ServerParse.SELECT) {
+		rrs = ServerRouterUtil.route(schema, sqlType, stmt, charset, info,
+				tableId2DataNodeCache);
+		if (sqlType == ServerParse.SELECT && rrs.isCacheAble()) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
 		}
 		return rrs;

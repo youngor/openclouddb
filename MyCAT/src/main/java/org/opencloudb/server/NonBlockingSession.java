@@ -65,7 +65,6 @@ public class NonBlockingSession implements Session {
 	private volatile CommitNodeHandler commitHandler;
 	private volatile RollbackNodeHandler rollbackHandler;
 	private boolean openWRFluxContrl = false;
-
 	public NonBlockingSession(ServerConnection source, int openWRFluxContrl) {
 		this.source = source;
 		this.target = new ConcurrentHashMap<RouteResultsetNode, PhysicalConnection>(
@@ -93,6 +92,8 @@ public class NonBlockingSession implements Session {
 			}
 		}
 	}
+
+
 
 	/**
 	 * temporary upsupress channel read event ,because front connection is
@@ -151,7 +152,8 @@ public class NonBlockingSession implements Session {
 		if (nodes == null || nodes.length == 0 || nodes[0].getName() == null
 				|| nodes[0].getName().equals("")) {
 			source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-					"No dataNode selected");
+					"No dataNode found ,please check tables defined in schema:"
+							+ source.getSchema());
 			return;
 		}
 
@@ -169,8 +171,8 @@ public class NonBlockingSession implements Session {
 			if (ServerParse.SELECT == type && rrs.needMerge()) {
 				dataMergeSvr = new DataMergeService(rrs);
 			}
-			multiNodeHandler = new MultiNodeQueryHandler(nodes, autocommit,
-					this, dataMergeSvr);
+			multiNodeHandler = new MultiNodeQueryHandler(rrs, autocommit, this,
+					dataMergeSvr);
 			try {
 				multiNodeHandler.execute();
 			} catch (Exception e) {

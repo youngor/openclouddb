@@ -20,9 +20,6 @@
 	</schema>
 	<schema name="dubbo" dataNode="dubbo_dn" />
 	<schema name="ignoreSchemaTest" dataNode="cndb_dn" />
-	<schema name="ignoreSchemaTest0">
-		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule" />
-	</schema>
 	<schema name="config">
 		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule"
 			ruleRequired="true" />
@@ -39,7 +36,7 @@
 		<table name="company" type="global" dataNode="dn1,dn2,dn3" />
 		<table name="goods" type="global" dataNode="dn1,dn2,dn3" />
 
-		<table name="employee" dataNode="dn1,dn2" rule="sharding-by-intfile" />
+		<table name="employee" primaryKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile" />
 		<table name="customer" dataNode="dn1,dn2" rule="auto-sharding-long">
 			<childTable name="orders" joinKey="customer_id" parentKey="id">
 				<childTable name="order_items" joinKey="order_id"
