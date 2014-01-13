@@ -266,7 +266,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					Iterator<RowDataPacket> itor = dataMergeSvr.getResults()
 							.iterator();
 					while (itor.hasNext()) {
-
+						RowDataPacket row = itor.next();
+						itor.remove();
 						if (i < start) {
 							i++;
 							continue;
@@ -274,8 +275,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 							break;
 						}
 						i++;
-						RowDataPacket row = itor.next();
-						itor.remove();
 						row.packetId = ++packetId;
 						buffer = row.write(buffer, source);
 					}
