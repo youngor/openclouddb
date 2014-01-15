@@ -76,13 +76,14 @@ public class AutoPartitionByLong implements RuleAlgorithm {
 					continue;
 				int ind = line.indexOf('=');
 				if (ind < 0) {
-					System.out.println(" warn: bad line int "+mapFile+ " :"+line);
+					System.out.println(" warn: bad line int " + mapFile + " :"
+							+ line);
 					continue;
 				}
 				try {
 					String pairs[] = line.substring(0, ind).trim().split("-");
-					long longStart = Long.parseLong(pairs[0].trim());
-					long longEnd = Long.parseLong(pairs[1].trim());
+					long longStart = NumberParseUtil.parseLong(pairs[0].trim());
+					long longEnd = NumberParseUtil.parseLong(pairs[1].trim());
 					int nodeId = Integer.parseInt(line.substring(ind + 1)
 							.trim());
 					longRangeList
