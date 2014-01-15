@@ -23,6 +23,19 @@ public class SimpleConPool {
 		System.out.println("success ful created connections ,total :" + maxCon);
 	}
 
+	public void close() {
+		for (Connection con : this.cons) {
+			try {
+				if (con != null && !con.isClosed()) {
+					con.close();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		cons.clear();
+	}
+
 	private Connection getCon() throws SQLException {
 		Connection theCon = DriverManager.getConnection(url, user, password);
 		return theCon;
@@ -39,6 +52,7 @@ public class SimpleConPool {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+
 	}
 
 	public Connection getConnection() throws SQLException {

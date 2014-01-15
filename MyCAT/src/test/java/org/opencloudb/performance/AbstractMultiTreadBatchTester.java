@@ -1,7 +1,9 @@
 package org.opencloudb.performance;
 
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -137,9 +139,11 @@ public abstract class AbstractMultiTreadBatchTester {
 
 	public void runAndReport() throws InterruptedException {
 		executor.shutdown();
+		
+		SimpleDateFormat df=new SimpleDateFormat("dd HH:mm:ss");
 		while (!executor.isTerminated()) {
 			long sucess = finshiedCount.get() - failedCount.get();
-			System.out.println("finished records :" + finshiedCount.get()
+			System.out.println(df.format(new Date()) +" finished records :" + finshiedCount.get()
 					+ " failed:" + failedCount.get() + " speed:" + sucess
 					* 1000.0 / (System.currentTimeMillis() - start));
 			Thread.sleep(1000);
