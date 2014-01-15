@@ -28,8 +28,12 @@ public class GetConnectionHandler implements ResponseHandler {
 		this.total = totalNumber;
 	}
 
+	public String getStatusInfo()
+	{
+		return "finished "+ finishedCount.get()+" success "+successCons.size()+" target count:"+this.total;
+	}
 	public boolean finished() {
-		return finishedCount.get() == total;
+		return finishedCount.get() >= total;
 	}
 
 	@Override

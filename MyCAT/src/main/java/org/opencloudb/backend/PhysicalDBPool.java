@@ -167,8 +167,8 @@ public class PhysicalDBPool {
 	}
 
 	private String getMessage(int index, String info) {
-		return new StringBuilder().append(hostName).append(" index:").append(index)
-				.append(info).toString();
+		return new StringBuilder().append(hostName).append(" index:")
+				.append(index).append(info).toString();
 	}
 
 	private boolean initSource(int index, PhysicalDatasource ds) {
@@ -188,14 +188,19 @@ public class PhysicalDBPool {
 				LOGGER.warn(getMessage(index, " init connection error."), e);
 			}
 		}
+		long timeOut = System.currentTimeMillis() + 60 * 1000;
+
 		// waiting for finish
-		while (!getConHandler.finished()) {
+		while (!getConHandler.finished()
+				&& (System.currentTimeMillis() < timeOut)) {
 			try {
 				Thread.sleep(200);
+
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+		LOGGER.info("init result :" + getConHandler.getStatusInfo());
 		for (PhysicalConnection c : list) {
 			c.release();
 		}

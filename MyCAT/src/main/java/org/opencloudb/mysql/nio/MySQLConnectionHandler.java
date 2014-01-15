@@ -58,9 +58,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 		// handleQueue();
 		dataQueue.clear();
 		if (responseHandler != null) {
-			System.out.println(" responseHandler connectionError "
-					+ responseHandler.getClass().getName());
-			e.printStackTrace();
 			responseHandler.connectionError(e, source);
 		}
 
@@ -158,7 +155,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 	 */
 	private void handleOkPacket(byte[] data) {
 		if (responseHandler != null) {
-		responseHandler.okResponse(data, source);
+			responseHandler.okResponse(data, source);
 		}
 	}
 

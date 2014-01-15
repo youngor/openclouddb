@@ -187,7 +187,8 @@ public abstract class PhysicalDatasource {
 	}
 
 	public PhysicalConnection getConnection(final ConnectionMeta conMeta,
-			final ResponseHandler handler, final Object attachment) throws Exception {
+			final ResponseHandler handler, final Object attachment)
+			throws Exception {
 		int activeCount = this.getActiveCount();
 		// used to store new created connection
 		int emptyIndex = -1;
@@ -216,12 +217,12 @@ public abstract class PhysicalDatasource {
 						int similary = conMeta.getMetaSimilarity(conn);
 						if (bestCandidateSimilarity < similary) {
 							bestCandidateSimilarity = similary;
-							bestCandidateTime=conn.getLastTime();
+							bestCandidateTime = conn.getLastTime();
 							bestCandidate = i;
 						} else if (bestCandidateSimilarity == similary) {
 							// compare if more old
 							if (conn.getLastTime() < bestCandidateTime) {
-								bestCandidateTime=conn.getLastTime();
+								bestCandidateTime = conn.getLastTime();
 								bestCandidate = i;
 							}
 
@@ -255,13 +256,13 @@ public abstract class PhysicalDatasource {
 		return this.createNewConnection(new DelegateResponseHandler(handler) {
 			@Override
 			public void connectionError(Throwable e, PhysicalConnection conn) {
-				handler.connectionError(e, conn);
 				lock.lock();
 				try {
 					items[insertIndex] = null;
 				} finally {
 					lock.unlock();
 				}
+				handler.connectionError(e, conn);
 			}
 
 			@Override

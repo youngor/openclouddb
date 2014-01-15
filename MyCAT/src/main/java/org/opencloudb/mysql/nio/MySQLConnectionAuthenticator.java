@@ -87,6 +87,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 		} catch (RuntimeException e) {
 			if (listener != null) {
 				listener.connectionError(e, source);
+				return;
 			}
 			throw e;
 		}
