@@ -19,35 +19,35 @@ public class GoodsInsertJob implements Runnable {
 	private final int batchSize;
 	Calendar date = Calendar.getInstance();
 	DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
-	private final  AtomicInteger finshiedCount;
-	private final  AtomicInteger failedCount;
+	private final AtomicInteger finshiedCount;
+	private final AtomicInteger failedCount;
+
 	public GoodsInsertJob(Connection con, int totalRecords, int batchSize,
-			int startId,AtomicInteger finshiedCount,AtomicInteger failedCount) {
+			int startId, AtomicInteger finshiedCount, AtomicInteger failedCount) {
 		super();
 		this.con = con;
 		this.totalRecords = startId + totalRecords;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
-		this.finshiedCount=finshiedCount;
-		this.failedCount=failedCount;
+		this.finshiedCount = finshiedCount;
+		this.failedCount = failedCount;
 	}
 
 	private int insert(List<Map<String, String>> list) throws SQLException {
 		PreparedStatement ps;
-			String sql = "insert into goods (id,name ,good_type,good_img_url,good_created ,good_desc, price ) values(?,? ,?,?,? ,?, ?)";
-			ps = con.prepareStatement(sql);
-			for (Map<String, String> map : list) {
-				ps.setLong(1, Long.parseLong(map.get("id")));
-				ps.setString(2, (String) map.get("name"));
-				ps.setShort(3, Short.parseShort(map.get("good_type")));
-				ps.setString(4, (String) map.get("good_img_url"));
-				ps.setString(5, (String) map.get("good_created"));
-				ps.setString(6, (String) map.get("good_desc"));
-				ps.setDouble(7, Double.parseDouble(map.get("price")));
-				ps.addBatch();
-				ps.executeBatch();
-			}
-		
+		String sql = "insert into goods (id,name ,good_type,good_img_url,good_created ,good_desc, price ) values(?,? ,?,?,? ,?, ?)";
+		ps = con.prepareStatement(sql);
+		for (Map<String, String> map : list) {
+			ps.setLong(1, Long.parseLong(map.get("id")));
+			ps.setString(2, (String) map.get("name"));
+			ps.setShort(3, Short.parseShort(map.get("good_type")));
+			ps.setString(4, (String) map.get("good_img_url"));
+			ps.setString(5, (String) map.get("good_created"));
+			ps.setString(6, (String) map.get("good_desc"));
+			ps.setDouble(7, Double.parseDouble(map.get("price")));
+			ps.addBatch();
+		}
+		ps.executeBatch();
 		return list.size();
 	}
 

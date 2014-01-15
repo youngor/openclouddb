@@ -49,9 +49,9 @@ public class TravelRecordUpdateJob implements Runnable {
 			ps.setString(4, (String) map.get("days"));
 			ps.setLong(5, Long.parseLong(map.get("id")));
 			ps.addBatch();
-			ps.executeBatch();
+			
 		}
-
+		ps.executeBatch();
 		return list.size();
 	}
 
