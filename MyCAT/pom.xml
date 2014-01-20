@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.opencloudb.mycat</groupId>
 	<artifactId>Mycat-server</artifactId>
-	<version>1.1-Dev</version>
+	<version>1.1-Alpha</version>
 	<packaging>jar</packaging>
 	<name>Mycat-server</name>
 	<description>The project of Mycat-server</description>
@@ -291,7 +291,7 @@
 					</items>
 					<doCheck>false</doCheck>
 					<doUpdate>false</doUpdate>
-					<providerImplementations> <svn>javasvn</svn> </providerImplementations> 
+				<providerImplementations> <svn>javasvn</svn> </providerImplementations> 
 				</configuration>
 				<dependencies> <dependency> <groupId>com.google.code.maven-scm-provider-svnjava</groupId> 
 					<artifactId>maven-scm-provider-svnjava</artifactId> <version>2.0.6</version> 

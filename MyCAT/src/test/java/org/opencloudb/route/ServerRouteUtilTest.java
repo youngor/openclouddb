@@ -30,7 +30,7 @@ import junit.framework.Assert;
 import junit.framework.TestCase;
 
 import org.opencloudb.SimpleCachePool;
-import org.opencloudb.cache.CachePool;
+import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
@@ -42,7 +42,7 @@ import org.opencloudb.server.parser.ServerParse;
 public class ServerRouteUtilTest extends TestCase {
 
 	protected Map<String, SchemaConfig> schemaMap;
-	protected CachePool cachePool = new SimpleCachePool();
+	protected LayerCachePool cachePool = new SimpleCachePool();
 
 	public ServerRouteUtilTest() {
 		String schemaFile = "/route/schema.xml";
@@ -157,9 +157,7 @@ public class ServerRouteUtilTest extends TestCase {
 
 	public void testRouteCache() throws Exception {
 		// select cache ID
-		String key = "EMPLOYEE_88";
-		String dn = "dn2";
-		this.cachePool.putIfAbsent(key, dn);
+		this.cachePool.putIfAbsent("TESTDB_EMPLOYEE", "88", "dn2");
 		
 		SchemaConfig schema = schemaMap.get("TESTDB");
 		String sql = "select * from employee where id=88";
@@ -176,7 +174,7 @@ public class ServerRouteUtilTest extends TestCase {
 		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(2, rrs.getNodes().length);
 		Assert.assertEquals(false, rrs.isCacheAble());
-		Assert.assertEquals("EMPLOYEE.ID", rrs.getPrimaryKey());
+		Assert.assertEquals("TESTDB_EMPLOYEE.ID", rrs.getPrimaryKey());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 
 		// update cache ID found

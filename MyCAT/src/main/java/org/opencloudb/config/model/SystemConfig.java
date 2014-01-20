@@ -30,6 +30,8 @@ public final class SystemConfig {
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
 	private static final String DEFAULT_CHARSET = "UTF-8";
+	private static final int DEFAULT_BUFFER_SIZE = 1024 * 1024 * 16;
+	private static final int DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime()
 			.availableProcessors();
 	public static final int DEFAULT_POOL_SIZE = 128;// 保持后端数据通道的默认最大值
@@ -52,9 +54,7 @@ public final class SystemConfig {
 	private int managerPort;
 	private String charset;
 	private int processors;
-	private int processorHandler;
 	private int processorExecutor;
-	private int initExecutor;
 	private int timerExecutor;
 	private int managerExecutor;
 	private long idleTimeout;
@@ -71,17 +71,19 @@ public final class SystemConfig {
 	private int sqlRecordCount;
 	private long waitTimeout;
 	private int openWRFluxControl;
+	private int processorBufferPool;
+	private int processorBufferChunk;
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
 		this.charset = DEFAULT_CHARSET;
 		this.processors = DEFAULT_PROCESSORS;
-		this.processorHandler = DEFAULT_PROCESSORS;
+		processorBufferPool = DEFAULT_BUFFER_SIZE;
+		processorBufferChunk = DEFAULT_BUFFER_CHUNK_SIZE;
 		this.processorExecutor = DEFAULT_PROCESSORS;
-		this.managerExecutor = DEFAULT_PROCESSORS;
+		this.managerExecutor = 2;
 		this.timerExecutor = DEFAULT_PROCESSORS;
-		this.initExecutor = DEFAULT_PROCESSORS;
 		this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
 		this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
 		this.dataNodeIdleCheckPeriod = DEFAULT_DATANODE_IDLE_CHECK_PERIOD;
@@ -157,14 +159,6 @@ public final class SystemConfig {
 		this.processors = processors;
 	}
 
-	public int getProcessorHandler() {
-		return processorHandler;
-	}
-
-	public void setProcessorHandler(int processorExecutor) {
-		this.processorHandler = processorExecutor;
-	}
-
 	public int getProcessorExecutor() {
 		return processorExecutor;
 	}
@@ -187,14 +181,6 @@ public final class SystemConfig {
 
 	public void setTimerExecutor(int timerExecutor) {
 		this.timerExecutor = timerExecutor;
-	}
-
-	public int getInitExecutor() {
-		return initExecutor;
-	}
-
-	public void setInitExecutor(int initExecutor) {
-		this.initExecutor = initExecutor;
 	}
 
 	public long getIdleTimeout() {
@@ -293,27 +279,43 @@ public final class SystemConfig {
 		this.sqlRecordCount = sqlRecordCount;
 	}
 
+	public int getProcessorBufferPool() {
+		return processorBufferPool;
+	}
+
+	public void setProcessorBufferPool(int processorBufferPool) {
+		this.processorBufferPool = processorBufferPool;
+	}
+
+	public int getProcessorBufferChunk() {
+		return processorBufferChunk;
+	}
+
+	public void setProcessorBufferChunk(int processorBufferChunk) {
+		this.processorBufferChunk = processorBufferChunk;
+	}
+
 	@Override
 	public String toString() {
 		return "SystemConfig [serverPort=" + serverPort + ", managerPort="
 				+ managerPort + ", charset=" + charset + ", processors="
-				+ processors + ", processorHandler=" + processorHandler
-				+ ", processorExecutor=" + processorExecutor
-				+ ", initExecutor=" + initExecutor + ", timerExecutor="
-				+ timerExecutor + ", managerExecutor=" + managerExecutor
-				+ ", idleTimeout=" + idleTimeout + ", processorCheckPeriod="
-				+ processorCheckPeriod + ", dataNodeIdleCheckPeriod="
-				+ dataNodeIdleCheckPeriod + ", dataNodeHeartbeatPeriod="
-				+ dataNodeHeartbeatPeriod + ", clusterHeartbeatUser="
-				+ clusterHeartbeatUser + ", clusterHeartbeatPass="
-				+ clusterHeartbeatPass + ", clusterHeartbeatPeriod="
-				+ clusterHeartbeatPeriod + ", clusterHeartbeatTimeout="
-				+ clusterHeartbeatTimeout + ", clusterHeartbeatRetry="
-				+ clusterHeartbeatRetry + ", txIsolation=" + txIsolation
-				+ ", parserCommentVersion=" + parserCommentVersion
-				+ ", sqlRecordCount=" + sqlRecordCount + ", waitTimeout="
-				+ waitTimeout + ", openWRFluxControl=" + openWRFluxControl
-				+ "]";
+				+ processors + ", processorExecutor=" + processorExecutor
+				+ ", timerExecutor=" + timerExecutor + ", managerExecutor="
+				+ managerExecutor + ", idleTimeout=" + idleTimeout
+				+ ", processorCheckPeriod=" + processorCheckPeriod
+				+ ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod
+				+ ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod
+				+ ", clusterHeartbeatUser=" + clusterHeartbeatUser
+				+ ", clusterHeartbeatPass=" + clusterHeartbeatPass
+				+ ", clusterHeartbeatPeriod=" + clusterHeartbeatPeriod
+				+ ", clusterHeartbeatTimeout=" + clusterHeartbeatTimeout
+				+ ", clusterHeartbeatRetry=" + clusterHeartbeatRetry
+				+ ", txIsolation=" + txIsolation + ", parserCommentVersion="
+				+ parserCommentVersion + ", sqlRecordCount=" + sqlRecordCount
+				+ ", waitTimeout=" + waitTimeout + ", openWRFluxControl="
+				+ openWRFluxControl + ", processorBufferPool="
+				+ processorBufferPool + ", processorBufferChunk="
+				+ processorBufferChunk + "]";
 	}
 
 }

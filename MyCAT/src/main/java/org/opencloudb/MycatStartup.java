@@ -40,11 +40,11 @@ public final class MycatStartup {
 
 			// startup
 			server.startup();
+			System.out.println("MyCAT Server startup successfully. see logs in logs/mycat.log");
 		} catch (Throwable e) {
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
 			LogLog.error(sdf.format(new Date()) + " startup error", e);
 			System.exit(-1);
 		}
 	}
-
 }

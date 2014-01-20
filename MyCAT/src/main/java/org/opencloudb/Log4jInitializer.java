@@ -44,7 +44,7 @@ public final class Log4jInitializer {
         @Override
         public void doOnChange() {
             new DOMConfigurator().doConfigure(filename, LogManager.getLoggerRepository());
-            LogLog.warn(new SimpleDateFormat(format).format(new Date()) + " [" + filename + "] load completed.");
+            System.out.println("log4j "+new SimpleDateFormat(format).format(new Date()) + " [" + filename + "] load completed.");
         }
     }
 

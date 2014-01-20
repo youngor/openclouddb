@@ -21,7 +21,7 @@ package org.opencloudb.route.perf;
 import java.sql.SQLNonTransientException;
 
 import org.opencloudb.SimpleCachePool;
-import org.opencloudb.cache.CachePool;
+import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
@@ -33,7 +33,7 @@ import org.opencloudb.route.ServerRouterUtil;
 public class ShardingMultiTableSpace {
     private SchemaConfig schema;
     private static int total=1000000;
-    protected CachePool cachePool = new SimpleCachePool();
+    protected LayerCachePool cachePool = new SimpleCachePool();
     public ShardingMultiTableSpace() throws InterruptedException {
          String schemaFile = "/route/schema.xml";
  		String ruleFile = "/route/rule.xml";

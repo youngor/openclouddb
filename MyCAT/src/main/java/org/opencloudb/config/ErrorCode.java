@@ -21,6 +21,7 @@ package org.opencloudb.config;
 public interface ErrorCode {
 
     // mycat error code
+	int ERR_BAD_LOGICDB = 3000;
     int ERR_OPEN_SOCKET = 3001;
     int ERR_CONNECT_SOCKET = 3002;
     int ERR_REGISTER = 3004;

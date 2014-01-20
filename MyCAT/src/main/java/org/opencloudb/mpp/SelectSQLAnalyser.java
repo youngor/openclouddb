@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.opencloudb.route.RouteResultset;
 
 import com.akiban.sql.StandardException;
@@ -40,6 +41,8 @@ import com.akiban.sql.parser.ValueNodeList;
 import com.akiban.sql.unparser.NodeToString;
 
 public class SelectSQLAnalyser {
+	private static final Logger LOGGER = Logger
+			.getLogger(SelectSQLAnalyser.class);
 
 	private static String andTableName(SelectParseInf parsInf,
 			FromBaseTable fromTable) throws StandardException {
@@ -192,7 +195,7 @@ public class SelectSQLAnalyser {
 				analyseSQL(parsInf, unionNode.getRightResultSet(), notOpt);
 				return;
 			} else if (!(rsNode instanceof SelectNode)) {
-				System.out.println("not select node "
+				LOGGER.info("ignore not select node "
 						+ rsNode.getClass().getCanonicalName());
 				return;
 			}
@@ -214,7 +217,7 @@ public class SelectSQLAnalyser {
 			break;
 		}
 		default: {
-			System.out.println("todo :not select node "
+			LOGGER.info("todo :not select node "
 					+ ast.getClass().getCanonicalName());
 			return;
 		}
@@ -268,7 +271,10 @@ public class SelectSQLAnalyser {
 				analyseSQL(parsInf, ((FromSubquery) fromT).getSubquery(),
 						notOpt);
 			} else {
-				System.out.println("warn,todo " + fromT.getClass().toString());
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug("todo  parse" + fromT.getClass().toString());
+				}
+
 			}
 		}
 
@@ -307,9 +313,11 @@ public class SelectSQLAnalyser {
 			// theOpNode.getRightOperandList(), "IN", ctx,
 			// defaultTableName, notOpt);
 		} else {
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("todo  parse where cond\r\n "
+						+ valueNode.getClass().getCanonicalName());
+			}
 
-			System.out.println("todo parse where cond\r\n "
-					+ valueNode.getClass().getCanonicalName());
 			// valueNode.treePrint();
 		}
 	}
@@ -462,15 +470,19 @@ public class SelectSQLAnalyser {
 				addTableJoinInf(parsInf.ctx, leftCol, wrightRef);
 
 			} else {
-				System.out.println("todo ,parse condition: "
-						+ leftOp.getClass().getCanonicalName());
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug("todo ,parse condition: "
+							+ leftOp.getClass().getCanonicalName());
+				}
 			}
 		} else if (wrightOp instanceof SubqueryNode) {
 			analyseSQL(parsInf, ((SubqueryNode) wrightOp).getResultSet(),
 					notOpt);
 		} else {
-			System.out.println("todo ,parse condition: "
-					+ wrightOp.getClass().getCanonicalName());
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("todo ,parse condition: "
+						+ wrightOp.getClass().getCanonicalName());
+			}
 		}
 
 	}

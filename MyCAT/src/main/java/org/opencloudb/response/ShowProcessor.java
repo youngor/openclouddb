@@ -18,6 +18,7 @@ package org.opencloudb.response;
 import java.nio.ByteBuffer;
 
 import org.opencloudb.MycatServer;
+import org.opencloudb.buffer.BufferPool;
 import org.opencloudb.config.Fields;
 import org.opencloudb.manager.ManagerConnection;
 import org.opencloudb.mysql.PacketUtil;
@@ -37,7 +38,7 @@ import org.opencloudb.util.LongUtil;
  */
 public final class ShowProcessor {
 
-    private static final int FIELD_COUNT = 10;
+    private static final int FIELD_COUNT = 12;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
@@ -69,7 +70,13 @@ public final class ShowProcessor {
 
         fields[i] = PacketUtil.getField("TOTAL_BUFFER", Fields.FIELD_TYPE_LONGLONG);
         fields[i++].packetId = ++packetId;
+        
+        fields[i] = PacketUtil.getField("BU_PERCENT", Fields.FIELD_TYPE_TINY);
+        fields[i++].packetId = ++packetId;
 
+        fields[i] = PacketUtil.getField("BU_WARNS", Fields.FIELD_TYPE_TINY);
+        fields[i++].packetId = ++packetId;
+        
         fields[i] = PacketUtil.getField("FC_COUNT", Fields.FIELD_TYPE_LONG);
         fields[i++].packetId = ++packetId;
 
@@ -111,6 +118,11 @@ public final class ShowProcessor {
     }
 
     private static RowDataPacket getRow(NIOProcessor processor, String charset) {
+    	BufferPool bufferPool=processor.getBufferPool();
+    	int bufferSize=bufferPool.size();
+    	int bufferCapacity=bufferPool.capacity();
+    	int bufferTempLocatedTimes=bufferPool.getNewCount();
+    	int bufferUsagePercent=(bufferCapacity-bufferSize)*100/bufferCapacity;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(processor.getName().getBytes());
         row.add(LongUtil.toBytes(processor.getNetInBytes()));
@@ -118,8 +130,10 @@ public final class ShowProcessor {
         row.add(LongUtil.toBytes(processor.getReactCount()));
         row.add(IntegerUtil.toBytes(processor.getRegisterQueueSize()));
         row.add(IntegerUtil.toBytes(processor.getWriteQueueSize()));
-        row.add(IntegerUtil.toBytes(processor.getBufferPool().size()));
-        row.add(IntegerUtil.toBytes(processor.getBufferPool().capacity()));
+        row.add(IntegerUtil.toBytes(bufferSize));
+        row.add(IntegerUtil.toBytes(bufferCapacity));
+        row.add(IntegerUtil.toBytes(bufferUsagePercent));
+        row.add(IntegerUtil.toBytes(bufferTempLocatedTimes));
         row.add(IntegerUtil.toBytes(processor.getFrontends().size()));
         row.add(IntegerUtil.toBytes(processor.getBackends().size()));
         return row;

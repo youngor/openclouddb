@@ -62,10 +62,6 @@ public interface NIOConnection extends ClosableConnection{
      */
     void writeByQueue() throws IOException;
 
-    /**
-     * 基于监听事件的方式写数据
-     */
-    void writeByEvent() throws IOException;
 
     /**
      * 发生错误

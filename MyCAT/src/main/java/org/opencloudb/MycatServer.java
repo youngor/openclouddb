@@ -45,7 +45,7 @@ public class MycatServer {
 	private static final long TIME_UPDATE_PERIOD = 20L;
 	private static final MycatServer INSTANCE = new MycatServer();
 	private static final Logger LOGGER = Logger.getLogger(MycatServer.class);
-	private final RouteService routerService ;
+	private final RouteService routerService;
 	private final CacheService cacheService;
 
 	public static final MycatServer getInstance() {
@@ -74,11 +74,7 @@ public class MycatServer {
 				system.getManagerExecutor());
 		this.sqlRecorder = new SQLRecorder(system.getSqlRecordCount());
 		this.isOnline = new AtomicBoolean(true);
-		try {
-			cacheService = new CacheService();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		cacheService = new CacheService();
 		routerService = new RouteService(cacheService);
 		this.startupTime = TimeUtil.currentTimeMillis();
 	}
@@ -105,17 +101,21 @@ public class MycatServer {
 		timer.schedule(updateTime(), 0L, TIME_UPDATE_PERIOD);
 
 		// startup processors
-		int executor = system.getProcessorExecutor() * 2;
+		int executor = system.getProcessorExecutor();
 
 		// int handler = system.getProcessorHandler();
 
 		processors = new NIOProcessor[system.getProcessors()];
+		int processBuferPool=system.getProcessorBufferPool();
+		int processBufferChunk=system.getProcessorBufferChunk();
+		LOGGER.info("Startup processors ...,total processors:"
+				+ processors.length + " each procssors's thread pool size:" + executor+"    \r\n each process allocated socket buffer pool "+processBuferPool+" bytes ,buffer chunk size:"+processBufferChunk
+				+"  buffer pool's capacity(buferPool/bufferChunk) is:"+processBuferPool/processBufferChunk);
 		for (int i = 0; i < processors.length; i++) {
-			processors[i] = new NIOProcessor("Processor" + i, 0, executor);
+			processors[i] = new NIOProcessor("Processor" + i, processBuferPool,processBufferChunk, executor);
 			processors[i].startup();
 		}
-		LOGGER.info("Startup processors ...,total processor:"
-				+ processors.length + " thread pool size:" + executor);
+		
 		timer.schedule(processorCheck(), 0L, system.getProcessorCheckPeriod());
 
 		// startup connector
@@ -162,7 +162,6 @@ public class MycatServer {
 		LOGGER.info("===============================================");
 	}
 
-	
 	public RouteService getRouterService() {
 		return routerService;
 	}

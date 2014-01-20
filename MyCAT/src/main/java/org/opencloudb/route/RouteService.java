@@ -4,20 +4,21 @@ import java.sql.SQLNonTransientException;
 
 import org.opencloudb.cache.CachePool;
 import org.opencloudb.cache.CacheService;
+import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.server.parser.ServerParse;
 
 public class RouteService {
 	private final CachePool sqlRouteCache;
-	private final CachePool tableId2DataNodeCache;
+	private final LayerCachePool tableId2DataNodeCache;
 
 	public RouteService(CacheService cachService) {
 		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
-		tableId2DataNodeCache = cachService
+		tableId2DataNodeCache = (LayerCachePool) cachService
 				.getCachePool("TableID2DataNodeCache");
 	}
 
-	public CachePool getTableId2DataNodeCache() {
+	public LayerCachePool getTableId2DataNodeCache() {
 		return tableId2DataNodeCache;
 	}
 
@@ -26,7 +27,7 @@ public class RouteService {
 		RouteResultset rrs = null;
 		String cacheKey = null;
 		if (sqlType == ServerParse.SELECT) {
-			cacheKey = schema + stmt;
+			cacheKey = schema.getName() + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
 			if (rrs != null) {
 				return rrs;

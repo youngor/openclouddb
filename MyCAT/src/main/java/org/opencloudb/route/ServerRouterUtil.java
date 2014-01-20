@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.cache.CachePool;
+import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.TableConfig;
 import org.opencloudb.config.model.rule.RuleAlgorithm;
@@ -68,7 +68,7 @@ public final class ServerRouterUtil {
 			.getLogger(ServerRouterUtil.class);
 
 	public static RouteResultset route(SchemaConfig schema, int sqlType,
-			String stmt, String charset, Object info, CachePool cachePool)
+			String stmt, String charset, Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		stmt = stmt.trim();
 		stmt = removeSchema(stmt, schema.getName());
@@ -158,16 +158,18 @@ public final class ServerRouterUtil {
 						throw new SQLNonTransientException(inf);
 					}
 					// try to route by ER parent partion key
-					rrs = routeByERParentKey(stmt, rrs, tc, joinKeyVal);
-					if (rrs != null) {
-						return rrs;
+					RouteResultset theRrs = routeByERParentKey(stmt, rrs, tc,
+							joinKeyVal);
+					if (theRrs != null) {
+						return theRrs;
 					}
+
 					// route by sql query root parent's datanode
 					String findRootTBSql = tc.getLocateRTableKeySql()
 							+ joinKeyVal;
 					FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
-					String dn = fetchHandler.execute(findRootTBSql, tc
-							.getRootParent().getDataNodes());
+					String dn = fetchHandler.execute(schema.getName(),
+							findRootTBSql, tc.getRootParent().getDataNodes());
 					if (dn == null) {
 						throw new SQLNonTransientException(
 								"can't find (root) parent sharding node for sql:"
@@ -399,8 +401,8 @@ public final class ServerRouterUtil {
 	private static RouteResultset tryRouteForTable(QueryTreeNode ast,
 			SchemaConfig schema, RouteResultset rrs, boolean isSelect,
 			String sql, TableConfig tc, Set<ColumnRoutePair> ruleCol2Val,
-			Map<String, Set<ColumnRoutePair>> allColConds, CachePool cachePool)
-			throws SQLNonTransientException {
+			Map<String, Set<ColumnRoutePair>> allColConds,
+			LayerCachePool cachePool) throws SQLNonTransientException {
 
 		if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE && isSelect) {
 			return routeToSingleNode(rrs, tc.getRandomDataNode(), sql);
@@ -446,9 +448,11 @@ public final class ServerRouterUtil {
 					Set<String> dataNodes = new HashSet<String>(
 							primaryKeyPairs.size());
 					boolean allFound = true;
+					String tableKey = schema.getName() + '_' + tc.getName();
 					for (ColumnRoutePair pair : primaryKeyPairs) {
-						String cacheKey = tc.getName() + '_' + pair.colValue;
-						String dataNode = (String) cachePool.get(cacheKey);
+						String cacheKey = pair.colValue;
+						String dataNode = (String) cachePool.get(tableKey,
+								cacheKey);
 						if (dataNode == null) {
 							allFound = false;
 							break;
@@ -462,8 +466,7 @@ public final class ServerRouterUtil {
 					}
 					// need cache primary key ->datanode relation
 					if (isSelect && tc.getPrimaryKey() != null) {
-						rrs.setPrimaryKey(tc.getName() + '.'
-								+ tc.getPrimaryKey());
+						rrs.setPrimaryKey(tableKey + '.' + tc.getPrimaryKey());
 					}
 				}
 
@@ -478,7 +481,7 @@ public final class ServerRouterUtil {
 
 	private static RouteResultset tryRouteForTables(QueryTreeNode ast,
 			boolean isSelect, RouteResultset rrs, SchemaConfig schema,
-			ShardingParseInfo ctx, String sql, CachePool cachePool)
+			ShardingParseInfo ctx, String sql, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		Map<String, TableConfig> tables = schema.getTables();
 		Map<String, Map<String, Set<ColumnRoutePair>>> tbCondMap = ctx.tablesAndCondtions;

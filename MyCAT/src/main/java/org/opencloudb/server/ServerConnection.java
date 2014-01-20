@@ -122,13 +122,13 @@ public class ServerConnection extends FrontendConnection {
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
-			writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "No database selected");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No MyCAT Database selected");
 			return;
 		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig()
 				.getSchemas().get(db);
 		if (schema == null) {
-			writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '"
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown MyCAT Database '"
 					+ db + "'");
 			return;
 		}
@@ -140,7 +140,7 @@ public class ServerConnection extends FrontendConnection {
 			rrs = MycatServer.getInstance().getRouterservice().route(schema, type, sql, this.charset, this);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
-			LOGGER.warn(s.append(this).append(sql).toString(), e);
+			LOGGER.warn(s.append(this).append(sql).toString()+" err:"+e.toString());
 			String msg = e.getMessage();
 			writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e
 					.getClass().getSimpleName() : msg);
@@ -216,6 +216,7 @@ public class ServerConnection extends FrontendConnection {
 	public void close(String reason) {
 
 		super.close(reason);
+		this.session.clearResources();
 		if (this.isClosed()) {
 			processor.getExecutor().execute(new Runnable() {
 				@Override

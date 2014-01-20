@@ -72,8 +72,8 @@ public class InsertSQLAnalyser {
 				// System.out.println(columnNames[i] + " " + colVale);
 			} else {
 				colMap.put(columnNames[i].toUpperCase(), "?");
-				System.out.println("todo column value class:"
-						+ expNode.getClass().getCanonicalName());
+//				System.out.println("todo column value class:"
+//						+ expNode.getClass().getCanonicalName());
 			}
 
 		}

@@ -2,6 +2,7 @@ package org.opencloudb.mysql.nio.handler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
@@ -10,15 +11,14 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
+import org.opencloudb.cache.CachePool;
 import org.opencloudb.net.mysql.ErrorPacket;
-import org.opencloudb.net.mysql.FieldPacket;
 import org.opencloudb.net.mysql.RowDataPacket;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.NonBlockingSession;
 import org.opencloudb.server.parser.ServerParse;
 
 /**
- * by wuzh fetch store node of child table ,use sql as following select id from
  * company where id=(select company_id from customer where id=3); the one which
  * return data (id) is the datanode to store child table's records
  * 
@@ -31,26 +31,36 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	private String sql;
 	private volatile String result;
 	private volatile String dataNode;
+	private AtomicInteger finished = new AtomicInteger(0);
 	protected final ReentrantLock lock = new ReentrantLock();
 
-	public String execute(String sql, ArrayList<String> dataNodes) {
+	public String execute(String schema, String sql, ArrayList<String> dataNodes) {
+		String key = schema + ":" + sql;
+		CachePool cache = MycatServer.getInstance().getCacheService()
+				.getCachePool("ER_SQL2PARENTID");
+		String result = (String) cache.get(key);
+		if (result != null) {
+			return result;
+		}
 		this.sql = sql;
+		int totalCount = dataNodes.size();
 		long startTime = System.currentTimeMillis();
 		long endTime = startTime + 5 * 60 * 1000L;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
-		
+
 		for (String dn : dataNodes) {
 			if (dataNode != null) {
 				return dataNode;
 			}
 			PhysicalDBNode mysqlDN = conf.getDataNodes().get(dn);
-			ConnectionMeta conMeta=new ConnectionMeta(mysqlDN.getDatabase(),null,-1,true);
+			ConnectionMeta conMeta = new ConnectionMeta(mysqlDN.getDatabase(),
+					null, -1, true);
 			try {
 				if (LOGGER.isDebugEnabled()) {
 					LOGGER.debug("execute in datanode " + dn);
 				}
-				mysqlDN.getConnection(conMeta,new RouteResultsetNode(dn,
-						ServerParse.SELECT, sql),  this, dn);
+				mysqlDN.getConnection(conMeta, new RouteResultsetNode(dn,
+						ServerParse.SELECT, sql), this, dn);
 			} catch (Exception e) {
 				LOGGER.warn("get connection err " + e);
 			}
@@ -60,15 +70,19 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 			}
 		}
+
 		while (dataNode == null && System.currentTimeMillis() < endTime) {
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {
 				break;
 			}
-			if (dataNode != null) {
-				return dataNode;
+			if (dataNode != null || finished.get() >= totalCount) {
+				break;
 			}
+		}
+		if (dataNode != null) {
+			cache.putIfAbsent(key, dataNode);
 		}
 		return dataNode;
 
@@ -87,12 +101,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
+		finished.incrementAndGet();
 		LOGGER.warn("connectionError " + e);
 
 	}
 
 	@Override
 	public void errorResponse(byte[] data, PhysicalConnection conn) {
+		finished.incrementAndGet();
 		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
@@ -105,21 +121,11 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void okResponse(byte[] ok, PhysicalConnection conn) {
-		LOGGER.info("okResponse ");
-		conn.setRunning(false);
-		conn.release();
-
-	}
-
-	@Override
-	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
-		LOGGER.info("fieldEofResponse ,fields " + fields.size());
-		for (byte[] data : fields) {
-			FieldPacket fieldPkg = new FieldPacket();
-			fieldPkg.read(data);
-			String fieldName = new String(fieldPkg.name);
-			System.out.println(fieldName + " type " + fieldPkg.type);
+		boolean executeResponse = conn.syncAndExcute();
+		if (executeResponse) {
+			finished.incrementAndGet();
+			conn.setRunning(false);
+			conn.release();
 		}
 
 	}
@@ -143,12 +149,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 	@Override
 	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-		LOGGER.info("rowEofResponse   ");
+		finished.incrementAndGet();
 		conn.setRunning(false);
 		conn.release();
 	}
 
 	private void executeException(PhysicalConnection c, Throwable e) {
+		finished.incrementAndGet();
 		LOGGER.warn("executeException   " + e);
 		c.setRunning(false);
 		c.close("exception:" + e);
@@ -166,7 +173,10 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 		LOGGER.warn("connection closed " + conn + " reason:" + reason);
 	}
 
-	
-	
+	@Override
+	public void fieldEofResponse(byte[] header, List<byte[]> fields,
+			byte[] eof, PhysicalConnection conn) {
+
+	}
 
 }

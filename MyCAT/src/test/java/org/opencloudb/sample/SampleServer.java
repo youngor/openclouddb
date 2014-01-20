@@ -70,7 +70,7 @@ public class SampleServer {
         // startup processors
         processors = new NIOProcessor[Runtime.getRuntime().availableProcessors()];
         for (int i = 0; i < processors.length; i++) {
-            processors[i] = new NIOProcessor(name + "Processor" + i);
+            processors[i] = new NIOProcessor(name + "Processor" + i,1024*1024,4096,1);
             processors[i].startup();
         }
 

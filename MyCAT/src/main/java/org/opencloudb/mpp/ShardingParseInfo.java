@@ -15,9 +15,9 @@ public class ShardingParseInfo {
 		Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndCondtions
 				.get(tableName);
 		if (tableColumnsMap == null) {
-			System.out
-					.println("not found table name ,may be child select result "
-							+ tableName);
+//			System.out
+//					.println("not found table name ,may be child select result "
+//							+ tableName);
 			return;
 		}
 		String uperColName = columnName.toUpperCase();

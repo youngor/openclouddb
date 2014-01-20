@@ -425,9 +425,11 @@ public class NonBlockingSession implements Session {
 		this.releaseConnections();
 		if (this.singleNodeHandler != null) {
 			singleNodeHandler.clearResources();
+			singleNodeHandler=null;
 		}
 		if (this.multiNodeHandler != null) {
 			multiNodeHandler.clearResources();
+			multiNodeHandler=null;
 		}
 	}
 

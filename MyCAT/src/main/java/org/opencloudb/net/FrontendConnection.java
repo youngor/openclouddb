@@ -122,7 +122,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
 	public void setProcessor(NIOProcessor processor) {
 		this.processor = processor;
-		this.readBuffer = processor.getBufferPool().allocate();
+		this.readBuffer =allocate();
 		processor.addFrontend(this);
 	}
 

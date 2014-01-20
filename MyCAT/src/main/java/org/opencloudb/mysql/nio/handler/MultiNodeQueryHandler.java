@@ -32,7 +32,7 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
-import org.opencloudb.cache.CachePool;
+import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.mpp.ColMeta;
 import org.opencloudb.mpp.DataMergeService;
 import org.opencloudb.net.mysql.ErrorPacket;
@@ -375,17 +375,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					rowDataPkg.read(row);
 					String primaryKey = new String(
 							rowDataPkg.fieldValues.get(primaryKeyIndex));
-					CachePool pool = MycatServer.getInstance()
+					LayerCachePool pool = MycatServer.getInstance()
 							.getRouterservice().getTableId2DataNodeCache();
-
-					String cacheKey = priamaryKeyTable + '_' + primaryKey;
 					String dataNode = ((RouteResultsetNode) conn
 							.getAttachment()).getName();
-					pool.putIfAbsent(cacheKey, dataNode);
-					if(LOGGER.isDebugEnabled())
-					{
-						LOGGER.debug("cache primary key for table: "+priamaryKeyTable+" primary key value:"+primaryKey+" in datanode:"+dataNode);
-					}
+					pool.putIfAbsent(priamaryKeyTable, primaryKey, dataNode);
 				}
 				row[3] = ++packetId;
 				buffer = session.getSource().writeToBuffer(row, buffer);

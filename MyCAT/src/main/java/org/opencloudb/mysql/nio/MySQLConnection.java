@@ -37,6 +37,7 @@ import org.opencloudb.net.mysql.MySQLPacket;
 import org.opencloudb.net.mysql.QuitPacket;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.ServerConnection;
+import org.opencloudb.server.parser.ServerParse;
 import org.opencloudb.util.TimeUtil;
 
 /**
@@ -121,10 +122,14 @@ public class MySQLConnection extends BackendConnection implements
 	private boolean fromSlaveDB;
 	private long threadId;
 	private HandshakePacket handshake;
-	private int charsetIndex;
-	private String charset;
+	private volatile int charsetIndex;
+	private volatile int oldCharsetIndex;
+	private volatile String charset;
+	private volatile String oldCharset;
 	private volatile int txIsolation;
+	private volatile int oldTxIsolation;
 	private volatile boolean autocommit;
+	private volatile boolean oldAutoCommit;
 	private long clientFlags;
 	private boolean isAuthenticated;
 	private String user;
@@ -183,6 +188,7 @@ public class MySQLConnection extends BackendConnection implements
 
 	public void setCharsetIndex(int charsetIndex) {
 		this.charsetIndex = charsetIndex;
+		this.oldCharsetIndex = charsetIndex;
 	}
 
 	public long getThreadId() {
@@ -199,6 +205,7 @@ public class MySQLConnection extends BackendConnection implements
 
 	public void setCharset(String charset) {
 		this.charset = charset;
+		this.oldCharset = charset;
 	}
 
 	public boolean isAuthenticated() {
@@ -283,16 +290,16 @@ public class MySQLConnection extends BackendConnection implements
 		private volatile boolean executed;
 
 		public StatusSync(MySQLConnection conn, RouteResultsetNode rrn,
-				ServerConnection sc, boolean autocommit) {
+				int scCharIndex, int scTxtIsolation, boolean autocommit) {
 			this.conn = conn;
 			this.rrn = rrn;
-			this.charIndex = sc.getCharsetIndex();
+			this.charIndex = scCharIndex;
 			this.schema = conn.schema;
 			this.schemaCmd = !schema.equals(conn.oldSchema) ? getChangeSchemaCommand(schema)
 					: null;
 			this.charCmd = conn.charsetIndex != charIndex ? getCharsetCommand(charIndex)
 					: null;
-			this.txIsolation = sc.getTxIsolation();
+			this.txIsolation = scTxtIsolation;
 
 			this.isoCmd = conn.txIsolation != txIsolation ? getTxIsolationCommand(txIsolation)
 					: null;
@@ -352,10 +359,12 @@ public class MySQLConnection extends BackendConnection implements
 		public boolean sync() {
 			CommandPacket cmd;
 			if (schemaCmd != null) {
+				conn.schema = "snyn...";
 				updater = new Runnable() {
 					@Override
 					public void run() {
-						conn.oldSchema = schema;
+						conn.schema = schema;
+						conn.oldSchema = conn.schema;
 					}
 				};
 				cmd = schemaCmd;
@@ -365,12 +374,16 @@ public class MySQLConnection extends BackendConnection implements
 				return true;
 			}
 			if (charCmd != null) {
+				conn.charsetIndex = conn.oldCharsetIndex;
+				conn.charset = conn.oldCharset;
 				updater = new Runnable() {
 					@Override
 					public void run() {
 						int ci = StatusSync.this.charIndex;
 						conn.charsetIndex = ci;
 						conn.charset = CharsetUtil.getCharset(ci);
+						conn.oldCharsetIndex = ci;
+						conn.oldCharset = CharsetUtil.getCharset(ci);
 					}
 				};
 				cmd = charCmd;
@@ -380,10 +393,12 @@ public class MySQLConnection extends BackendConnection implements
 				return true;
 			}
 			if (isoCmd != null) {
+				conn.txIsolation = conn.oldTxIsolation;
 				updater = new Runnable() {
 					@Override
 					public void run() {
 						conn.txIsolation = StatusSync.this.txIsolation;
+						conn.oldTxIsolation = conn.txIsolation;
 					}
 				};
 				cmd = isoCmd;
@@ -393,10 +408,12 @@ public class MySQLConnection extends BackendConnection implements
 				return true;
 			}
 			if (acCmd != null) {
+				conn.autocommit = conn.oldAutoCommit;
 				updater = new Runnable() {
 					@Override
 					public void run() {
 						conn.autocommit = StatusSync.this.autocommit;
+						conn.oldAutoCommit = autocommit;
 					}
 				};
 				cmd = acCmd;
@@ -476,11 +493,9 @@ public class MySQLConnection extends BackendConnection implements
 		if (!modifiedSQLExecuted && rrn.isModifySQL()) {
 			modifiedSQLExecuted = true;
 		}
-		StatusSync sync = new StatusSync(this, rrn, sc, autocommit);
-		statusSync = sync;
-		if (sync.isSync() || !sync.sync()) {
-			sync.execute();
-		}
+		StatusSync sync = new StatusSync(this, rrn, sc.getCharsetIndex(),
+				sc.getTxIsolation(), autocommit);
+		doExecute(sync);
 	}
 
 	/**
@@ -489,8 +504,19 @@ public class MySQLConnection extends BackendConnection implements
 	 * @param sql
 	 * @throws UnsupportedEncodingException
 	 */
-	public void query(String sql) throws UnsupportedEncodingException {
-		sendQueryCmd(sql);
+	public void query(String query)
+			throws UnsupportedEncodingException {
+		RouteResultsetNode rrn=new RouteResultsetNode("default", ServerParse.SELECT,query);
+		StatusSync sync = new StatusSync(this, rrn, this.charsetIndex,
+				Isolations.READ_COMMITTED, true);
+		doExecute(sync);
+	}
+
+	private void doExecute(StatusSync sync) {
+		statusSync = sync;
+		if (sync.isSync() || !sync.sync()) {
+			sync.execute();
+		}
 	}
 
 	public long getLastTime() {
@@ -506,7 +532,7 @@ public class MySQLConnection extends BackendConnection implements
 			if (isAuthenticated) {
 				// QS_TODO check
 				write(writeToBuffer(QuitPacket.QUIT, allocate()));
-				write(processor.getBufferPool().allocate());
+				write(allocate());
 			} else {
 				close("normal");
 			}

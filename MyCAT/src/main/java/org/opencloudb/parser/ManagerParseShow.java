@@ -50,6 +50,7 @@ public final class ManagerParseShow {
     public static final int SLOW_DATANODE = 25;
     public static final int SLOW_SCHEMA = 26;
     public static final int BACKEND = 27;
+    public static final int CACHE = 28;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -187,14 +188,26 @@ public final class ManagerParseShow {
             case 'O':
             case 'o':
                 return show2CoCheck(stmt, offset);
+            case 'A':
+            case 'a':
+            	 return show2CACheck(stmt, offset);
             default:
                 return OTHER;
             }
         }
         return OTHER;
     }
+ // SHOW @@CACHE
+    private static int show2CACheck(String stmt, int offset) {
+    	String remain=stmt.substring(offset);
+    	 if(remain.equalsIgnoreCase("ACHE"))
+    	 {
+    		 return CACHE;
+    	 }
+    	return OTHER;
+	}
 
-    // SHOW @@DATA
+	// SHOW @@DATA
     static int show2DCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ATA".length()) {
             char c1 = stmt.charAt(++offset);

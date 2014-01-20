@@ -146,6 +146,9 @@ public final class ShowHandler {
 		case ManagerParseShow.THREADPOOL:
 			ShowThreadPool.execute(c);
 			break;
+		case ManagerParseShow.CACHE:
+			ShowCache.execute(c);
+			break;
 		case ManagerParseShow.TIME_CURRENT:
 			ShowTime.execute(c, ManagerParseShow.TIME_CURRENT);
 			break;

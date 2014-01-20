@@ -16,13 +16,16 @@
 package org.opencloudb.buffer;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.log4j.Logger;
 
 /**
  * @author mycat
  */
 public final class BufferPool {
-
+	private static final Logger LOGGER = Logger.getLogger(BufferPool.class);
 	private final int chunkSize;
 	private final ByteBuffer[] items;
 	private final ReentrantLock lock;
@@ -38,7 +41,7 @@ public final class BufferPool {
 		this.items = new ByteBuffer[capacity];
 		this.lock = new ReentrantLock();
 		for (int i = 0; i < capacity; i++) {
-			insert(create(chunkSize));
+			insert(createDirectBuffer(chunkSize));
 		}
 	}
 
@@ -65,7 +68,9 @@ public final class BufferPool {
 		}
 		if (node == null) {
 			++newCount;
-			return create(chunkSize);
+			LOGGER.warn("pool is full ,allocate tempory buffer ,total alloccated times:"
+					+ newCount);
+			return createTempBuffer(chunkSize);
 		} else {
 			return node;
 		}
@@ -73,7 +78,12 @@ public final class BufferPool {
 
 	public void recycle(ByteBuffer buffer) {
 		// 拒绝回收null和容量大于chunkSize的缓存
-		if (buffer == null || buffer.capacity() > chunkSize) {
+		if (buffer == null || !buffer.isDirect()) {
+			return;
+		} else if (buffer.capacity() > chunkSize) {
+			buffer.clear();
+			LOGGER.warn("cant' recycle  a buffer large than my pool chunksize "
+					+ buffer.capacity());
 			return;
 		}
 		final ReentrantLock lock = this.lock;
@@ -82,6 +92,8 @@ public final class BufferPool {
 			if (count != items.length) {
 				buffer.clear();
 				insert(buffer);
+			} else {
+				LOGGER.warn("can't recycle  buffer ,pool is full ");
 			}
 		} finally {
 			lock.unlock();
@@ -107,10 +119,35 @@ public final class BufferPool {
 		return (++i == items.length) ? 0 : i;
 	}
 
-	private ByteBuffer create(int size) {
-		// for performance
-		return ByteBuffer.allocateDirect(size);
-		// return ByteBuffer.allocate(size);
+	private ByteBuffer createTempBuffer(int size) {
+		return ByteBuffer.allocate(size);
 	}
 
+	private ByteBuffer createDirectBuffer(int size) {
+		// for performance
+		return ByteBuffer.allocateDirect(size);
+	}
+
+	public ByteBuffer allocate(int size) {
+		if (size <= this.chunkSize) {
+			return allocate();
+		} else {
+			LOGGER.warn("allocate buffer size large than default chunksize:"
+					+ this.chunkSize + " he want " + size);
+			return createTempBuffer(size);
+		}
+	}
+
+	public static void main(String[] args) {
+		BufferPool pool = new BufferPool(1024 * 5, 1024);
+		int i = pool.capacity();
+		ArrayList<ByteBuffer> all = new ArrayList<ByteBuffer>();
+		for (int j = 0; j <= i; j++) {
+			all.add(pool.allocate());
+		}
+		for (ByteBuffer buf : all) {
+			pool.recycle(buf);
+		}
+		System.out.println(pool.size());
+	}
 }
