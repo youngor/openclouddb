@@ -70,7 +70,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 		this.localPort = socket.getLocalPort();
 		this.handler = new FrontendAuthenticator(this);
 	}
-
+	
 	public long getId() {
 		return id;
 	}
@@ -121,9 +121,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 	}
 
 	public void setProcessor(NIOProcessor processor) {
-		this.processor = processor;
-		this.readBuffer =allocate();
+		super.setProcessor(processor);
 		processor.addFrontend(this);
+
 	}
 
 	public void setQueryHandler(FrontendQueryHandler queryHandler) {
@@ -264,7 +264,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 				return;
 			}
 
-			//sql = StringUtil.replace(sql, "`", "");
+			// sql = StringUtil.replace(sql, "`", "");
 
 			// remove last ';'
 			if (sql.endsWith(";")) {
@@ -425,7 +425,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 	public String toString() {
 		return new StringBuilder().append("[thread=")
 				.append(Thread.currentThread().getName()).append(",class=")
-				.append(getClass().getSimpleName()).append(",host=")
+				.append(getClass().getSimpleName()).append(",id=").append(id).append(",host=")
 				.append(host).append(",port=").append(port).append(",schema=")
 				.append(schema).append(']').toString();
 	}

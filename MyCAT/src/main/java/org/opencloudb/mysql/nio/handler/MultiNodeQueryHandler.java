@@ -189,8 +189,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				lock.unlock();
 			}
 			if (decrementCountBy(1)) {
-				// clear resources
-				clearResources();
 				if (this.autocommit) {// clear all connections
 					session.releaseConnections();
 				}
@@ -287,10 +285,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				this.createErrPkg("exception:multiNodeQuery process err," + e)
 						.write(source);
 			} finally {
+				lock.unlock();
 				if (dataMergeSvr != null) {
 					dataMergeSvr.clear();
 				}
-				lock.unlock();
 			}
 		}
 	}
@@ -407,7 +405,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			lock.unlock();
 		}
 		if (buf != null) {
-			session.getSource().recycle(buf);
+			session.getSource().recycleIfNeed(buf);
 		}
 
 	}

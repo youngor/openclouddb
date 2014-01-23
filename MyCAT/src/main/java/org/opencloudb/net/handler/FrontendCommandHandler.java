@@ -53,7 +53,7 @@ public class FrontendCommandHandler implements NIOHandler {
             break;
         case MySQLPacket.COM_QUIT:
             commands.doQuit();
-            source.close("do quit");
+            source.close("quit cmd");
             break;
         case MySQLPacket.COM_PROCESS_KILL:
             commands.doKill();

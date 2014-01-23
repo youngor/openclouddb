@@ -116,8 +116,7 @@ public abstract class BackendConnection extends AbstractConnection {
 	}
 
 	public void setProcessor(NIOProcessor processor) {
-		this.processor = processor;
-		this.readBuffer = allocate();
+		super.setProcessor(processor);
 		processor.addBackend(this);
 	}
 

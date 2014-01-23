@@ -65,6 +65,7 @@ public class NonBlockingSession implements Session {
 	private volatile CommitNodeHandler commitHandler;
 	private volatile RollbackNodeHandler rollbackHandler;
 	private boolean openWRFluxContrl = false;
+
 	public NonBlockingSession(ServerConnection source, int openWRFluxContrl) {
 		this.source = source;
 		this.target = new ConcurrentHashMap<RouteResultsetNode, PhysicalConnection>(
@@ -92,8 +93,6 @@ public class NonBlockingSession implements Session {
 			}
 		}
 	}
-
-
 
 	/**
 	 * temporary upsupress channel read event ,because front connection is
@@ -142,6 +141,8 @@ public class NonBlockingSession implements Session {
 
 	@Override
 	public void execute(RouteResultset rrs, int type) {
+		//clear prev execute resources
+		clearHandlesResources();
 		if (LOGGER.isDebugEnabled()) {
 			StringBuilder s = new StringBuilder();
 			LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
@@ -418,19 +419,23 @@ public class NonBlockingSession implements Session {
 		}
 	}
 
+	private void clearHandlesResources() {
+		if (this.singleNodeHandler != null) {
+			singleNodeHandler.clearResources();
+			singleNodeHandler = null;
+		}
+		if (this.multiNodeHandler != null) {
+			multiNodeHandler.clearResources();
+			multiNodeHandler = null;
+		}
+	}
+
 	public void clearResources() {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("clear session resources " + this);
 		}
 		this.releaseConnections();
-		if (this.singleNodeHandler != null) {
-			singleNodeHandler.clearResources();
-			singleNodeHandler=null;
-		}
-		if (this.multiNodeHandler != null) {
-			multiNodeHandler.clearResources();
-			multiNodeHandler=null;
-		}
+		clearHandlesResources();
 	}
 
 	public boolean closed() {

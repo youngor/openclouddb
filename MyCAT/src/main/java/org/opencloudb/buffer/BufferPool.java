@@ -76,7 +76,31 @@ public final class BufferPool {
 		}
 	}
 
-	public void recycle(ByteBuffer buffer) {
+	/**
+	 * check if buffer already recycled ,only used when not sure if a buffer
+	 * already recycled
+	 * 
+	 * @param buffer
+	 */
+	public void safeRecycle(ByteBuffer buffer) {
+		checkValidBuffer(buffer);
+		final boolean debug = LOGGER.isDebugEnabled();
+		final ReentrantLock lock = this.lock;
+		lock.lock();
+		try {
+			if (testIfDuplicate(buffer)) {
+				if (debug) {
+					LOGGER.debug("already recycled buffer ");
+				}
+				return;
+			}
+			recycleBuffer(buffer);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void checkValidBuffer(ByteBuffer buffer) {
 		// 拒绝回收null和容量大于chunkSize的缓存
 		if (buffer == null || !buffer.isDirect()) {
 			return;
@@ -86,14 +110,24 @@ public final class BufferPool {
 					+ buffer.capacity());
 			return;
 		}
+	}
+
+	public void recycle(ByteBuffer buffer) {
+		checkValidBuffer(buffer);
+		recycleBuffer(buffer);
+	}
+	private void recycleBuffer(ByteBuffer buffer) {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
+			// reportDuplicate(buffer);
 			if (count != items.length) {
 				buffer.clear();
 				insert(buffer);
+
 			} else {
 				LOGGER.warn("can't recycle  buffer ,pool is full ");
+
 			}
 		} finally {
 			lock.unlock();
@@ -102,8 +136,20 @@ public final class BufferPool {
 
 	private void insert(ByteBuffer buffer) {
 		items[putIndex] = buffer;
+
 		putIndex = inc(putIndex);
 		++count;
+
+	}
+
+	public boolean testIfDuplicate(ByteBuffer buffer) {
+		for (ByteBuffer exists : items) {
+			if (exists == buffer) {
+				return true;
+			}
+		}
+		return false;
+
 	}
 
 	private ByteBuffer extract() {

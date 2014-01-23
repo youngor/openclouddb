@@ -51,14 +51,13 @@ public final class BufferQueue {
 		this.attachment = buffer;
 	}
 
-	public int size() {
-		final ReentrantLock lock = this.lock;
-		lock.lock();
-		try {
-			return count;
-		} finally {
-			lock.unlock();
-		}
+	/**
+	 * used for statics
+	 * 
+	 * @return
+	 */
+	public int snapshotSize() {
+		return count;
 	}
 
 	/**

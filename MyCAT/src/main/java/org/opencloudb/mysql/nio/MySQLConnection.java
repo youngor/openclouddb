@@ -678,7 +678,7 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public String toString() {
 		return "MySQLConnection [id=" + id + ", isRunning=" + isRunning
-				+ ", lastTime=" + lastTime + ", schema=" + schema
+				+ ", processor=" + processor.getName() +", lastTime=" + lastTime + ", schema=" + schema
 				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
 				+ ", threadId=" + threadId + ", charset=" + charset
 				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit

@@ -15,6 +15,7 @@
  */
 package org.opencloudb.net;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -32,20 +33,16 @@ import org.opencloudb.config.ErrorCode;
  */
 public final class NIOReactor {
 	private static final Logger LOGGER = Logger.getLogger(NIOReactor.class);
-
 	private final String name;
-	private final R reactorR;
-	private final W reactorW;
+	private final RW reactorR;
 
 	public NIOReactor(String name) throws IOException {
 		this.name = name;
-		this.reactorR = new R();
-		this.reactorW = new W();
+		this.reactorR = new RW();
 	}
 
 	final void startup() {
-		new Thread(reactorR, name + "-R").start();
-		new Thread(reactorW, name + "-W").start();
+		new Thread(reactorR, name + "-RW").start();
 	}
 
 	final void postRegister(NIOConnection c) {
@@ -61,20 +58,12 @@ public final class NIOReactor {
 		return reactorR.reactCount;
 	}
 
-	final void postWrite(NIOConnection c) {
-		reactorW.writeQueue.offer(c);
-	}
-
-	final BlockingQueue<NIOConnection> getWriteQueue() {
-		return reactorW.writeQueue;
-	}
-
-	private final class R implements Runnable {
+	private final class RW implements Runnable {
 		private final Selector selector;
 		private final BlockingQueue<NIOConnection> registerQueue;
 		private long reactCount;
 
-		private R() throws IOException {
+		private RW() throws IOException {
 			this.selector = Selector.open();
 			this.registerQueue = new LinkedBlockingQueue<NIOConnection>();
 		}
@@ -82,40 +71,44 @@ public final class NIOReactor {
 		@Override
 		public void run() {
 			final Selector selector = this.selector;
-			// final Set<SelectionKey> suppressedKeys = new
-			// HashSet<SelectionKey>();
+			Set<SelectionKey> keys = null;
 			for (;;) {
 				++reactCount;
 				try {
-					// Suppressed tempory read keys should not clear
-					// List<NIOConnection> suppressedReadCons=new
-					// LinkedList<NIOConnection>();
-
 					selector.select(1000L);
 					register(selector);
-					Set<SelectionKey> keys = selector.selectedKeys();
-					// Set<SelectionKey> keys = selectedKeys;
+					keys = selector.selectedKeys();
 
-					try {
-						for (SelectionKey key : keys) {
+					for (SelectionKey key : keys) {
+						try {
 							Object att = key.attachment();
-							// System.out.println("attchment "+att);
 							if (att != null && key.isValid()) {
+								AbstractConnection con = (AbstractConnection) att;
 								int readyOps = key.readyOps();
 								if ((readyOps & SelectionKey.OP_READ) != 0) {
-									read((NIOConnection) att);
-								} else {
-									key.cancel();
+									//System.out.println("xxx read " + att);
+									read(con);
+								}
+								if ((readyOps & SelectionKey.OP_WRITE) != 0) {
+									//System.out.println("xxx write " + att);
+									con.writeByQueue();
 								}
 							} else {
+								LOGGER.warn("key not valid ,cancel key ");
 								key.cancel();
 							}
+						} catch (Throwable e) {
+							LOGGER.warn(name, e);
 						}
-					} finally {
-						keys.clear();
+
 					}
 				} catch (Throwable e) {
 					LOGGER.warn(name, e);
+				} finally {
+					if (keys != null) {
+						keys.clear();
+					}
+
 				}
 			}
 		}
@@ -134,35 +127,19 @@ public final class NIOReactor {
 		private void read(NIOConnection c) {
 
 			try {
-				c.read();
+				if (!c.isClosed()) {
+					c.read();
+				}
+			} catch (EOFException e) {
+				if (!c.isClosed()) {
+					c.close("exception:" + e.toString());
+					c.error(ErrorCode.ERR_READ, e);
+				}
+
 			} catch (Throwable e) {
 				c.close("exception:" + e.toString());
 				c.error(ErrorCode.ERR_READ, e);
-				
-			}
-		}
 
-	}
-
-	private final class W implements Runnable {
-		private final BlockingQueue<NIOConnection> writeQueue;
-
-		private W() {
-			this.writeQueue = new LinkedBlockingQueue<NIOConnection>();
-		}
-
-		@Override
-		public void run() {
-			NIOConnection c = null;
-			for (;;) {
-				try {
-					if ((c = writeQueue.take()) != null) {
-						c.writeByQueue();
-					}
-				} catch (Throwable e) {
-					LOGGER.warn(name, e);
-					c.close("exception:" + e.toString());
-				}
 			}
 		}
 

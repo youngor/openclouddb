@@ -66,7 +66,15 @@ public final class NIOProcessor {
 	}
 
 	public int getWriteQueueSize() {
-		return reactor.getWriteQueue().size();
+		int total = 0;
+		for (FrontendConnection fron : frontends.values()) {
+			total += fron.getWriteQueue().snapshotSize();
+		}
+		for (BackendConnection back : backends.values()) {
+			total += back.getWriteQueue().snapshotSize();
+		}
+		return total;
+
 	}
 
 	// public NameableExecutor getHandler() {
@@ -83,10 +91,6 @@ public final class NIOProcessor {
 
 	public void postRegister(NIOConnection c) {
 		reactor.postRegister(c);
-	}
-
-	public void postWrite(NIOConnection c) {
-		reactor.postWrite(c);
 	}
 
 	public CommandCount getCommands() {
@@ -113,7 +117,6 @@ public final class NIOProcessor {
 		return reactor.getReactCount();
 	}
 
-	
 	public void addFrontend(FrontendConnection c) {
 		frontends.put(c.getId(), c);
 	}

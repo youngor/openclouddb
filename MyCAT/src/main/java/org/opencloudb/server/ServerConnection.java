@@ -112,6 +112,10 @@ public class ServerConnection extends FrontendConnection {
 	}
 
 	public void execute(String sql, int type) {
+		if (this.isClosed()) {
+			LOGGER.warn("ignore execute ,server connection is closed " + this);
+			return;
+		}
 		// 状态检查
 		if (txInterrupted) {
 			writeErrMessage(ErrorCode.ER_YES,
@@ -122,14 +126,15 @@ public class ServerConnection extends FrontendConnection {
 		// 检查当前使用的DB
 		String db = this.schema;
 		if (db == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No MyCAT Database selected");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
+					"No MyCAT Database selected");
 			return;
 		}
 		SchemaConfig schema = MycatServer.getInstance().getConfig()
 				.getSchemas().get(db);
 		if (schema == null) {
-			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown MyCAT Database '"
-					+ db + "'");
+			writeErrMessage(ErrorCode.ERR_BAD_LOGICDB,
+					"Unknown MyCAT Database '" + db + "'");
 			return;
 		}
 
@@ -137,10 +142,12 @@ public class ServerConnection extends FrontendConnection {
 		RouteResultset rrs = null;
 		try {
 
-			rrs = MycatServer.getInstance().getRouterservice().route(schema, type, sql, this.charset, this);
+			rrs = MycatServer.getInstance().getRouterservice()
+					.route(schema, type, sql, this.charset, this);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
-			LOGGER.warn(s.append(this).append(sql).toString()+" err:"+e.toString());
+			LOGGER.warn(s.append(this).append(sql).toString() + " err:"
+					+ e.toString());
 			String msg = e.getMessage();
 			writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e
 					.getClass().getSimpleName() : msg);

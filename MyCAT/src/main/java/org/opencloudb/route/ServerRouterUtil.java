@@ -167,6 +167,10 @@ public final class ServerRouterUtil {
 					// route by sql query root parent's datanode
 					String findRootTBSql = tc.getLocateRTableKeySql()
 							+ joinKeyVal;
+					if(LOGGER.isDebugEnabled())
+					{
+						LOGGER.debug("find root parent's node sql "+findRootTBSql);
+					}
 					FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
 					String dn = fetchHandler.execute(schema.getName(),
 							findRootTBSql, tc.getRootParent().getDataNodes());

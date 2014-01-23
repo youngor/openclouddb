@@ -1251,7 +1251,7 @@ public class NodeToString {
 		String tableName = node.getSequenceName().getTableName();
 		if (null != tableName
 				&& tableName.toUpperCase().startsWith("MYCATSEQ_")) {
-			String prefixName = tableName.split("_")[1];
+			String prefixName = tableName.split("_", 2)[1];
 			return sequenceHandler.nextId(prefixName.toUpperCase()) + "";
 		}
 		return "NEXT VALUE FOR " + toString(node.getSequenceName());
