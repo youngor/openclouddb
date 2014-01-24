@@ -32,7 +32,7 @@ public final class RouteResultsetNode {
 		this.sqlType = sqlType;
 		this.statement = statement;
 		canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
-		hasBlanceFlag = statement.startsWith("/*balance*/");
+		hasBlanceFlag = (statement!=null)&&statement.startsWith("/*balance*/");
 	}
 
 	public boolean canRunnINReadDB(boolean autocommit) {

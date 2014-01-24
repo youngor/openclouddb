@@ -142,7 +142,6 @@ public class ConfigInitializer {
 		if (dbType.equals("mysql") && dbDriver.equals("native")) {
 			for (int i = 0; i < nodes.length; i++) {
 				nodes[i].setIdleTimeout(system.getIdleTimeout());
-				nodes[i].setWaitTimeout(system.getWaitTimeout());
 				MySQLDataSource ds = new MySQLDataSource(nodes[i],conf, isRead);
 				dataSources[i] = ds;
 			}

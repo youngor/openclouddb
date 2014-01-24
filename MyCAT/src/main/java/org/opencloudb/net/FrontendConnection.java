@@ -34,6 +34,7 @@ import org.opencloudb.net.handler.FrontendPrivileges;
 import org.opencloudb.net.handler.FrontendQueryHandler;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.HandshakePacket;
+import org.opencloudb.net.mysql.MySQLPacket;
 import org.opencloudb.net.mysql.OkPacket;
 import org.opencloudb.util.RandomUtil;
 import org.opencloudb.util.TimeUtil;
@@ -70,7 +71,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 		this.localPort = socket.getLocalPort();
 		this.handler = new FrontendAuthenticator(this);
 	}
-	
+
 	public long getId() {
 		return id;
 	}
@@ -378,6 +379,12 @@ public abstract class FrontendConnection extends AbstractConnection {
 
 	@Override
 	public void handle(final byte[] data) {
+		if (data[4] == MySQLPacket.COM_QUIT) {
+			this.getProcessor().getCommands().doQuit();
+			this.close("quit cmd");
+			return;
+
+		}
 		// 异步处理前端数据
 		// processor.getHandler().execute(new Runnable()
 		processor.getExecutor().execute(new Runnable() {
@@ -425,9 +432,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 	public String toString() {
 		return new StringBuilder().append("[thread=")
 				.append(Thread.currentThread().getName()).append(",class=")
-				.append(getClass().getSimpleName()).append(",id=").append(id).append(",host=")
-				.append(host).append(",port=").append(port).append(",schema=")
-				.append(schema).append(']').toString();
+				.append(getClass().getSimpleName()).append(",id=").append(id)
+				.append(",host=").append(host).append(",port=").append(port)
+				.append(",schema=").append(schema).append(']').toString();
 	}
 
 	private final static byte[] encodeString(String src, String charset) {

@@ -27,7 +27,7 @@ import org.opencloudb.server.parser.ServerParse;
  */
 public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	private static final Logger LOGGER = Logger
-			.getLogger(NonBlockingSession.class);
+			.getLogger(FetchStoreNodeOfChildTableHandler.class);
 	private String sql;
 	private volatile String result;
 	private volatile String dataNode;

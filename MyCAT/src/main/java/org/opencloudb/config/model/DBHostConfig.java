@@ -1,7 +1,6 @@
 package org.opencloudb.config.model;
 
 public class DBHostConfig {
-	private long waitTimeout = SystemConfig.DEFAULT_WAIT_TIMEOUT; // 取得新连接的等待超时时间
 	private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT; // 连接池中连接空闲超时时间
 	private final String hostName;
 	private final String ip;
@@ -30,14 +29,6 @@ public class DBHostConfig {
 		this.url = url;
 		this.user = user;
 		this.password = password;
-	}
-
-	public long getWaitTimeout() {
-		return waitTimeout;
-	}
-
-	public void setWaitTimeout(long waitTimeout) {
-		this.waitTimeout = waitTimeout;
 	}
 
 	public long getIdleTimeout() {

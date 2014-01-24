@@ -39,7 +39,7 @@ public final class SystemConfig {
 	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
 	// private static final long DEFAULT_IDLE_TIMEOUT = 8 * 3600 * 1000L;
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 15 * 1000L;
-	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 60 * 1000L;
+	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5*60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_PERIOD = 5 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_TIMEOUT = 10 * 1000L;

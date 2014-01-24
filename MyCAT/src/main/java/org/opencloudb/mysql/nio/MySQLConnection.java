@@ -427,7 +427,9 @@ public class MySQLConnection extends BackendConnection implements
 
 		public void execute() {
 			executed = true;
-			conn.sendQueryCmd(rrn.getStatement());
+			if (rrn.getStatement() != null) {
+				conn.sendQueryCmd(rrn.getStatement());
+			}
 
 		}
 
@@ -504,9 +506,9 @@ public class MySQLConnection extends BackendConnection implements
 	 * @param sql
 	 * @throws UnsupportedEncodingException
 	 */
-	public void query(String query)
-			throws UnsupportedEncodingException {
-		RouteResultsetNode rrn=new RouteResultsetNode("default", ServerParse.SELECT,query);
+	public void query(String query) throws UnsupportedEncodingException {
+		RouteResultsetNode rrn = new RouteResultsetNode("default",
+				ServerParse.SELECT, query);
 		StatusSync sync = new StatusSync(this, rrn, this.charsetIndex,
 				Isolations.READ_COMMITTED, true);
 		doExecute(sync);
@@ -678,13 +680,13 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public String toString() {
 		return "MySQLConnection [id=" + id + ", isRunning=" + isRunning
-				+ ", processor=" + processor.getName() +", lastTime=" + lastTime + ", schema=" + schema
-				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
-				+ ", threadId=" + threadId + ", charset=" + charset
-				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
-				+ ", attachment=" + attachment + ", respHandler=" + respHandler
-				+ ", host=" + host + ", port=" + port
-				+ ", suppressReadTemporay=" + suppressReadTemporay
+				+", lastTime="
+				+ lastTime + ", schema=" + schema + ", borrowed=" + borrowed
+				+ ", fromSlaveDB=" + fromSlaveDB + ", threadId=" + threadId
+				+ ", charset=" + charset + ", txIsolation=" + txIsolation
+				+ ", autocommit=" + autocommit + ", attachment=" + attachment
+				+ ", respHandler=" + respHandler + ", host=" + host + ", port="
+				+ port + ", suppressReadTemporay=" + suppressReadTemporay
 				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}
 

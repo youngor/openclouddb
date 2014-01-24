@@ -20,7 +20,6 @@ import java.util.Date;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.helpers.FileWatchdog;
-import org.apache.log4j.helpers.LogLog;
 import org.apache.log4j.xml.DOMConfigurator;
 
 /**

@@ -94,7 +94,7 @@ public final class NIOReactor {
 									con.writeByQueue();
 								}
 							} else {
-								LOGGER.warn("key not valid ,cancel key ");
+								//LOGGER.warn("key not valid ,cancel key ");
 								key.cancel();
 							}
 						} catch (Throwable e) {

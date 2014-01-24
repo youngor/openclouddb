@@ -232,10 +232,10 @@ public class PhysicalDBPool {
 	/**
 	 * 绌洪棽妫�煡
 	 */
-	public void idleCheck() {
+	public void idleCheck(long ildCheckPeriod) {
 		for (PhysicalDatasource ds : sources) {
 			if (ds != null) {
-				ds.idleCheck(ds.getConfig().getIdleTimeout());
+				ds.idleCheck(ds.getConfig().getIdleTimeout(),ildCheckPeriod);
 			}
 		}
 	}

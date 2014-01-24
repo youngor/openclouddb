@@ -106,16 +106,22 @@ public class MycatServer {
 		// int handler = system.getProcessorHandler();
 
 		processors = new NIOProcessor[system.getProcessors()];
-		int processBuferPool=system.getProcessorBufferPool();
-		int processBufferChunk=system.getProcessorBufferChunk();
+		int processBuferPool = system.getProcessorBufferPool();
+		int processBufferChunk = system.getProcessorBufferChunk();
 		LOGGER.info("Startup processors ...,total processors:"
-				+ processors.length + " each procssors's thread pool size:" + executor+"    \r\n each process allocated socket buffer pool "+processBuferPool+" bytes ,buffer chunk size:"+processBufferChunk
-				+"  buffer pool's capacity(buferPool/bufferChunk) is:"+processBuferPool/processBufferChunk);
+				+ processors.length + " each procssors's thread pool size:"
+				+ executor
+				+ "    \r\n each process allocated socket buffer pool "
+				+ processBuferPool + " bytes ,buffer chunk size:"
+				+ processBufferChunk
+				+ "  buffer pool's capacity(buferPool/bufferChunk) is:"
+				+ processBuferPool / processBufferChunk);
 		for (int i = 0; i < processors.length; i++) {
-			processors[i] = new NIOProcessor("Processor" + i, processBuferPool,processBufferChunk, executor);
+			processors[i] = new NIOProcessor("Processor" + i, processBuferPool,
+					processBufferChunk, executor);
 			processors[i].startup();
 		}
-		
+
 		timer.schedule(processorCheck(), 0L, system.getProcessorCheckPeriod());
 
 		// startup connector
@@ -131,8 +137,9 @@ public class MycatServer {
 			node.init(0);
 			node.startHeartbeat();
 		}
-		timer.schedule(dataNodeIdleCheck(), 0L,
-				system.getDataNodeIdleCheckPeriod());
+		long dataNodeIldeCheckPeriod = system.getDataNodeIdleCheckPeriod();
+		timer.schedule(dataNodeIdleCheck(dataNodeIldeCheckPeriod), 0L,
+				dataNodeIldeCheckPeriod);
 		timer.schedule(dataNodeHeartbeat(), 0L,
 				system.getDataNodeHeartbeatPeriod());
 
@@ -238,7 +245,7 @@ public class MycatServer {
 	}
 
 	// 数据节点定时连接空闲超时检查任务
-	private TimerTask dataNodeIdleCheck() {
+	private TimerTask dataNodeIdleCheck(final long ildCheckPeriod) {
 		return new TimerTask() {
 			@Override
 			public void run() {
@@ -248,13 +255,13 @@ public class MycatServer {
 						Map<String, PhysicalDBPool> nodes = config
 								.getDataHosts();
 						for (PhysicalDBPool node : nodes.values()) {
-							node.idleCheck();
+							node.idleCheck(ildCheckPeriod);
 						}
 						Map<String, PhysicalDBPool> _nodes = config
 								.getBackupDataHosts();
 						if (_nodes != null) {
 							for (PhysicalDBPool node : _nodes.values()) {
-								node.idleCheck();
+								node.idleCheck(ildCheckPeriod);
 							}
 						}
 					}

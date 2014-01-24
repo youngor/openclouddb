@@ -2,6 +2,7 @@ package org.opencloudb.backend;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
@@ -9,8 +10,10 @@ import org.opencloudb.config.Alarms;
 import org.opencloudb.config.model.DBHostConfig;
 import org.opencloudb.config.model.DataHostConfig;
 import org.opencloudb.heartbeat.DBHeartbeat;
+import org.opencloudb.mysql.nio.handler.ConnectionHeartBeatHandler;
 import org.opencloudb.mysql.nio.handler.DelegateResponseHandler;
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
+import org.opencloudb.mysql.nio.handler.SimpleLogHandler;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.ServerConnection;
 import org.opencloudb.util.TimeUtil;
@@ -28,7 +31,7 @@ public abstract class PhysicalDatasource {
 	private final boolean readNode;
 	private volatile long heartbeatRecoveryTime;
 	private final DataHostConfig hostConfig;
-
+	private final ConnectionHeartBeatHandler conHeartBeatHanler = new ConnectionHeartBeatHandler();
 	private PhysicalDBPool dbPool;
 
 	private long executeCount;
@@ -115,22 +118,96 @@ public abstract class PhysicalDatasource {
 		return idle;
 	}
 
-	public void idleCheck(long timeout) {
+	private boolean validSchema(String schema) {
+		String theSchema = schema;
+		return theSchema != null & !theSchema.endsWith("")
+				&& !theSchema.equals("snyn...");
+	}
+
+	public void idleCheck(long timeout, long conHeartBeatPeriod) {
+		LinkedList<PhysicalConnection> heartBeatCons = new LinkedList<PhysicalConnection>();
+		int idleCons = 0;
+		int activeCons = 0;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
 			final PhysicalConnection[] items = this.items;
 			long time = TimeUtil.currentTimeMillis() - timeout;
+			long hearBeatTime = TimeUtil.currentTimeMillis()
+					- conHeartBeatPeriod;
+			long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2
+					* conHeartBeatPeriod;
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
-				if (c != null && time > c.getLastTime()) {
-
+				// idleCons
+				if (items[i] == null) {
+					continue;
+				}
+				if (items[i].isBorrowed()) {
+					activeCons++;
+				} else {
+					idleCons++;
+				}
+				if (time > c.getLastTime()) {
 					c.closeNoActive(" idle ");
 					items[i] = null;
+				} else if (!c.isBorrowed()) {
+					if (validSchema(c.getSchema())) {
+						if (c.getLastTime() < hearBeatTime) {
+							// Heart beat check
+							c.setBorrowed(true);
+							heartBeatCons.add(c);
+						}
+					} else if (c.getLastTime() < hearBeatTime2) {
+						{// not valid schema conntion should close for idle
+							// exceed 2*conHeartBeatPeriod
+							c.closeNoActive(" heart beate idle ");
+							items[i] = null;
+						}
+
+					}
 				}
 			}
 		} finally {
 			lock.unlock();
+		}
+		if (!heartBeatCons.isEmpty()) {
+			for (PhysicalConnection con : heartBeatCons) {
+				conHeartBeatHanler
+						.doHeartBeat(con, hostConfig.getHearbeatSQL());
+			}
+		}
+		// check if there has timeouted heatbeat cons
+		conHeartBeatHanler.abandTimeOuttedConns();
+		// create if idle too little
+		if (idleCons + activeCons < hostConfig.getMaxCon()
+				&& idleCons < hostConfig.getMinCon()) {
+			LOGGER.info("create connections ,because idle connection not enough ,cur is "
+					+ idleCons + ", minCon is " + hostConfig.getMinCon());
+			SimpleLogHandler simpleHandler = new SimpleLogHandler();
+			lock.lock();
+			try {
+				int createCount = (hostConfig.getMinCon() - idleCons) / 3;
+				final PhysicalConnection[] items = this.items;
+				for (int i = 0; i < items.length; i++) {
+					if (items[i] == null) {
+						items[i] = new FakeConnection();
+						--createCount;
+						try {
+							this.createNewConnection(simpleHandler, i, null, "");
+						} catch (IOException e) {
+							LOGGER.warn("create connection err " + e);
+						}
+						if (createCount <= 0) {
+							break;
+						}
+					}
+				}
+			} finally {
+				lock.unlock();
+			}
+			// creat new connection
+
 		}
 	}
 
@@ -184,6 +261,34 @@ public abstract class PhysicalDatasource {
 		conn.setAttachment(attachment);
 		handler.connectionAcquired(conn);
 		return conn;
+	}
+
+	private PhysicalConnection createNewConnection(
+			final ResponseHandler handler, final int insertIndex,
+			final Object attachment, final String schema) throws IOException {
+		return this.createNewConnection(new DelegateResponseHandler(handler) {
+			@Override
+			public void connectionError(Throwable e, PhysicalConnection conn) {
+				lock.lock();
+				try {
+					items[insertIndex] = null;
+				} finally {
+					lock.unlock();
+				}
+				handler.connectionError(e, conn);
+			}
+
+			@Override
+			public void connectionAcquired(PhysicalConnection conn) {
+				lock.lock();
+				try {
+					items[insertIndex] = conn;
+					takeCon(conn, handler, attachment, schema);
+				} finally {
+					lock.unlock();
+				}
+			}
+		});
 	}
 
 	public PhysicalConnection getConnection(final ConnectionMeta conMeta,
@@ -253,29 +358,8 @@ public abstract class PhysicalDatasource {
 				+ this.name);
 		final int insertIndex = emptyIndex;
 		// create connection
-		return this.createNewConnection(new DelegateResponseHandler(handler) {
-			@Override
-			public void connectionError(Throwable e, PhysicalConnection conn) {
-				lock.lock();
-				try {
-					items[insertIndex] = null;
-				} finally {
-					lock.unlock();
-				}
-				handler.connectionError(e, conn);
-			}
-
-			@Override
-			public void connectionAcquired(PhysicalConnection conn) {
-				lock.lock();
-				try {
-					items[insertIndex] = conn;
-					takeCon(conn, handler, attachment, conMeta.getSchema());
-				} finally {
-					lock.unlock();
-				}
-			}
-		});
+		return createNewConnection(handler, insertIndex, attachment,
+				conMeta.getSchema());
 	}
 
 	private void returnCon(PhysicalConnection c) {
