@@ -180,16 +180,19 @@ public abstract class PhysicalDatasource {
 		// check if there has timeouted heatbeat cons
 		conHeartBeatHanler.abandTimeOuttedConns();
 		// create if idle too little
-		if (idleCons + activeCons < hostConfig.getMaxCon()
-				&& idleCons < hostConfig.getMinCon()) {
+		if (idleCons + activeCons < size && idleCons < hostConfig.getMinCon()) {
 			LOGGER.info("create connections ,because idle connection not enough ,cur is "
 					+ idleCons + ", minCon is " + hostConfig.getMinCon());
 			SimpleLogHandler simpleHandler = new SimpleLogHandler();
 			lock.lock();
 			try {
 				int createCount = (hostConfig.getMinCon() - idleCons) / 3;
+
 				final PhysicalConnection[] items = this.items;
 				for (int i = 0; i < items.length; i++) {
+					if (this.getActiveCount() + this.getIdleCount() >= size) {
+						break;
+					}
 					if (items[i] == null) {
 						items[i] = new FakeConnection();
 						--createCount;
