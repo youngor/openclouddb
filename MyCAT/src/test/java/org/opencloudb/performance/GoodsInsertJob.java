@@ -7,33 +7,35 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 public class GoodsInsertJob implements Runnable {
-	private final Connection con;
-	private final int totalRecords;
+	private final int endId;
 	private int finsihed;
 	private final int batchSize;
-	Calendar date = Calendar.getInstance();
-	DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
 	private final AtomicInteger finshiedCount;
 	private final AtomicInteger failedCount;
+	Calendar date = Calendar.getInstance();
+	DateFormat datafomat = new SimpleDateFormat("yyyy-MM-dd");
+	private final SimpleConPool conPool;
 
-	public GoodsInsertJob(Connection con, int totalRecords, int batchSize,
-			int startId, AtomicInteger finshiedCount, AtomicInteger failedCount) {
+
+	public GoodsInsertJob(SimpleConPool conPool, int totalRecords,
+			int batchSize, int startId, AtomicInteger finshiedCount,
+			AtomicInteger failedCount) {
 		super();
-		this.con = con;
-		this.totalRecords = startId + totalRecords;
+		this.conPool = conPool;
+		this.endId = startId + totalRecords - 1;
 		this.batchSize = batchSize;
 		this.finsihed = startId;
 		this.finshiedCount = finshiedCount;
 		this.failedCount = failedCount;
 	}
 
-	private int insert(List<Map<String, String>> list) throws SQLException {
+	private int insert(Connection con,List<Map<String, String>> list) throws SQLException {
 		PreparedStatement ps;
 		String sql = "insert into goods (id,name ,good_type,good_img_url,good_created ,good_desc, price ) values(?,? ,?,?,? ,?, ?)";
 		ps = con.prepareStatement(sql);
@@ -52,8 +54,15 @@ public class GoodsInsertJob implements Runnable {
 	}
 
 	private List<Map<String, String>> getNextBatch() {
-		int end = (finsihed + batchSize) < this.totalRecords ? (finsihed + batchSize)
-				: totalRecords;
+		if (finsihed >= endId) {
+			return Collections.emptyList();
+		}
+		int end = (finsihed + batchSize) < this.endId ? (finsihed + batchSize)
+				: endId;
+		// the last batch
+		if (end + batchSize > this.endId) {
+			end = this.endId;
+		}
 		List<Map<String, String>> list = new ArrayList<Map<String, String>>(
 				(end - finsihed));
 		for (int i = finsihed; i < end; i++) {
@@ -83,21 +92,29 @@ public class GoodsInsertJob implements Runnable {
 
 	@Override
 	public void run() {
-		List<Map<String, String>> batch = getNextBatch();
-		while (!batch.isEmpty()) {
-			try {
-				insert(batch);
-				finshiedCount.addAndGet(batch.size());
-			} catch (Exception e) {
-				failedCount.addAndGet(batch.size());
-				e.printStackTrace();
-			}
-			batch = getNextBatch();
-		}
+		Connection con = null;
 		try {
-			con.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+
+			List<Map<String, String>> batch = getNextBatch();
+			while (!batch.isEmpty()) {
+				try {
+					if (con == null || con.isClosed()) {
+						con = conPool.getConnection();
+						con.setAutoCommit(true);
+					}
+
+					insert(con, batch);
+					finshiedCount.addAndGet(batch.size());
+				} catch (Exception e) {
+					failedCount.addAndGet(batch.size());
+					e.printStackTrace();
+				}
+				batch = getNextBatch();
+			}
+		} finally {
+			if (con != null) {
+				this.conPool.returnCon(con);
+			}
 		}
 	}
 }

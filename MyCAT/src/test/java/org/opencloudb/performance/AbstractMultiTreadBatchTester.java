@@ -19,7 +19,7 @@ public abstract class AbstractMultiTreadBatchTester {
 	protected String password;
 	protected ExecutorService executor;
 	long start;
-	private String[] rangeItems;
+	protected String[] rangeItems;
 
 	public boolean  parseArgs(String[] args) {
 		if (args.length < 5) {
@@ -65,7 +65,7 @@ public abstract class AbstractMultiTreadBatchTester {
 			int myCount = endId - startId + 1;
 			Runnable job =createJob(getConPool(),
 					myCount, 100, startId, finshiedCount, failedCount);
-			System.out.println("job insert record id is " + startId + "-"
+			System.out.println("job record id is " + startId + "-"
 					+ endId);
 			jobs.add(job);
 
