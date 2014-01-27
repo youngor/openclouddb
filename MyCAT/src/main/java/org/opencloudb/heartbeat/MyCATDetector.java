@@ -174,7 +174,7 @@ public class MyCATDetector extends BackendConnection {
     @Override
     protected void idleCheck() {
         if (isIdleTimeout()) {
-            LOGGER.warn(toString() + " idle timeout");
+            LOGGER.warn(toString() + " heartbeat idle timeout");
             quit();
         }
     }

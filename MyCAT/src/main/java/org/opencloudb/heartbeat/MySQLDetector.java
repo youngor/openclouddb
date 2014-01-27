@@ -193,7 +193,7 @@ public class MySQLDetector extends BackendConnection {
 	@Override
 	protected void idleCheck() {
 		if (isIdleTimeout()) {
-			LOGGER.warn(toString() + " idle timeout");
+			LOGGER.warn(toString() + " heatbeat idle timeout");
 			quit();
 		}
 	}
