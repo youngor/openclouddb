@@ -30,23 +30,8 @@ public class TestSelectPerf {
 		return theCon;
 	}
 
-	public static void main(String[] args) throws Exception {
-		Class.forName("com.mysql.jdbc.Driver");
-		if (args.length < 5) {
-			System.out
-					.println("input param,format: [jdbcurl] [user] [password]  [threadpoolsize]  [executetimes] [maxId] ");
-			return;
-		}
-		int threadCount = 0;// 线程数
-		String url = args[0];
-		String user = args[1];
-		String password = args[2];
-		threadCount = Integer.parseInt(args[3]);
-		int executetimes = Integer.parseInt(args[4]);
-		long maxId = Integer.parseInt(args[5]);
-		System.out.println("concerent threads:" + threadCount);
-		System.out.println("execute sql times:" + executetimes);
-		System.out.println("maxId:" + maxId);
+	private static void doTest(String url, String user, String password,
+			int threadCount, long maxId, int executetimes, boolean outmidle) {
 		ArrayList<Thread> threads = new ArrayList<Thread>(threadCount);
 		ArrayList<TravelRecordSelectJob> jobs = new ArrayList<TravelRecordSelectJob>(
 				threadCount);
@@ -70,36 +55,78 @@ public class TestSelectPerf {
 			thread.start();
 		}
 		System.out.println("all thread started,waiting finsh...");
-		long start=System.currentTimeMillis();
+		long start = System.currentTimeMillis();
 		boolean notFinished = true;
-		int remainThread=0;
+		int remainThread = 0;
 		while (notFinished) {
 			notFinished = false;
-			remainThread=0;
+			remainThread = 0;
 			for (Thread thread : threads) {
 				if (thread.isAlive()) {
 					notFinished = true;
 					remainThread++;
 				}
 			}
-			if(remainThread<threads.size()/2)
-			{
-				System.out.println("warning many test threads finished ,tps may NOT Accurate ,alive threads:"+remainThread);
+			if (remainThread < threads.size() / 2) {
+				System.out
+						.println("warning many test threads finished ,tps may NOT Accurate ,alive threads:"
+								+ remainThread);
 			}
-			report(jobs);
-			Thread.sleep(1000);
+			if (outmidle) {
+				report(jobs);
+			}
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-		report(jobs);
-		System.out.println("total time :" +(System.currentTimeMillis()-start)/1000);
+		if (outmidle) {
+			report(jobs);
+		}
+		System.out.println("finished all,total time :"
+				+ (System.currentTimeMillis() - start) / 1000);
 	}
-	
+
+	public static void main(String[] args) throws Exception {
+		Class.forName("com.mysql.jdbc.Driver");
+		if (args.length < 5) {
+			System.out
+					.println("input param,format: [jdbcurl] [user] [password]  [threadpoolsize]  [executetimes] [maxId] [repeat]");
+			return;
+		}
+		int threadCount = 0;// 线程数
+		String url = args[0];
+		String user = args[1];
+		String password = args[2];
+		threadCount = Integer.parseInt(args[3]);
+		int executetimes = Integer.parseInt(args[4]);
+		long maxId = Integer.parseInt(args[5]);
+		System.out.println("concerent threads:" + threadCount);
+		System.out.println("execute sql times:" + executetimes);
+		System.out.println("maxId:" + maxId);
+		int repeate = 1;
+		if (args.length > 6) {
+			repeate = Integer.parseInt(args[6]);
+			System.out.println("repeat test times:" + repeate);
+		}
+		for (int i = 0; i < repeate; i++) {
+			try {
+				doTest(url, user, password, threadCount, maxId, executetimes,
+						repeate < 2);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
 	public static void report(ArrayList<TravelRecordSelectJob> jobs) {
 		int tps = 0;
 		for (TravelRecordSelectJob job : jobs) {
 			tps += job.getTPS();
 		}
 		System.out.println("finishend:" + finshiedCount.get() + " failed:"
-				+ failedCount.get());
-		System.out.println("tps:" +tps);
+				+ failedCount.get() + " tps:" + tps);
 	}
 }
