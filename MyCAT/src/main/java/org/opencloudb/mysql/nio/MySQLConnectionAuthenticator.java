@@ -68,8 +68,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 			case ErrorPacket.FIELD_COUNT:
 				ErrorPacket err = new ErrorPacket();
 				err.read(data);
-				throw new ConnectionException(err.errno,
-						new String(err.message));
+				String errMsg = new String(err.message);
+				source.close(errMsg);
+				throw new ConnectionException(err.errno, errMsg);
+
 			case EOFPacket.FIELD_COUNT:
 				auth323(data[3]);
 				break;
@@ -80,8 +82,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 					// 发送认证数据包
 					source.authenticate();
 					break;
+				} else {
+					throw new RuntimeException("Unknown Packet!");
 				}
-				throw new RuntimeException("Unknown Packet!");
+
 			}
 
 		} catch (RuntimeException e) {

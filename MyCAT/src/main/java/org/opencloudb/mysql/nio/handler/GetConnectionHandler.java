@@ -47,7 +47,7 @@ public class GetConnectionHandler implements ResponseHandler {
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
 		finishedCount.addAndGet(1);
-		logger.warn("connect error " + conn, e);
+		logger.warn("connect error " + conn+ e);
 
 	}
 

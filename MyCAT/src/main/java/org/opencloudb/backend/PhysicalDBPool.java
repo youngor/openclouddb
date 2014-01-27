@@ -111,9 +111,12 @@ public class PhysicalDBPool {
 		try {
 			int current = activedIndex;
 			if (current != newIndex) {
+				//switch index
+				activedIndex = newIndex;
+				// clear all connections
+				this.getSources()[current].clearCons("switch datasource");
 				// write log
 				LOGGER.warn(switchMessage(current, newIndex, false, reason));
-
 				return true;
 			}
 		} finally {
@@ -235,7 +238,7 @@ public class PhysicalDBPool {
 	public void idleCheck(long ildCheckPeriod) {
 		for (PhysicalDatasource ds : sources) {
 			if (ds != null) {
-				ds.idleCheck(ds.getConfig().getIdleTimeout(),ildCheckPeriod);
+				ds.idleCheck(ds.getConfig().getIdleTimeout(), ildCheckPeriod);
 			}
 		}
 	}

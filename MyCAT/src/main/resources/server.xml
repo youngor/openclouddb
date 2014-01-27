@@ -16,10 +16,9 @@
 <!DOCTYPE mycat:server SYSTEM "server.dtd">
 <mycat:server xmlns:mycat="http://org.opencloudb/">
   <!--
-   <property name="dataNodeHeartbeatPeriod">5000</property>
   <system>
-    <property name="processorExecutor">32</property>
     <property name="processors">32</property>
+    <property name="processorExecutor">32</property>
     <property name="serverPort">8066</property>
     <property name="managerPort">9066</property>
     <property name="initExecutor">2</property>

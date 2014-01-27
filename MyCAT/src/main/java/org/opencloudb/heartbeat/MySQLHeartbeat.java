@@ -200,8 +200,6 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		this.status = ERROR_STATUS;
 		this.errorCount = 0;
 		this.isChecking.set(false);
-		// max error checked ,clear datasource
-		this.source.clearCons("heartbeat err checked,status:" + this.status);
 	}
 
 	private void setTimeout(MySQLDetector detector) {

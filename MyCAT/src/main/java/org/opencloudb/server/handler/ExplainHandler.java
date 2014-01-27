@@ -33,7 +33,6 @@ import org.opencloudb.net.mysql.ResultSetHeaderPacket;
 import org.opencloudb.net.mysql.RowDataPacket;
 import org.opencloudb.route.RouteResultset;
 import org.opencloudb.route.RouteResultsetNode;
-import org.opencloudb.route.ServerRouterUtil;
 import org.opencloudb.server.ServerConnection;
 import org.opencloudb.server.parser.ServerParse;
 import org.opencloudb.util.StringUtil;
@@ -124,7 +123,7 @@ public class ExplainHandler {
 					.route(schema, sqlType, stmt, c.getCharset(), c);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
-			logger.warn(s.append(c).append(stmt).toString(), e);
+			logger.warn(s.append(c).append(stmt).toString()+" error:"+ e);
 			String msg = e.getMessage();
 			c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e
 					.getClass().getSimpleName() : msg);
