@@ -14,6 +14,9 @@ public class ByteUtil {
 	 */
 	public static int compareNumberByte(byte[] b1, byte[] b2) {
 		boolean isNegetive = b1[0] == 45 || b2[0] == 45;
+		if (isNegetive == false && b1.length != b2.length) {
+			return b1.length - b2.length;
+		}
 		int len = b1.length > b2.length ? b2.length : b1.length;
 		int result = 0;
 		int index = -1;
