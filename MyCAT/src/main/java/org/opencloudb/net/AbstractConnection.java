@@ -15,7 +15,6 @@
  */
 package org.opencloudb.net;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -203,7 +202,8 @@ public abstract class AbstractConnection implements NIOConnection {
 		lastReadTime = TimeUtil.currentTimeMillis();
 		if (got < 0) {
 			if (!this.isClosed()) {
-				throw new EOFException("socket closed " + this);
+				this.close("socket closed");
+				return;
 			}
 		} else if (got == 0) {
 			return;
@@ -307,8 +307,8 @@ public abstract class AbstractConnection implements NIOConnection {
 				enableWrite();
 			}
 		} else {// no more write
-			//System.out.println("disable write "+this);
-			if ((processKey.interestOps() & SelectionKey.OP_WRITE)!=0) {
+			// System.out.println("disable write "+this);
+			if ((processKey.interestOps() & SelectionKey.OP_WRITE) != 0) {
 				disableWrite();
 			}
 		}
@@ -470,7 +470,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	
 	/**
 	 * if has more data to write ,return false else retun true
 	 * 
@@ -533,6 +532,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 		return true;
 	}
+
 	/**
 	 * 关闭写事件
 	 */
