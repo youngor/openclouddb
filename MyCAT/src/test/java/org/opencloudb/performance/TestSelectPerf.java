@@ -81,9 +81,7 @@ public class TestSelectPerf {
 				e.printStackTrace();
 			}
 		}
-		if (outmidle) {
-			report(jobs);
-		}
+		report(jobs);
 		System.out.println("finished all,total time :"
 				+ (System.currentTimeMillis() - start) / 1000);
 	}

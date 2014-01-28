@@ -60,29 +60,4 @@ public class ManagerConnection extends FrontendConnection {
 		});
 	}
 
-	@Override
-	public void error(int errCode, Throwable t) {
-		// 根据异常类型和信息，选择日志输出级别。
-		if (t instanceof EOFException) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(toString(), t);
-			}
-		} else if (isConnectionReset(t)) {
-			if (LOGGER.isInfoEnabled()) {
-				LOGGER.info(toString(), t);
-			}
-		} else {
-			LOGGER.warn(toString(), t);
-		}
-
-		// 异常返回码处理
-		switch (errCode) {
-		case ErrorCode.ERR_HANDLE_DATA:
-			String msg = t.getMessage();
-			writeErrMessage(ErrorCode.ER_YES, msg == null ? t.getClass()
-					.getSimpleName() : msg);
-			break;
-		}
-	}
-
 }

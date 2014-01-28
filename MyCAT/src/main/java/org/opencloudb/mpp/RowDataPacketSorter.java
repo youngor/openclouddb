@@ -144,29 +144,19 @@ public class RowDataPacketSorter {
 		// System.out.println("------------" + colType);
 		switch (colType) {
 		case ColMeta.COL_TYPE_INT:
-			return CompareUtil.compareInt(ByteUtil.getInt(left),
-					ByteUtil.getInt(right));
 		case ColMeta.COL_TYPE_LONG:
 		case ColMeta.COL_TYPE_LONGLONG:
 		case ColMeta.COL_TYPE_NEWDECIMAL:
-			if(left.length!=right.length)
-			{
-				return (left.length>right.length)?1:-1;
-			}
-			return CompareUtil.compareLong(ByteUtil.getLong(left),
-					ByteUtil.getLong(right));
+		case ColMeta.COL_TYPE_DOUBLE:
+		case ColMeta.COL_TYPE_FLOAT:
+			return ByteUtil.compareNumberByte(left, right);
 		case ColMeta.COL_TYPE_VAR_STRING:
 			return CompareUtil.compareString(ByteUtil.getString(left),
 					ByteUtil.getString(right));
 		case ColMeta.COL_TYPE_BIT:
 			return CompareUtil.compareChar(ByteUtil.getChar(left),
 					ByteUtil.getChar(right));
-		case ColMeta.COL_TYPE_DOUBLE:
-			return CompareUtil.compareDouble(ByteUtil.getDouble(left),
-					ByteUtil.getDouble(right));
-		case ColMeta.COL_TYPE_FLOAT:
-			return CompareUtil.compareFloat(ByteUtil.getFloat(left),
-					ByteUtil.getFloat(right));
+
 		case ColMeta.COL_TYPE_DATE:
 			return CompareUtil.compareString(ByteUtil.getDate(left),
 					ByteUtil.getDate(right));
@@ -180,5 +170,4 @@ public class RowDataPacketSorter {
 
 		return 0;
 	}
-
 }

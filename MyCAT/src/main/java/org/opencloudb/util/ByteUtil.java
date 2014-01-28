@@ -5,29 +5,38 @@ import java.nio.charset.Charset;
 public class ByteUtil {
 
 	/**
-	 * compare to 'number' array, for number :123456 ,store to array
-	 * [1,2,3,4,5,6]
+	 * compare to number or dicamal ascii byte array, for number :123456 ,store
+	 * to array [1,2,3,4,5,6]
 	 * 
 	 * @param b1
 	 * @param b2
 	 * @return -1 means b1 < b2, or 0 means b1=b2 else return 1
 	 */
-	public static int compareNumberArray(byte[] b1, byte[] b2) {
-		if (b1.length > b2.length) {
-			return 1;
-		} else if (b1.length < b2.length) {
-			return -1;
-		} else {
-			for (int i = 0; i < b1.length; i++) {
-				if (b1[i] > b2[i]) {
-					return 1;
-				} else if (b1[i] < b2[i]) {
-					return -1;
-				}
-
+	public static int compareNumberByte(byte[] b1, byte[] b2) {
+		boolean isNegetive = b1[0] == 45 || b2[0] == 45;
+		int len = b1.length > b2.length ? b2.length : b1.length;
+		int result = 0;
+		int index = -1;
+		for (int i = 0; i < len; i++) {
+			int b1val = b1[i];
+			int b2val = b2[i];
+			if (b1val > b2val) {
+				result = 1;
+				index = i;
+				break;
+			} else if (b1val < b2val) {
+				index = i;
+				result = -1;
+				break;
 			}
 		}
-		return 0;
+		if (index == 0) {
+			// first byte compare
+			return result;
+		} else {
+			int lenDelta = b1.length - b2.length;
+			return isNegetive ? 0 - lenDelta : lenDelta;
+		}
 	}
 
 	public static byte[] compareNumberArray2(byte[] b1, byte[] b2, int order) {
@@ -55,7 +64,7 @@ public class ByteUtil {
 		bytes[1] = (byte) ((data & 0xff00) >> 8);
 		return bytes;
 	}
-	
+
 	public static byte[] getBytes(char data) {
 		byte[] bytes = new byte[2];
 		bytes[0] = (byte) (data);
@@ -128,13 +137,8 @@ public class ByteUtil {
 		// 48)) | (0xff00000000000000L & ((long)bytes[7] << 56));
 	}
 
-	public static float getFloat(byte[] bytes) {
-		return Float.intBitsToFloat(getInt(bytes));
-	}
-
 	public static double getDouble(byte[] bytes) {
-		long l = getLong(bytes);
-		return Double.longBitsToDouble(l);
+		return Double.parseDouble(new String(bytes));
 	}
 
 	public static String getString(byte[] bytes, String charsetName) {
@@ -142,7 +146,7 @@ public class ByteUtil {
 	}
 
 	public static String getString(byte[] bytes) {
-		return getString(bytes, "GBK");
+		return getString(bytes, "UFT-8");
 
 	}
 

@@ -20,8 +20,9 @@ public abstract class AbstractMultiTreadBatchTester {
 	protected ExecutorService executor;
 	long start;
 	protected String[] rangeItems;
+	protected boolean outputMiddleInf = true;
 
-	public boolean  parseArgs(String[] args) {
+	public boolean parseArgs(String[] args) {
 		if (args.length < 5) {
 			System.out
 					.println("input param,format: [jdbcurl] [user] [password]  [threadpoolsize]  [recordrange] ");
@@ -35,6 +36,7 @@ public abstract class AbstractMultiTreadBatchTester {
 		return true;
 
 	}
+
 	public void run(String[] args) throws Exception {
 		if (!this.parseArgs(args)) {
 			return;
@@ -47,13 +49,12 @@ public abstract class AbstractMultiTreadBatchTester {
 		finshiedCount.addAndGet(count);
 	}
 
-	public ArrayList<Runnable> createJobs(SimpleConPool conPool,
-			int minId, int maxId) throws Exception {
+	public ArrayList<Runnable> createJobs(SimpleConPool conPool, int minId,
+			int maxId) throws Exception {
 		int recordCount = maxId - minId + 1;
 		int batchSize = 1000;
 		int totalBatch = recordCount / batchSize;
-		ArrayList<Runnable> jobs = new ArrayList<Runnable>(
-				totalBatch);
+		ArrayList<Runnable> jobs = new ArrayList<Runnable>(totalBatch);
 		for (int i = 0; i < totalBatch; i++) {
 			int startId = minId + i * batchSize;
 			int endId = (startId + batchSize - 1);
@@ -63,20 +64,17 @@ public abstract class AbstractMultiTreadBatchTester {
 				endId = maxId;
 			}
 			int myCount = endId - startId + 1;
-			Runnable job =createJob(getConPool(),
-					myCount, 100, startId, finshiedCount, failedCount);
-			System.out.println("job record id is " + startId + "-"
-					+ endId);
+			Runnable job = createJob(getConPool(), myCount, 100, startId,
+					finshiedCount, failedCount);
+			System.out.println("job record id is " + startId + "-" + endId);
 			jobs.add(job);
 
 		}
 		return jobs;
 	}
 
-
-
-	public abstract Runnable createJob(SimpleConPool conPool2,
-			int myCount, int batchSize, int startId, AtomicInteger finshiedCount2,
+	public abstract Runnable createJob(SimpleConPool conPool2, int myCount,
+			int batchSize, int startId, AtomicInteger finshiedCount2,
 			AtomicInteger failedCount2);
 
 	@SuppressWarnings("unchecked")
@@ -92,7 +90,6 @@ public abstract class AbstractMultiTreadBatchTester {
 		return allJobs;
 	}
 
-	
 	public void addFailed(int count) {
 		failedCount.addAndGet(count);
 	}
@@ -139,13 +136,16 @@ public abstract class AbstractMultiTreadBatchTester {
 
 	public void runAndReport() throws InterruptedException {
 		executor.shutdown();
-		
-		SimpleDateFormat df=new SimpleDateFormat("dd HH:mm:ss");
+
+		SimpleDateFormat df = new SimpleDateFormat("dd HH:mm:ss");
 		while (!executor.isTerminated()) {
-			long sucess = finshiedCount.get() - failedCount.get();
-			System.out.println(df.format(new Date()) +" finished records :" + finshiedCount.get()
-					+ " failed:" + failedCount.get() + " speed:" + sucess
-					* 1000.0 / (System.currentTimeMillis() - start));
+			if (outputMiddleInf) {
+				long sucess = finshiedCount.get() - failedCount.get();
+				System.out.println(df.format(new Date())
+						+ " finished records :" + finshiedCount.get()
+						+ " failed:" + failedCount.get() + " speed:" + sucess
+						* 1000.0 / (System.currentTimeMillis() - start));
+			}
 			Thread.sleep(1000);
 		}
 
@@ -156,7 +156,7 @@ public abstract class AbstractMultiTreadBatchTester {
 		System.out.println("used time total:" + usedTime + "seconds");
 		System.out.println("tps:" + sucess / usedTime);
 	}
-	
+
 	/**
 	 * can parse values like 200M ,200K,200M1(2000001)
 	 * 

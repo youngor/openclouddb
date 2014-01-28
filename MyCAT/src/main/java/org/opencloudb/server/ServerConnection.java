@@ -15,7 +15,6 @@
  */
 package org.opencloudb.server;
 
-import java.io.EOFException;
 import java.nio.channels.SocketChannel;
 import java.sql.SQLNonTransientException;
 
@@ -198,26 +197,7 @@ public class ServerConnection extends FrontendConnection {
 		});
 	}
 
-	@Override
-	public void error(int errCode, Throwable t) {
-		// 根据异常类型和信息，选择日志输出级别。
-		if (t instanceof EOFException) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug(toString(), t);
-			}
-		} else if (isConnectionReset(t)) {
-			if (LOGGER.isInfoEnabled()) {
-				LOGGER.info(toString(), t);
-			}
-		} else {
-			LOGGER.warn(toString(), t);
-		}
-
-		String msg = t.getMessage();
-		writeErrMessage(ErrorCode.ER_YES, msg == null ? t.getClass()
-				.getSimpleName() : msg);
-
-	}
+	
 
 	@Override
 	public void close(String reason) {

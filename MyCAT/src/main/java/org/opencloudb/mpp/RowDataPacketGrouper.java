@@ -65,6 +65,15 @@ public class RowDataPacketGrouper {
 		// " field:"+Arrays.toString(bs)+ " ->  "+Arrays.toString(bs2));
 		switch (mergeType) {
 		case MergeCol.MERGE_SUM:
+			if (colType == ColMeta.COL_TYPE_NEWDECIMAL
+					|| colType == ColMeta.COL_TYPE_DOUBLE
+					|| colType == ColMeta.COL_TYPE_FLOAT) {
+
+				Double vale = ByteUtil.getDouble(bs) + ByteUtil.getDouble(bs2);
+				return vale.toString().getBytes();
+				// return String.valueOf(vale).getBytes();
+			}
+			// continue to count case
 		case MergeCol.MERGE_COUNT: {
 			long s1 = Long.parseLong(new String(bs));
 			long s2 = Long.parseLong(new String(bs2));
@@ -72,14 +81,25 @@ public class RowDataPacketGrouper {
 			return LongUtil.toBytes(total);
 		}
 		case MergeCol.MERGE_MAX: {
-			// int compare = ByteUtil.compareNumberArray(bs, bs2);
-			// return (compare > 0) ? bs : bs2;
-			return ByteUtil.compareNumberArray2(bs, bs2, 1);
+			// System.out.println("value:"+
+			// ByteUtil.getNumber(bs).doubleValue());
+			// System.out.println("value2:"+
+			// ByteUtil.getNumber(bs2).doubleValue());
+			// int compare = CompareUtil.compareDouble(ByteUtil.getNumber(bs)
+			// .doubleValue(), ByteUtil.getNumber(bs2).doubleValue());
+			// return ByteUtil.compareNumberByte(bs, bs2);
+			int compare = ByteUtil.compareNumberByte(bs, bs2);
+			return (compare > 0) ? bs : bs2;
+
 		}
 		case MergeCol.MERGE_MIN: {
+			// int compare = CompareUtil.compareDouble(ByteUtil.getNumber(bs)
+			// .doubleValue(), ByteUtil.getNumber(bs2).doubleValue());
 			// int compare = ByteUtil.compareNumberArray(bs, bs2);
-			// return (compare > 0) ? bs2 : bs;
-			return ByteUtil.compareNumberArray2(bs, bs2, 2);
+			//return (compare > 0) ? bs2 : bs;
+			int compare = ByteUtil.compareNumberByte(bs, bs2);
+			return (compare > 0) ? bs2 : bs;
+			// return ByteUtil.compareNumberArray2(bs, bs2, 2);
 		}
 		default:
 			return null;
