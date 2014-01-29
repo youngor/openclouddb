@@ -1,83 +1,23 @@
-//package org.hx.rainbow.common.amqp;
-//
-//import org.springframework.amqp.core.AmqpAdmin;
-//import org.springframework.amqp.core.Queue;
-//import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-//import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-//import org.springframework.amqp.rabbit.core.RabbitAdmin;
-//import org.springframework.amqp.rabbit.core.RabbitTemplate;
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//
-////@Configuration
-//public class HelloWorldConfiguration {
-//
-////	protected final String helloWorldQueueName = "hello.world.queue";
-//	protected final String helloWorldQueueName = "queue_no1";
-//
-//	@Bean
-//	public ConnectionFactory connectionFactory() {
-//		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
-//		connectionFactory.setUsername("guest");
-//		connectionFactory.setPassword("guest");
-//		return connectionFactory;
-//	}
-//	
-//	@Bean
-//	public AmqpAdmin amqpAdmin() {
-//		return new RabbitAdmin(connectionFactory());
-//	}
-//
-//	@Bean
-//	public RabbitTemplate rabbitTemplate() {
-//		RabbitTemplate template = new RabbitTemplate(connectionFactory());
-//		//The routing key is set to the name of the queue by the broker for the default exchange.
-//		template.setRoutingKey(this.helloWorldQueueName);
-//		//Where we will synchronously receive messages from
-//		template.setQueue(this.helloWorldQueueName);
-//		return template;
-//	}
-//
-//	@Bean
-//	// Every queue is bound to the default direct exchange
-//	public Queue helloWorldQueue() {
-//		return new Queue(this.helloWorldQueueName);
-//	}
-//
-//	/*
-//	@Bean 
-//	public Binding binding() {
-//		return declare(new Binding(helloWorldQueue(), defaultDirectExchange()));
-//	}*/
-//	
-//	/*	
-//	@Bean
-//	public TopicExchange helloExchange() {
-//		return declare(new TopicExchange("hello.world.exchange"));
-//	}*/
-//	
-//	/*
-//	public Queue declareUniqueQueue(String namePrefix) {
-//		Queue queue = new Queue(namePrefix + "-" + UUID.randomUUID());
-//		rabbitAdminTemplate().declareQueue(queue);
-//		return queue;
-//	}
-//	
-//	// if the default exchange isn't configured to your liking....
-//	@Bean Binding declareP2PBinding(Queue queue, DirectExchange exchange) {
-//		return declare(new Binding(queue, exchange, queue.getName()));
-//	}
-//	
-//	@Bean Binding declarePubSubBinding(String queuePrefix, FanoutExchange exchange) {
-//		return declare(new Binding(declareUniqueQueue(queuePrefix), exchange));
-//	}
-//	
-//	@Bean Binding declarePubSubBinding(UniqueQueue uniqueQueue, TopicExchange exchange) {
-//		return declare(new Binding(uniqueQueue, exchange));
-//	}
-//	
-//	@Bean Binding declarePubSubBinding(String queuePrefix, TopicExchange exchange, String routingKey) {
-//		return declare(new Binding(declareUniqueQueue(queuePrefix), exchange, routingKey));
-//	}*/
-//
-//}
+/*
+ * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software;Designed and Developed mainly by many Chinese 
+ * opensource volunteers. you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License version 2 only, as published by the
+ * Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * 
+ * Any questions about this component can be directed to it's project Web address 
+ * https://code.google.com/p/opencloudb/.
+ *
+ */

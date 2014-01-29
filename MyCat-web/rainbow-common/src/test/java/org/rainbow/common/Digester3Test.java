@@ -1,59 +1,23 @@
-/*package org.rainbow.common;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.digester3.CallMethodRule;
-import org.apache.commons.digester3.Digester;
-import org.apache.commons.digester3.Rule;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
-public class Digester3Test {
-	public static void main(String[] args) throws IOException, SAXException {
-		String aa = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"+
-					"<body><header>" +
-					"<a1>123</a1>" +
-					"<test>123</test>"+
-					""+
-					"<alist>"+
-					"		<b>"+
-					"			<c1>sdf</c1>"+
-					"			<c2>123</c2>"+
-					"			<c3>123</c3>"+
-					"		</b>"+
-					"		<b>"+
-					"			<c1>12312</c1>"+
-					"			<c2>123</c2>"+
-					"			<c3>123</c3>"+
-					"		</b>"+
-					"	</alist></header></body>";
-
-		System.out.println(aa);
-		StringReader sr = new StringReader(aa);
-		InputSource is = new InputSource(sr);
-		Digester digester = new Digester();
-		digester.setValidating(false);
-		digester.addObjectCreate("body/header", HashMap.class);
-		digester.addCallMethod("body/header", "put", 2);
-		digester.addCallParam("body/header", 0, "a1");
-		digester.addCallParam("body/header", 1, "body/header/a1");
-
-//		digester.addSetProperties( "body/header");
-//		digester.addBeanPropertySetter("body/header/a1", "a1");
-//		digester.addBeanPropertySetter("body/header/test", "test");
-//		digester.addObjectCreate("body/header/alist/b", Digester3DomainDel.class);
-//		digester.addBeanPropertySetter("body/header/alist/b/c1", "c1");
-//		digester.addBeanPropertySetter("body/header/alist/b/c2", "c2");
-//		digester.addBeanPropertySetter("body/header/alist/b/c3", "c3");
-//		digester.addSetNext("body/header/alist/b", "addList");
-		Map map = (Map)digester.parse(is);
-//		System.out.println(digester3Domain.getList().get(1).getC1());
-		System.out.println(map.toString());
-
-		
-	}
-}
-*/
+/*
+ * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software;Designed and Developed mainly by many Chinese 
+ * opensource volunteers. you can redistribute it and/or modify it under the 
+ * terms of the GNU General Public License version 2 only, as published by the
+ * Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * 
+ * Any questions about this component can be directed to it's project Web address 
+ * https://code.google.com/p/opencloudb/.
+ *
+ */
