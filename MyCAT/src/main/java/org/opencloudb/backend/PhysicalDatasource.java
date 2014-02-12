@@ -154,7 +154,6 @@ public abstract class PhysicalDatasource {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			final PhysicalConnection[] items = this.items;
 			long time = TimeUtil.currentTimeMillis() - timeout;
 			long hearBeatTime = TimeUtil.currentTimeMillis()
 					- conHeartBeatPeriod;
@@ -162,7 +161,6 @@ public abstract class PhysicalDatasource {
 					* conHeartBeatPeriod;
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
-				// idleCons
 				if (items[i] == null) {
 					continue;
 				}
@@ -172,7 +170,7 @@ public abstract class PhysicalDatasource {
 					idleCons++;
 				}
 				if (time > c.getLastTime()) {
-					c.closeNoActive(" idle ");
+					c.close(" idle ");
 					items[i] = null;
 				} else if (!c.isBorrowed()) {
 					if (validSchema(c.getSchema())) {
@@ -184,7 +182,7 @@ public abstract class PhysicalDatasource {
 					} else if (c.getLastTime() < hearBeatTime2) {
 						{// not valid schema conntion should close for idle
 							// exceed 2*conHeartBeatPeriod
-							c.closeNoActive(" heart beate idle ");
+							c.close(" heart beate idle ");
 							items[i] = null;
 						}
 
@@ -205,12 +203,14 @@ public abstract class PhysicalDatasource {
 		// create if idle too little
 		if (idleCons + activeCons < size && idleCons < hostConfig.getMinCon()) {
 			LOGGER.info("create connections ,because idle connection not enough ,cur is "
-					+ idleCons + ", minCon is " + hostConfig.getMinCon());
+					+ idleCons
+					+ ", minCon is "
+					+ hostConfig.getMinCon()
+					+ " for " + name);
 			SimpleLogHandler simpleHandler = new SimpleLogHandler();
 			lock.lock();
 			try {
 				int createCount = (hostConfig.getMinCon() - idleCons) / 3;
-
 				final PhysicalConnection[] items = this.items;
 				for (int i = 0; i < items.length; i++) {
 					if (this.getActiveCount() + this.getIdleCount() >= size) {
@@ -220,7 +220,7 @@ public abstract class PhysicalDatasource {
 						items[i] = new FakeConnection();
 						--createCount;
 						try {
-							this.createNewConnection(simpleHandler, i, null, "");
+							this.createNewConnection(false,simpleHandler, i, null, "");
 						} catch (IOException e) {
 							LOGGER.warn("create connection err " + e);
 						}
@@ -245,7 +245,7 @@ public abstract class PhysicalDatasource {
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
 				if (c != null) {
-					c.closeNoActive(reason);
+					c.close(reason);
 					items[i] = null;
 				}
 			}
@@ -289,7 +289,7 @@ public abstract class PhysicalDatasource {
 		return conn;
 	}
 
-	private PhysicalConnection createNewConnection(
+	private PhysicalConnection createNewConnection(final boolean consume,
 			final ResponseHandler handler, final int insertIndex,
 			final Object attachment, final String schema) throws IOException {
 		return this.createNewConnection(new DelegateResponseHandler(handler) {
@@ -309,7 +309,9 @@ public abstract class PhysicalDatasource {
 				lock.lock();
 				try {
 					items[insertIndex] = conn;
-					takeCon(conn, handler, attachment, schema);
+					if (consume) {
+						takeCon(conn, handler, attachment, schema);
+					}
 				} finally {
 					lock.unlock();
 				}
@@ -325,7 +327,6 @@ public abstract class PhysicalDatasource {
 		int emptyIndex = -1;
 		int bestCandidate = -1;
 		int bestCandidateSimilarity = -1;
-		long bestCandidateTime = Long.MAX_VALUE;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
@@ -348,15 +349,7 @@ public abstract class PhysicalDatasource {
 						int similary = conMeta.getMetaSimilarity(conn);
 						if (bestCandidateSimilarity < similary) {
 							bestCandidateSimilarity = similary;
-							bestCandidateTime = conn.getLastTime();
 							bestCandidate = i;
-						} else if (bestCandidateSimilarity == similary) {
-							// compare if more old
-							if (conn.getLastTime() < bestCandidateTime) {
-								bestCandidateTime = conn.getLastTime();
-								bestCandidate = i;
-							}
-
 						}
 					}
 				}
@@ -384,7 +377,7 @@ public abstract class PhysicalDatasource {
 				+ this.name);
 		final int insertIndex = emptyIndex;
 		// create connection
-		return createNewConnection(handler, insertIndex, attachment,
+		return createNewConnection(true,handler, insertIndex, attachment,
 				conMeta.getSchema());
 	}
 
@@ -441,11 +434,6 @@ class FakeConnection implements PhysicalConnection {
 	@Override
 	public long getLastTime() {
 		return System.currentTimeMillis();
-	}
-
-	@Override
-	public void closeNoActive(String reason) {
-
 	}
 
 	@Override

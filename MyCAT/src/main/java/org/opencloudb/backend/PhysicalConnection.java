@@ -31,10 +31,10 @@ import org.opencloudb.net.ClosableConnection;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.ServerConnection;
 
-public interface PhysicalConnection extends ClosableConnection{
-	
+public interface PhysicalConnection extends ClosableConnection {
+
 	public boolean isModifiedSQLExecuted();
-	
+
 	public boolean isFromSlaveDB();
 
 	public String getSchema();
@@ -42,8 +42,6 @@ public interface PhysicalConnection extends ClosableConnection{
 	public void setSchema(String newSchema);
 
 	public long getLastTime();
-
-	public void closeNoActive(String reason);
 
 	public boolean isClosedOrQuit();
 
@@ -55,11 +53,9 @@ public interface PhysicalConnection extends ClosableConnection{
 
 	public void release();
 
-
 	public void setRunning(boolean running);
 
 	public boolean setResponseHandler(ResponseHandler commandHandler);
-	
 
 	public void commit();
 
@@ -85,11 +81,12 @@ public interface PhysicalConnection extends ClosableConnection{
 	public void setSuppressReadTemporay(boolean b);
 
 	public boolean isRunning();
-	
+
 	public boolean isBorrowed();
-	
+
 	public void setBorrowed(boolean borrowed);
 
 	public int getTxIsolation();
+
 	public boolean isAutocommit();
 }

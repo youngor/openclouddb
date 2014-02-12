@@ -579,18 +579,20 @@ public class MySQLConnection extends BackendConnection implements
 
 	@Override
 	public void error(int errCode, Throwable t) {
-		LOGGER.warn(" error code: " + errCode + " exception: " + t + " con: "
-				+ this, t);
 
 		switch (errCode) {
 		case ErrorCode.ERR_HANDLE_DATA:
-			// handle error ..
+			LOGGER.warn(" error code: " + errCode + " exception: " + t
+					+ " con: " + this, t);
 			break;
 		case ErrorCode.ERR_PUT_WRITE_QUEUE:
-			// QS_TODO
+			LOGGER.warn(" error code: " + errCode + " exception: " + t
+					+ " con: " + this, t);
 			break;
 		case ErrorCode.ERR_CONNECT_SOCKET:
 			if (handler == null) {
+				LOGGER.warn(" error code: " + errCode + " exception: " + t
+						+ " con: " + this);
 				return;
 			}
 			if (handler instanceof MySQLConnectionHandler) {
@@ -649,13 +651,6 @@ public class MySQLConnection extends BackendConnection implements
 		this.lastTime = now;
 	}
 
-	public void closeNoActive(String reason) {
-		if (!isClosed.get()) {
-			close(reason);
-			isClosed.compareAndSet(false, true);
-		}
-	}
-
 	private static byte[] passwd(String pass, HandshakePacket hs)
 			throws NoSuchAlgorithmException {
 		if (pass == null || pass.length() == 0) {
@@ -688,13 +683,13 @@ public class MySQLConnection extends BackendConnection implements
 	@Override
 	public String toString() {
 		return "MySQLConnection [id=" + id + ", isRunning=" + isRunning
-				+", lastTime="
-				+ lastTime + ", schema=" + schema + ", borrowed=" + borrowed
-				+ ", fromSlaveDB=" + fromSlaveDB + ", threadId=" + threadId
-				+ ", charset=" + charset + ", txIsolation=" + txIsolation
-				+ ", autocommit=" + autocommit + ", attachment=" + attachment
-				+ ", respHandler=" + respHandler + ", host=" + host + ", port="
-				+ port + ", suppressReadTemporay=" + suppressReadTemporay
+				+ ", lastTime=" + lastTime + ", schema=" + schema
+				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
+				+ ", threadId=" + threadId + ", charset=" + charset
+				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
+				+ ", attachment=" + attachment + ", respHandler=" + respHandler
+				+ ", host=" + host + ", port=" + port
+				+ ", suppressReadTemporay=" + suppressReadTemporay
 				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}
 

@@ -98,6 +98,11 @@ public class PhysicalDBPool {
 		return hostName;
 	}
 
+	/**
+	 * all write datanodes
+	 * 
+	 * @return
+	 */
 	public PhysicalDatasource[] getSources() {
 		return sources;
 	}
@@ -134,8 +139,10 @@ public class PhysicalDBPool {
 		try {
 			int current = activedIndex;
 			if (current != newIndex) {
-				//switch index
+				// switch index
 				activedIndex = newIndex;
+				//init again
+				this.init(activedIndex);
 				// clear all connections
 				this.getSources()[current].clearCons("switch datasource");
 				// write log
@@ -259,8 +266,9 @@ public class PhysicalDBPool {
 	 * 绌洪棽妫�煡
 	 */
 	public void idleCheck(long ildCheckPeriod) {
-		for (PhysicalDatasource ds : sources) {
-			if (ds != null) {
+		for (PhysicalDatasource ds : allDs) {
+			// only readnode and current write node will check
+			if (ds != null && (ds.isReadNode() || ds == this.getSource())) {
 				ds.idleCheck(ds.getConfig().getIdleTimeout(), ildCheckPeriod);
 			}
 		}

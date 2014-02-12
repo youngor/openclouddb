@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalDBPool;
+import org.opencloudb.backend.PhysicalDatasource;
 import org.opencloudb.mysql.nio.MySQLDataSource;
 
 /**
@@ -170,6 +171,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	}
 
 	private void setOk(MySQLDetector detector) {
+
 		recorder.set(detector.lastReadTime() - detector.lastWriteTime());
 		switch (status) {
 		case DBHeartbeat.TIMEOUT_STATUS:
@@ -224,12 +226,19 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		if (!source.isReadNode() && this.status == DBHeartbeat.OK_STATUS) {
 			PhysicalDBPool pool = source.getDbPool();
 			// try to see if need switch datasource
+			int curDatasourceHB= pool.getSource().getHeartbeat().getStatus();
 			if (pool.getSources().length > 1
-					&& pool.getSource().getHeartbeat().getStatus() != DBHeartbeat.OK_STATUS) {
-				int i = pool.next(pool.getActivedIndex());
-				pool.switchSource(i, true, reason);
+					&& curDatasourceHB!=DBHeartbeat.INIT_STATUS && curDatasourceHB!= DBHeartbeat.OK_STATUS) {
+				int myIndex = -1;
+				PhysicalDatasource[] allWriteNodes = pool.getSources();
+				for (int i = 0; i < allWriteNodes.length; i++) {
+					if (this.source == allWriteNodes[i]) {
+						myIndex = i;
+						break;
+					}
+				}
+				pool.switchSource(myIndex, true, reason);
 			}
 		}
 	}
-
 }
