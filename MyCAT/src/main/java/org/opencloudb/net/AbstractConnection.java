@@ -63,7 +63,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected long netInBytes;
 	protected long netOutBytes;
 	protected int writeAttempts;
-	private int disableWriteTimes = 0;
 	protected final ReentrantLock keyLock = new ReentrantLock();
 
 	public AbstractConnection(SocketChannel channel) {
@@ -140,7 +139,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 分配缓存
+	 * 鍒嗛厤缂撳瓨
 	 */
 	public ByteBuffer allocate() {
 		ByteBuffer buffer = this.processor.getBufferPool().allocate();
@@ -148,15 +147,16 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 回收缓存
+	 * 鍥炴敹缂撳瓨
 	 */
 	public final void recycle(ByteBuffer buffer) {
 		this.processor.getBufferPool().recycle(buffer);
 	}
 
 	/**
-	 * 试图回收缓存，当不确定此缓存是否已经回收过，则调用此方法
-	 * 写队列的情况下，当放入到写队列的BUFFER写入socket以后，会自动回收，因此这个方法仅仅用于不确定是否已经被自动回收了的情况下调用
+	 * 璇曞浘鍥炴敹缂撳瓨锛屽綋涓嶇‘瀹氭缂撳瓨鏄惁宸茬粡鍥炴敹杩囷紝鍒欒皟鐢ㄦ鏂规硶
+	 * 鍐欓槦鍒楃殑鎯呭喌涓嬶紝褰撴斁鍏ュ埌鍐欓槦鍒楃殑BUFFER鍐欏叆socket浠ュ悗锛屼細鑷
+	 * 姩鍥炴敹锛屽洜姝よ繖涓柟娉曚粎浠呯敤浜庝笉纭畾鏄惁宸茬粡琚嚜鍔ㄥ洖鏀朵簡鐨勬儏鍐典笅璋冪敤
 	 * 
 	 * @param buffer
 	 */
@@ -180,7 +180,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
-			// fix:异常时候不停刷日志的缺陷
+			// fix:寮傚父鏃跺�涓嶅仠鍒锋棩蹇楃殑缂洪櫡
 			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
@@ -218,37 +218,37 @@ public abstract class AbstractConnection implements NIOConnection {
 		netInBytes += got;
 		processor.addNetInBytes(got);
 
-		// 处理数据
+		// 澶勭悊鏁版嵁
 		int offset = readBufferOffset, length = 0, position = buffer.position();
 		for (;;) {
 			length = getPacketLength(buffer, offset);
-			if (length == -1) {// 未达到可计算数据包长度的数据
+			if (length == -1) {// 鏈揪鍒板彲璁＄畻鏁版嵁鍖呴暱搴︾殑鏁版嵁
 				if (!buffer.hasRemaining()) {
 					buffer = checkReadBuffer(buffer, offset, position);
 				}
 				break;
 			}
 			if (position >= offset + length) {
-				// 提取一个数据包的数据进行处理
+				// 鎻愬彇涓�釜鏁版嵁鍖呯殑鏁版嵁杩涜澶勭悊
 				buffer.position(offset);
 				byte[] data = new byte[length];
 				buffer.get(data, 0, length);
 				handle(data);
 
-				// 设置偏移量
+				// 璁剧疆鍋忕Щ閲�
 				offset += length;
-				if (position == offset) {// 数据正好全部处理完毕
+				if (position == offset) {// 鏁版嵁姝ｅソ鍏ㄩ儴澶勭悊瀹屾瘯
 					if (readBufferOffset != 0) {
 						readBufferOffset = 0;
 					}
 					buffer.clear();
 					break;
-				} else {// 还有剩余数据未处理
+				} else {// 杩樻湁鍓╀綑鏁版嵁鏈鐞�
 					readBufferOffset = offset;
 					buffer.position(position);
 					continue;
 				}
-			} else {// 未到达一个数据包的数据
+			} else {// 鏈埌杈句竴涓暟鎹寘鐨勬暟鎹�
 				if (!buffer.hasRemaining()) {
 					buffer = checkReadBuffer(buffer, offset, position);
 				}
@@ -298,39 +298,34 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	@Override
-	public void writeByQueue() throws IOException {
+	public boolean writeByQueue() throws IOException {
 
 		// System.out.println("writeByQueue ");
 		if (isClosed.get()) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("not write queue ,connection closed " + this);
 			}
-			return;
+			return false;
 		}
 
-		// 满足以下两个条件时，切换到基于事件的写操作。
-		// 1.当前key对写事件不该兴趣。
-		// 2.write0()返回false。
-		boolean hasMoreWrite = !write0();
-		if (!hasMoreWrite  
-				&& ++disableWriteTimes > 1) {
+		// 婊¤冻浠ヤ笅涓や釜鏉′欢鏃讹紝鍒囨崲鍒板熀浜庝簨浠剁殑鍐欐搷浣溿�
+		// 1.褰撳墠key瀵瑰啓浜嬩欢涓嶈鍏磋叮銆�
+		// 2.write0()杩斿洖false銆�
+		boolean noMoreData = write0();
+		if (noMoreData) {
 			disableWrite();
-		}else
-		{
-			disableWriteTimes=0;
+			return true;
+		} else {
+			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+				enableWrite();
+			}
+			return false;
 		}
-
-		// else {// no more write
-		// // System.out.println("disable write "+this);
-		// if ((processKey.interestOps() & SelectionKey.OP_WRITE) != 0) {
-		//
-		// }
-		// }
 
 	}
 
 	/**
-	 * 打开读事件
+	 * 鎵撳紑璇讳簨浠�
 	 */
 	public void enableRead() {
 
@@ -348,7 +343,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 关闭读事件
+	 * 鍏抽棴璇讳簨浠�
 	 */
 	public void disableRead() {
 
@@ -357,7 +352,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 检查WriteBuffer容量，不够则写出当前缓存块并申请新的缓存块。
+	 * 妫�煡WriteBuffer瀹归噺锛屼笉澶熷垯鍐欏嚭褰撳墠缂撳瓨鍧楀苟鐢宠鏂扮殑缂撳瓨鍧椼�
 	 */
 	public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity) {
 		if (capacity > buffer.remaining()) {
@@ -369,7 +364,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 把数据写到给定的缓存中，如果满了则提交当前缓存并申请新的缓存。
+	 * 鎶婃暟鎹啓鍒扮粰瀹氱殑缂撳瓨涓紝濡傛灉婊′簡鍒欐彁浜ゅ綋鍓嶇紦瀛樺苟鐢宠鏂扮殑缂撳瓨銆�
 	 */
 	public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
 		int offset = 0;
@@ -406,22 +401,22 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 由Processor调用的空闲检查
+	 * 鐢盤rocessor璋冪敤鐨勭┖闂叉鏌�
 	 */
 	protected abstract void idleCheck();
 
 	/**
-	 * 清理遗留资源
+	 * 娓呯悊閬楃暀璧勬簮
 	 */
 	protected void cleanup() {
 
-		// 回收接收缓存
+		// 鍥炴敹鎺ユ敹缂撳瓨
 		if (readBuffer != null) {
 			recycle(readBuffer);
 			this.readBuffer = null;
 		}
 
-		// 回收发送缓存
+		// 鍥炴敹鍙戦�缂撳瓨
 		if (writeQueue != null) {
 			ByteBuffer buffer = null;
 			while ((buffer = writeQueue.poll()) != null) {
@@ -432,7 +427,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 获取数据包长度，默认是MySQL数据包，其他数据包重载此方法。
+	 * 鑾峰彇鏁版嵁鍖呴暱搴︼紝榛樿鏄疢ySQL鏁版嵁鍖咃紝鍏朵粬鏁版嵁鍖呴噸杞芥鏂规硶銆�
 	 */
 	protected int getPacketLength(ByteBuffer buffer, int offset) {
 		if (buffer.position() < offset + packetHeaderSize) {
@@ -446,11 +441,11 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 检查ReadBuffer容量，不够则扩展当前缓存，直到最大值。
+	 * 妫�煡ReadBuffer瀹归噺锛屼笉澶熷垯鎵╁睍褰撳墠缂撳瓨锛岀洿鍒版渶澶у�銆�
 	 */
 	private ByteBuffer checkReadBuffer(ByteBuffer buffer, int offset,
 			int position) {
-		// 当偏移量为0时需要扩容，否则移动数据至偏移量为0的位置。
+		// 褰撳亸绉婚噺涓�鏃堕渶瑕佹墿瀹癸紝鍚﹀垯绉诲姩鏁版嵁鑷冲亸绉婚噺涓�鐨勪綅缃�
 		if (offset == 0) {
 			if (buffer.capacity() >= maxPacketSize) {
 				throw new IllegalArgumentException(
@@ -462,7 +457,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			buffer.position(offset);
 			newBuffer.put(buffer);
 			readBuffer = newBuffer;
-			// 回收扩容前的缓存块
+			// 鍥炴敹鎵╁鍓嶇殑缂撳瓨鍧�
 			recycle(buffer);
 			return newBuffer;
 		} else {
@@ -480,7 +475,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	 * @throws IOException
 	 */
 	private boolean write0() throws IOException {
-		// 检查是否有遗留数据未写出
+		// 妫�煡鏄惁鏈夐仐鐣欐暟鎹湭鍐欏嚭
 		int written = 0;
 		ByteBuffer buffer = writeQueue.attachment();
 		if (buffer != null) {
@@ -503,9 +498,9 @@ public abstract class AbstractConnection implements NIOConnection {
 				recycle(buffer);
 			}
 		}
-		// 写出发送队列中的数据块
+		// 鍐欏嚭鍙戦�闃熷垪涓殑鏁版嵁鍧�
 		while ((buffer = writeQueue.poll()) != null) {
-			// 如果是一块未使用过的buffer，则执行关闭连接。
+			// 濡傛灉鏄竴鍧楁湭浣跨敤杩囩殑buffer锛屽垯鎵ц鍏抽棴杩炴帴銆�
 			if (buffer.position() == 0) {
 				recycle(buffer);
 				this.close("quit send");
@@ -536,13 +531,12 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 关闭写事件
+	 * 鍏抽棴鍐欎簨浠�
 	 */
 	private void disableWrite() {
 		try {
 			SelectionKey key = this.processKey;
 			key.interestOps(key.interestOps() & OP_NOT_WRITE);
-			disableWriteTimes = 0;
 		} catch (Exception e) {
 			LOGGER.warn("can't disable write " + e);
 		}
@@ -550,7 +544,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	/**
-	 * 打开写事件
+	 * 鎵撳紑鍐欎簨浠�
 	 */
 	private void enableWrite() {
 		boolean needWakeup = false;

@@ -27,6 +27,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -80,13 +81,27 @@ public final class NIOReactor {
 		public void run() {
 			final Selector selector = this.selector;
 			Set<SelectionKey> keys = null;
+			final LinkedList<AbstractConnection> writeCheckCons = new LinkedList<AbstractConnection>();
 			for (;;) {
+
 				++reactCount;
 				try {
-					selector.select(1000L);
+					selector.select(500L);
 					register(selector);
+					// check if has data to write
+					if (!writeCheckCons.isEmpty()) {
+						for (AbstractConnection theCon : writeCheckCons) {
+							try
+							{
+							theCon.writeByQueue();
+							}catch(Exception e)
+							{
+								LOGGER.warn(theCon+" write queue err "+e);
+							}
+						}
+						writeCheckCons.clear();
+					}
 					keys = selector.selectedKeys();
-
 					for (SelectionKey key : keys) {
 						try {
 							Object att = key.attachment();
@@ -94,15 +109,17 @@ public final class NIOReactor {
 								AbstractConnection con = (AbstractConnection) att;
 								int readyOps = key.readyOps();
 								if ((readyOps & SelectionKey.OP_READ) != 0) {
-									//System.out.println("xxx read " + att);
+									// System.out.println("xxx read " + att);
 									read(con);
 								}
 								if ((readyOps & SelectionKey.OP_WRITE) != 0) {
-									//System.out.println("xxx write " + att);
-									con.writeByQueue();
+									// System.out.println("xxx write " + att);
+									if (con.writeByQueue()) {
+										writeCheckCons.add(con);
+									}
 								}
 							} else {
-								//LOGGER.warn("key not valid ,cancel key ");
+								// LOGGER.warn("key not valid ,cancel key ");
 								key.cancel();
 							}
 						} catch (Throwable e) {
@@ -118,6 +135,7 @@ public final class NIOReactor {
 					}
 
 				}
+
 			}
 		}
 
