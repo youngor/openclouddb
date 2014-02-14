@@ -30,7 +30,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
@@ -50,7 +49,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected NIOProcessor processor;
 	protected NIOHandler handler;
 	protected SelectionKey processKey;
-	protected final ReentrantLock keyLock;
 	protected int packetHeaderSize;
 	protected int maxPacketSize;
 	protected int readBufferOffset;
@@ -65,10 +63,11 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected long netInBytes;
 	protected long netOutBytes;
 	protected int writeAttempts;
+	private int disableWriteTimes = 0;
+	protected final ReentrantLock keyLock = new ReentrantLock();
 
 	public AbstractConnection(SocketChannel channel) {
 		this.channel = channel;
-		this.keyLock = new ReentrantLock();
 		this.isClosed = new AtomicBoolean(false);
 		this.startupTime = TimeUtil.currentTimeMillis();
 		this.lastReadTime = startupTime;
@@ -273,6 +272,9 @@ public abstract class AbstractConnection implements NIOConnection {
 		if (isRegistered) {
 			try {
 				int writeQueueStatus = writeQueue.put(buffer);
+				if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+					enableWrite();
+				}
 				switch (writeQueueStatus) {
 				case BufferQueue.NEARLY_EMPTY: {
 					this.writeQueueAvailable();
@@ -288,9 +290,7 @@ public abstract class AbstractConnection implements NIOConnection {
 				error(ErrorCode.ERR_PUT_WRITE_QUEUE, e);
 				return;
 			}
-			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-				enableWrite();
-			}
+
 		} else {
 			recycle(buffer);
 			close("not registed con");
@@ -299,6 +299,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	@Override
 	public void writeByQueue() throws IOException {
+
 		// System.out.println("writeByQueue ");
 		if (isClosed.get()) {
 			if (LOGGER.isDebugEnabled()) {
@@ -306,20 +307,25 @@ public abstract class AbstractConnection implements NIOConnection {
 			}
 			return;
 		}
+
 		// 满足以下两个条件时，切换到基于事件的写操作。
 		// 1.当前key对写事件不该兴趣。
 		// 2.write0()返回false。
 		boolean hasMoreWrite = !write0();
-		if (hasMoreWrite) {
-			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-				enableWrite();
-			}
-		} else {// no more write
-			// System.out.println("disable write "+this);
-			if ((processKey.interestOps() & SelectionKey.OP_WRITE) != 0) {
-				disableWrite();
-			}
+		if (!hasMoreWrite  
+				&& ++disableWriteTimes > 1) {
+			disableWrite();
+		}else
+		{
+			disableWriteTimes=0;
 		}
+
+		// else {// no more write
+		// // System.out.println("disable write "+this);
+		// if ((processKey.interestOps() & SelectionKey.OP_WRITE) != 0) {
+		//
+		// }
+		// }
 
 	}
 
@@ -327,11 +333,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	 * 打开读事件
 	 */
 	public void enableRead() {
-		final Lock lock = this.keyLock;
-		lock.lock();
-		/**
-		 * 增加needWakeup参数判断，解决因负载均衡haproxy心跳检测带来的异常(CancelledKeyException)错误
-		 */
+
 		boolean needWakeup = false;
 		try {
 			SelectionKey key = this.processKey;
@@ -339,8 +341,6 @@ public abstract class AbstractConnection implements NIOConnection {
 			needWakeup = true;
 		} catch (Exception e) {
 			LOGGER.warn("enable read fail " + e);
-		} finally {
-			lock.unlock();
 		}
 		if (needWakeup) {
 			processKey.selector().wakeup();
@@ -351,14 +351,9 @@ public abstract class AbstractConnection implements NIOConnection {
 	 * 关闭读事件
 	 */
 	public void disableRead() {
-		final Lock lock = this.keyLock;
-		lock.lock();
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() & OP_NOT_READ);
-		} finally {
-			lock.unlock();
-		}
+
+		SelectionKey key = this.processKey;
+		key.interestOps(key.interestOps() & OP_NOT_READ);
 	}
 
 	/**
@@ -537,7 +532,6 @@ public abstract class AbstractConnection implements NIOConnection {
 				recycle(buffer);
 			}
 		}
-
 		return true;
 	}
 
@@ -545,17 +539,14 @@ public abstract class AbstractConnection implements NIOConnection {
 	 * 关闭写事件
 	 */
 	private void disableWrite() {
-		final Lock lock = this.keyLock;
-		lock.lock();
 		try {
 			SelectionKey key = this.processKey;
 			key.interestOps(key.interestOps() & OP_NOT_WRITE);
+			disableWriteTimes = 0;
 		} catch (Exception e) {
 			LOGGER.warn("can't disable write " + e);
-
-		} finally {
-			lock.unlock();
 		}
+
 	}
 
 	/**
@@ -563,8 +554,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	 */
 	private void enableWrite() {
 		boolean needWakeup = false;
-		final Lock lock = this.keyLock;
-		lock.lock();
 		try {
 			SelectionKey key = this.processKey;
 			key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
@@ -572,8 +561,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		} catch (Exception e) {
 			LOGGER.warn("can't enable write " + e);
 
-		} finally {
-			lock.unlock();
 		}
 		if (needWakeup) {
 			processKey.selector().wakeup();
@@ -581,8 +568,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	private void clearSelectionKey() {
-		final Lock lock = this.keyLock;
-		lock.lock();
 		try {
 			SelectionKey key = this.processKey;
 			if (key != null && key.isValid()) {
@@ -591,8 +576,6 @@ public abstract class AbstractConnection implements NIOConnection {
 			}
 		} catch (Exception e) {
 			LOGGER.warn("clear selector keys err:" + e);
-		} finally {
-			lock.unlock();
 		}
 	}
 
