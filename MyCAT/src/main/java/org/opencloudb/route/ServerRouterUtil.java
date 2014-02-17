@@ -593,8 +593,43 @@ public final class ServerRouterUtil {
 				}
 
 			}
+			 
 			// judge if global table contains all dataNodes of other tables
-			if (!globalTableDataNodesMap.isEmpty()) {
+			if (!globalTableDataNodesMap.isEmpty()&&curRNodeSet.isEmpty()) {
+				ArrayList<String> list1=new ArrayList<String>();
+				for (Map.Entry<String, ArrayList<String>> entry : globalTableDataNodesMap
+						.entrySet()) {
+					
+					if(list1.isEmpty()){
+						list1=entry.getValue();   
+
+					}else  if (list1.retainAll(entry.getValue())||list1.containsAll(entry.getValue())) { 
+						if(!list1.isEmpty()){
+							
+							continue;
+						}else{
+							String errMsg = "invalid route in sql, " + curTableName
+									+ " route to :"
+									+ Arrays.toString(curRNodeSet.toArray())
+									+ " ,but " + entry.getKey() + " to "
+									+ Arrays.toString(entry.getValue().toArray())
+									+ " sql:" + sql;
+							LOGGER.warn(errMsg);
+							throw new SQLNonTransientException(errMsg);
+						}
+					}else{
+						String errMsg = "invalid route in sql, " + curTableName
+								+ " route to :"
+								+ Arrays.toString(curRNodeSet.toArray())
+								+ " ,but " + entry.getKey() + " to "
+								+ Arrays.toString(entry.getValue().toArray())
+								+ " sql:" + sql;
+						LOGGER.warn(errMsg);
+						throw new SQLNonTransientException(errMsg);
+					}
+				} 
+				curRNodeSet.add(list1.get(0)); 
+			}else if (!globalTableDataNodesMap.isEmpty()&&!curRNodeSet.isEmpty()) {
 				for (Map.Entry<String, ArrayList<String>> entry : globalTableDataNodesMap
 						.entrySet()) {
 					if (!entry.getValue().containsAll(curRNodeSet)) {
@@ -608,6 +643,7 @@ public final class ServerRouterUtil {
 						throw new SQLNonTransientException(errMsg);
 					}
 				}
+				
 			}
 			return routeToMultiNode(isSelect, isSelect, ast, rrs, curRNodeSet,
 					sql);

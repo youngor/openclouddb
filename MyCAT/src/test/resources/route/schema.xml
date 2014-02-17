@@ -35,7 +35,7 @@
 			with any table whose sharding node is in the same data node -->
 		<table name="company" type="global" dataNode="dn1,dn2,dn3" />
 		<table name="goods" type="global" dataNode="dn1,dn2,dn3" />
-
+		<table name="area" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3" />
 		<table name="employee" primaryKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile" />
 		<table name="customer" dataNode="dn1,dn2" rule="auto-sharding-long">
 			<childTable name="orders" joinKey="customer_id" parentKey="id">

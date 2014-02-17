@@ -145,6 +145,18 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(true, nodeSet.size() > 1);
 
 	}
+	public void testMoreGlobalTableRoute() throws Exception {
+		String sql = null;
+		SchemaConfig schema = schemaMap.get("TESTDB");
+		RouteResultset rrs = null;
+		// select of global table route to only one datanode defined
+		sql = "select * from company,area where area.company_id=company.id ";
+		schema = schemaMap.get("TESTDB");
+		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		 
+	}
 
 	public void testRouteMultiTables() throws Exception {
 		// company is global table ,route to 3 datanode and ignored in route
