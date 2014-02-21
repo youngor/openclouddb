@@ -68,7 +68,7 @@ public interface NIOConnection extends ClosableConnection{
     /**
      * 基于处理器队列的方式写数据
      */
-    boolean writeByQueue() throws IOException;
+    void writeByQueue() throws IOException;
 
 
     /**

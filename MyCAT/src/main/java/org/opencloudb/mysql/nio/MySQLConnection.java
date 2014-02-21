@@ -518,7 +518,7 @@ public class MySQLConnection extends BackendConnection implements
 		RouteResultsetNode rrn = new RouteResultsetNode("default",
 				ServerParse.SELECT, query);
 		StatusSync sync = new StatusSync(this, rrn, this.charsetIndex,
-				Isolations.READ_COMMITTED, true);
+				 this.txIsolation, true);
 		doExecute(sync);
 	}
 
@@ -556,8 +556,9 @@ public class MySQLConnection extends BackendConnection implements
 		if (isClosed.get()) {
 			if (this.respHandler != null) {
 				this.respHandler.connectionClose(this, reason);
+				respHandler=null;
 			}
-			pool.deActive(this);
+
 		}
 	}
 

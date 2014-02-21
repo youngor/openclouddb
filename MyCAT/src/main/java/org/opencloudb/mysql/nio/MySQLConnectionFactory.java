@@ -48,6 +48,7 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
 		// c.setSchema(dsc.getDatabase());
 		c.setHandler(new MySQLConnectionAuthenticator(c, handler));
 		c.setPool(pool);
+		c.setIdleTimeout(pool.getConfig().getIdleTimeout());
 		postConnect(c, MycatServer.getInstance().getConnector());
 		return c;
 	}

@@ -23,8 +23,12 @@
  */
 package org.opencloudb;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,6 +59,7 @@ public class MycatServer {
 	private static final Logger LOGGER = Logger.getLogger(MycatServer.class);
 	private final RouteService routerService;
 	private final CacheService cacheService;
+	private Properties dnIndexProperties;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -107,7 +112,8 @@ public class MycatServer {
 		SystemConfig system = config.getSystem();
 		LOGGER.info("sysconfig params:" + system.toString());
 		timer.schedule(updateTime(), 0L, TIME_UPDATE_PERIOD);
-
+		// load datanode active index from properties
+		dnIndexProperties = loadDnIndexProps();
 		// startup processors
 		int executor = system.getProcessorExecutor();
 
@@ -142,11 +148,17 @@ public class MycatServer {
 		Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
 		LOGGER.info("Initialize dataHost ...");
 		for (PhysicalDBPool node : dataHosts.values()) {
-			node.init(0);
+			String index = dnIndexProperties.getProperty(node.getHostName(),
+					"0");
+			if (!"0".equals(index)) {
+				LOGGER.info("init datahost: " + node.getHostName()
+						+ "  to use datasource index:" + index);
+			}
+			node.init(Integer.valueOf(index));
 			node.startHeartbeat();
 		}
 		long dataNodeIldeCheckPeriod = system.getDataNodeIdleCheckPeriod();
-		timer.schedule(dataNodeIdleCheck(dataNodeIldeCheckPeriod), 0L,
+		timer.schedule(dataNodeConHeartBeatCheck(dataNodeIldeCheckPeriod), 0L,
 				dataNodeIldeCheckPeriod);
 		timer.schedule(dataNodeHeartbeat(), 0L,
 				system.getDataNodeHeartbeatPeriod());
@@ -175,6 +187,65 @@ public class MycatServer {
 		LOGGER.info(server.getName() + " is started and listening on "
 				+ server.getPort());
 		LOGGER.info("===============================================");
+	}
+
+	private Properties loadDnIndexProps() {
+		Properties prop = new Properties();
+		File file = new File(SystemConfig.getHomePath(), "conf"
+				+ File.separator + "dnindex.properties");
+		if (!file.exists()) {
+			return prop;
+		}
+		FileInputStream filein = null;
+		try {
+			filein = new FileInputStream(file);
+			prop.load(filein);
+		} catch (Exception e) {
+			LOGGER.warn("load DataNodeIndex err:" + e);
+		} finally {
+			if (filein != null) {
+				try {
+					filein.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+		return prop;
+	}
+
+	/**
+	 * save cur datanode index to properties file
+	 * 
+	 * @param dataNode
+	 * @param curIndex
+	 */
+	public synchronized void saveDataHostIndex(String dataHost, int curIndex) {
+
+		File file = new File(SystemConfig.getHomePath(), "conf"
+				+ File.separator + "dnindex.properties");
+		FileOutputStream fileOut = null;
+		try {
+			String oldIndex = dnIndexProperties.getProperty(dataHost);
+			String newIndex = String.valueOf(curIndex);
+			if (newIndex.equals(oldIndex)) {
+				return;
+			}
+			dnIndexProperties.setProperty(dataHost, newIndex);
+			LOGGER.info("save DataHost index  " + dataHost + " cur index "
+					+ curIndex);
+			fileOut = new FileOutputStream(file);
+			dnIndexProperties.store(fileOut, "update");
+		} catch (Exception e) {
+			LOGGER.warn("saveDataNodeIndex err:" + e);
+		} finally {
+			if (fileOut != null) {
+				try {
+					fileOut.close();
+				} catch (IOException e) {
+				}
+			}
+		}
+
 	}
 
 	public RouteService getRouterService() {
@@ -253,7 +324,7 @@ public class MycatServer {
 	}
 
 	// 数据节点定时连接空闲超时检查任务
-	private TimerTask dataNodeIdleCheck(final long ildCheckPeriod) {
+	private TimerTask dataNodeConHeartBeatCheck(final long heartPeriod) {
 		return new TimerTask() {
 			@Override
 			public void run() {
@@ -263,13 +334,13 @@ public class MycatServer {
 						Map<String, PhysicalDBPool> nodes = config
 								.getDataHosts();
 						for (PhysicalDBPool node : nodes.values()) {
-							node.idleCheck(ildCheckPeriod);
+							node.heartbeatCheck(heartPeriod);
 						}
 						Map<String, PhysicalDBPool> _nodes = config
 								.getBackupDataHosts();
 						if (_nodes != null) {
 							for (PhysicalDBPool node : _nodes.values()) {
-								node.idleCheck(ildCheckPeriod);
+								node.heartbeatCheck(heartPeriod);
 							}
 						}
 					}

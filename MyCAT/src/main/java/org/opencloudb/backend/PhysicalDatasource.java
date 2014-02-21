@@ -25,6 +25,7 @@ package org.opencloudb.backend;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -143,41 +144,46 @@ public abstract class PhysicalDatasource {
 
 	private boolean validSchema(String schema) {
 		String theSchema = schema;
-		return theSchema != null & !theSchema.endsWith("")
+		return theSchema != null & !theSchema.equals("")
 				&& !theSchema.equals("snyn...");
 	}
 
-	public void idleCheck(long timeout, long conHeartBeatPeriod) {
+	public void heatBeatCheck(long timeout, long conHeartBeatPeriod) {
+		int IDLE_CLOSE_COUNT = 3;
+		int MAX_CONS_IN_ONE_CHECK = 10;
 		LinkedList<PhysicalConnection> heartBeatCons = new LinkedList<PhysicalConnection>();
+		LinkedList<PhysicalConnection> idleConList = new LinkedList<PhysicalConnection>();
 		int idleCons = 0;
 		int activeCons = 0;
+		long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
+		long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2
+				* conHeartBeatPeriod;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			long time = TimeUtil.currentTimeMillis() - timeout;
-			long hearBeatTime = TimeUtil.currentTimeMillis()
-					- conHeartBeatPeriod;
-			long hearBeatTime2 = TimeUtil.currentTimeMillis() - 2
-					* conHeartBeatPeriod;
+
 			for (int i = 0; i < items.length; i++) {
 				PhysicalConnection c = items[i];
 				if (items[i] == null) {
 					continue;
+				} else if (items[i].isClosedOrQuit()) {
+					continue;
 				}
-				if (items[i].isBorrowed()) {
+				boolean borrowed = items[i].isBorrowed();
+				if (borrowed) {
 					activeCons++;
 				} else {
 					idleCons++;
+					idleConList.add(items[i]);
 				}
-				if (time > c.getLastTime()) {
-					c.close(" idle ");
-					items[i] = null;
-				} else if (!c.isBorrowed()) {
+				if (!borrowed) {
 					if (validSchema(c.getSchema())) {
 						if (c.getLastTime() < hearBeatTime) {
-							// Heart beat check
-							c.setBorrowed(true);
-							heartBeatCons.add(c);
+							if (heartBeatCons.size() < MAX_CONS_IN_ONE_CHECK) {
+								// Heart beat check
+								c.setBorrowed(true);
+								heartBeatCons.add(c);
+							}
 						}
 					} else if (c.getLastTime() < hearBeatTime2) {
 						{// not valid schema conntion should close for idle
@@ -220,7 +226,9 @@ public abstract class PhysicalDatasource {
 						items[i] = new FakeConnection();
 						--createCount;
 						try {
-							this.createNewConnection(false,simpleHandler, i, null, "");
+							// creat new connection
+							this.createNewConnection(false, simpleHandler, i,
+									null, "");
 						} catch (IOException e) {
 							LOGGER.warn("create connection err " + e);
 						}
@@ -232,8 +240,35 @@ public abstract class PhysicalDatasource {
 			} finally {
 				lock.unlock();
 			}
-			// creat new connection
 
+		} else if (idleCons > hostConfig.getMinCon() + IDLE_CLOSE_COUNT) {// too
+																			// many
+																			// idle
+			int closedCount = 0;
+			ArrayList<PhysicalConnection> readyCloseCons = new ArrayList<PhysicalConnection>(
+					IDLE_CLOSE_COUNT);
+			for (PhysicalConnection idleCon : idleConList) {
+				if (closedCount < IDLE_CLOSE_COUNT) {
+					if (!idleCon.isBorrowed() && !idleCon.isClosedOrQuit()
+							&& !lock.isLocked()) {
+						lock.lock();
+						try {
+							if (!idleCon.isBorrowed()
+									&& !idleCon.isClosedOrQuit()) {
+								idleCon.setBorrowed(true);
+								readyCloseCons.add(idleCon);
+								closedCount++;
+
+							}
+						} finally {
+							lock.unlock();
+						}
+					}
+				}
+			}
+			for (PhysicalConnection realidleCon : readyCloseCons) {
+				realidleCon.close("too many idle con");
+			}
 		}
 	}
 
@@ -377,11 +412,12 @@ public abstract class PhysicalDatasource {
 				+ this.name);
 		final int insertIndex = emptyIndex;
 		// create connection
-		return createNewConnection(true,handler, insertIndex, attachment,
+		return createNewConnection(true, handler, insertIndex, attachment,
 				conMeta.getSchema());
 	}
 
 	private void returnCon(PhysicalConnection c) {
+		c.setAttachment(null);
 		c.setBorrowed(false);
 		c.setLastTime(TimeUtil.currentTimeMillis());
 	}
@@ -396,10 +432,6 @@ public abstract class PhysicalDatasource {
 
 	public abstract PhysicalConnection createNewConnection(
 			ResponseHandler handler) throws IOException;
-
-	public void deActive(PhysicalConnection con) {
-		returnCon(con);
-	}
 
 	public long getHeartbeatRecoveryTime() {
 		return heartbeatRecoveryTime;

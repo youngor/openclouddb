@@ -64,6 +64,8 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected long netOutBytes;
 	protected int writeAttempts;
 	protected final ReentrantLock keyLock = new ReentrantLock();
+	private long idleTimeout;
+	private int emptyWriteTimes;
 
 	public AbstractConnection(SocketChannel channel) {
 		this.channel = channel;
@@ -71,6 +73,20 @@ public abstract class AbstractConnection implements NIOConnection {
 		this.startupTime = TimeUtil.currentTimeMillis();
 		this.lastReadTime = startupTime;
 		this.lastWriteTime = startupTime;
+	}
+
+	public long getIdleTimeout() {
+		return idleTimeout;
+	}
+
+	public void setIdleTimeout(long idleTimeout) {
+		this.idleTimeout = idleTimeout;
+	}
+
+	public boolean isIdleTimeout() {
+		return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
+				lastReadTime) + idleTimeout;
+
 	}
 
 	public SocketChannel getChannel() {
@@ -138,28 +154,15 @@ public abstract class AbstractConnection implements NIOConnection {
 		this.writeQueue = writeQueue;
 	}
 
-	/**
-	 * 鍒嗛厤缂撳瓨
-	 */
 	public ByteBuffer allocate() {
 		ByteBuffer buffer = this.processor.getBufferPool().allocate();
 		return buffer;
 	}
 
-	/**
-	 * 鍥炴敹缂撳瓨
-	 */
 	public final void recycle(ByteBuffer buffer) {
 		this.processor.getBufferPool().recycle(buffer);
 	}
 
-	/**
-	 * 璇曞浘鍥炴敹缂撳瓨锛屽綋涓嶇‘瀹氭缂撳瓨鏄惁宸茬粡鍥炴敹杩囷紝鍒欒皟鐢ㄦ鏂规硶
-	 * 鍐欓槦鍒楃殑鎯呭喌涓嬶紝褰撴斁鍏ュ埌鍐欓槦鍒楃殑BUFFER鍐欏叆socket浠ュ悗锛屼細鑷
-	 * 姩鍥炴敹锛屽洜姝よ繖涓柟娉曚粎浠呯敤浜庝笉纭畾鏄惁宸茬粡琚嚜鍔ㄥ洖鏀朵簡鐨勬儏鍐典笅璋冪敤
-	 * 
-	 * @param buffer
-	 */
 	public final void recycleIfNeed(ByteBuffer buffer) {
 		this.processor.getBufferPool().safeRecycle(buffer);
 	}
@@ -180,7 +183,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
-			// fix:寮傚父鏃跺�涓嶅仠鍒锋棩蹇楃殑缂洪櫡
 			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
@@ -222,33 +224,31 @@ public abstract class AbstractConnection implements NIOConnection {
 		int offset = readBufferOffset, length = 0, position = buffer.position();
 		for (;;) {
 			length = getPacketLength(buffer, offset);
-			if (length == -1) {// 鏈揪鍒板彲璁＄畻鏁版嵁鍖呴暱搴︾殑鏁版嵁
+			if (length == -1) {
 				if (!buffer.hasRemaining()) {
 					buffer = checkReadBuffer(buffer, offset, position);
 				}
 				break;
 			}
 			if (position >= offset + length) {
-				// 鎻愬彇涓�釜鏁版嵁鍖呯殑鏁版嵁杩涜澶勭悊
 				buffer.position(offset);
 				byte[] data = new byte[length];
 				buffer.get(data, 0, length);
 				handle(data);
 
-				// 璁剧疆鍋忕Щ閲�
 				offset += length;
-				if (position == offset) {// 鏁版嵁姝ｅソ鍏ㄩ儴澶勭悊瀹屾瘯
+				if (position == offset) {
 					if (readBufferOffset != 0) {
 						readBufferOffset = 0;
 					}
 					buffer.clear();
 					break;
-				} else {// 杩樻湁鍓╀綑鏁版嵁鏈鐞�
+				} else {
 					readBufferOffset = offset;
 					buffer.position(position);
 					continue;
 				}
-			} else {// 鏈埌杈句竴涓暟鎹寘鐨勬暟鎹�
+			} else {
 				if (!buffer.hasRemaining()) {
 					buffer = checkReadBuffer(buffer, offset, position);
 				}
@@ -298,35 +298,28 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	@Override
-	public boolean writeByQueue() throws IOException {
+	public void writeByQueue() throws IOException {
 
 		// System.out.println("writeByQueue ");
 		if (isClosed.get()) {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("not write queue ,connection closed " + this);
 			}
-			return false;
+			return;
 		}
 
-		// 婊¤冻浠ヤ笅涓や釜鏉′欢鏃讹紝鍒囨崲鍒板熀浜庝簨浠剁殑鍐欐搷浣溿�
-		// 1.褰撳墠key瀵瑰啓浜嬩欢涓嶈鍏磋叮銆�
-		// 2.write0()杩斿洖false銆�
 		boolean noMoreData = write0();
 		if (noMoreData) {
 			disableWrite();
-			return true;
 		} else {
+			emptyWriteTimes = 0;
 			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
 				enableWrite();
 			}
-			return false;
 		}
 
 	}
 
-	/**
-	 * 鎵撳紑璇讳簨浠�
-	 */
 	public void enableRead() {
 
 		boolean needWakeup = false;
@@ -351,9 +344,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		key.interestOps(key.interestOps() & OP_NOT_READ);
 	}
 
-	/**
-	 * 妫�煡WriteBuffer瀹归噺锛屼笉澶熷垯鍐欏嚭褰撳墠缂撳瓨鍧楀苟鐢宠鏂扮殑缂撳瓨鍧椼�
-	 */
 	public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity) {
 		if (capacity > buffer.remaining()) {
 			write(buffer);
@@ -363,9 +353,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	/**
-	 * 鎶婃暟鎹啓鍒扮粰瀹氱殑缂撳瓨涓紝濡傛灉婊′簡鍒欐彁浜ゅ綋鍓嶇紦瀛樺苟鐢宠鏂扮殑缂撳瓨銆�
-	 */
 	public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
 		int offset = 0;
 		int length = src.length;
@@ -400,10 +387,15 @@ public abstract class AbstractConnection implements NIOConnection {
 		return isClosed.get();
 	}
 
-	/**
-	 * 鐢盤rocessor璋冪敤鐨勭┖闂叉鏌�
-	 */
-	protected abstract void idleCheck();
+	protected void idleCheck() {
+		if ((this.getWriteQueue().snapshotSize() > 0)
+				&& ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0)) {
+			enableWrite();
+		} else if (isIdleTimeout()) {
+			LOGGER.info(toString() + " idle timeout");
+			close(" idle ");
+		}
+	}
 
 	/**
 	 * 娓呯悊閬楃暀璧勬簮
@@ -426,9 +418,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	/**
-	 * 鑾峰彇鏁版嵁鍖呴暱搴︼紝榛樿鏄疢ySQL鏁版嵁鍖咃紝鍏朵粬鏁版嵁鍖呴噸杞芥鏂规硶銆�
-	 */
 	protected int getPacketLength(ByteBuffer buffer, int offset) {
 		if (buffer.position() < offset + packetHeaderSize) {
 			return -1;
@@ -440,12 +429,8 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	/**
-	 * 妫�煡ReadBuffer瀹归噺锛屼笉澶熷垯鎵╁睍褰撳墠缂撳瓨锛岀洿鍒版渶澶у�銆�
-	 */
 	private ByteBuffer checkReadBuffer(ByteBuffer buffer, int offset,
 			int position) {
-		// 褰撳亸绉婚噺涓�鏃堕渶瑕佹墿瀹癸紝鍚﹀垯绉诲姩鏁版嵁鑷冲亸绉婚噺涓�鐨勪綅缃�
 		if (offset == 0) {
 			if (buffer.capacity() >= maxPacketSize) {
 				throw new IllegalArgumentException(
@@ -457,7 +442,6 @@ public abstract class AbstractConnection implements NIOConnection {
 			buffer.position(offset);
 			newBuffer.put(buffer);
 			readBuffer = newBuffer;
-			// 鍥炴敹鎵╁鍓嶇殑缂撳瓨鍧�
 			recycle(buffer);
 			return newBuffer;
 		} else {
@@ -475,7 +459,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	 * @throws IOException
 	 */
 	private boolean write0() throws IOException {
-		// 妫�煡鏄惁鏈夐仐鐣欐暟鎹湭鍐欏嚭
 		int written = 0;
 		ByteBuffer buffer = writeQueue.attachment();
 		if (buffer != null) {
@@ -498,9 +481,7 @@ public abstract class AbstractConnection implements NIOConnection {
 				recycle(buffer);
 			}
 		}
-		// 鍐欏嚭鍙戦�闃熷垪涓殑鏁版嵁鍧�
 		while ((buffer = writeQueue.poll()) != null) {
-			// 濡傛灉鏄竴鍧楁湭浣跨敤杩囩殑buffer锛屽垯鎵ц鍏抽棴杩炴帴銆�
 			if (buffer.position() == 0) {
 				recycle(buffer);
 				this.close("quit send");
@@ -518,7 +499,6 @@ public abstract class AbstractConnection implements NIOConnection {
 					break;
 				}
 			}
-
 			if (buffer.hasRemaining()) {
 				writeQueue.attach(buffer);
 				writeAttempts++;
@@ -530,22 +510,20 @@ public abstract class AbstractConnection implements NIOConnection {
 		return true;
 	}
 
-	/**
-	 * 鍏抽棴鍐欎簨浠�
-	 */
 	private void disableWrite() {
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() & OP_NOT_WRITE);
-		} catch (Exception e) {
-			LOGGER.warn("can't disable write " + e);
+		// close when twice call
+		if (++emptyWriteTimes > 1) {
+			try {
+				SelectionKey key = this.processKey;
+				key.interestOps(key.interestOps() & OP_NOT_WRITE);
+				emptyWriteTimes = 0;
+			} catch (Exception e) {
+				LOGGER.warn("can't disable write " + e);
+			}
 		}
 
 	}
 
-	/**
-	 * 鎵撳紑鍐欎簨浠�
-	 */
 	private void enableWrite() {
 		boolean needWakeup = false;
 		try {

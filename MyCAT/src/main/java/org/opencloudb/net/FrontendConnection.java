@@ -46,7 +46,6 @@ import org.opencloudb.net.mysql.HandshakePacket;
 import org.opencloudb.net.mysql.MySQLPacket;
 import org.opencloudb.net.mysql.OkPacket;
 import org.opencloudb.util.RandomUtil;
-import org.opencloudb.util.TimeUtil;
 
 /**
  * @author mycat
@@ -113,18 +112,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 		this.localPort = localPort;
 	}
 
-	public long getIdleTimeout() {
-		return idleTimeout;
-	}
 
-	public void setIdleTimeout(long idleTimeout) {
-		this.idleTimeout = idleTimeout;
-	}
 
-	public boolean isIdleTimeout() {
-		return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
-				lastReadTime) + idleTimeout;
-	}
+	
 
 	public void setAccepted(boolean isAccepted) {
 		this.isAccepted = isAccepted;
@@ -223,16 +213,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 		mm.position(5);
 		String db = mm.readString();
 
-		// 检查schema是否已经设置
-		if (schema != null) {
-			if (schema.equals(db)) {
-				write(writeToBuffer(OkPacket.OK, allocate()));
-			} else {
-				writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR,
-						"Not allowed to change the database!");
-			}
-			return;
-		}
 
 		// 检查schema的有效性
 		if (db == null || !privileges.schemaExists(db)) {
@@ -349,14 +329,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 		writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
 	}
 
-	@Override
-	protected void idleCheck() {
-		if (isIdleTimeout()) {
-			LOGGER.warn(toString() + " idle timeout");
-			close(" idle ");
-		}
-	}
-
+	
 	@Override
 	public void register(Selector selector) throws IOException {
 		super.register(selector);

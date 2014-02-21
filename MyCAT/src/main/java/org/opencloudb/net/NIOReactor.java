@@ -27,7 +27,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -81,26 +80,12 @@ public final class NIOReactor {
 		public void run() {
 			final Selector selector = this.selector;
 			Set<SelectionKey> keys = null;
-			final LinkedList<AbstractConnection> writeCheckCons = new LinkedList<AbstractConnection>();
 			for (;;) {
 
 				++reactCount;
 				try {
-					selector.select(500L);
+					selector.select(1000L);
 					register(selector);
-					// check if has data to write
-					if (!writeCheckCons.isEmpty()) {
-						for (AbstractConnection theCon : writeCheckCons) {
-							try
-							{
-							theCon.writeByQueue();
-							}catch(Exception e)
-							{
-								LOGGER.warn(theCon+" write queue err "+e);
-							}
-						}
-						writeCheckCons.clear();
-					}
 					keys = selector.selectedKeys();
 					for (SelectionKey key : keys) {
 						try {
@@ -113,10 +98,7 @@ public final class NIOReactor {
 									read(con);
 								}
 								if ((readyOps & SelectionKey.OP_WRITE) != 0) {
-									// System.out.println("xxx write " + att);
-									if (con.writeByQueue()) {
-										writeCheckCons.add(con);
-									}
+									con.writeByQueue();
 								}
 							} else {
 								// LOGGER.warn("key not valid ,cancel key ");

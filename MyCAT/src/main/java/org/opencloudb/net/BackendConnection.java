@@ -129,11 +129,6 @@ public abstract class BackendConnection extends AbstractConnection {
 	}
 
 	@Override
-	protected void idleCheck() {
-		// nothing
-	}
-
-	@Override
 	public String toString() {
 		return "BackendConnection [id=" + id + ", host=" + host + ", port="
 				+ port + ", localPort=" + localPort + ", suppressReadTemporay="

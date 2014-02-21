@@ -27,10 +27,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.net.BackendConnection;
 import org.opencloudb.net.mysql.ErrorPacket;
 
 /**
@@ -43,27 +46,25 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	private static final Logger LOGGER = Logger
 			.getLogger(ConnectionHeartBeatHandler.class);
 	protected final ReentrantLock lock = new ReentrantLock();
-	private final Collection<HeartBeatCon> allCons = new LinkedList<HeartBeatCon>();
+	private final ConcurrentHashMap<Long, HeartBeatCon> allCons = new ConcurrentHashMap<Long, HeartBeatCon>();
 
 	public void doHeartBeat(PhysicalConnection conn, String sql) {
-		long timeOutTimestamp = System.currentTimeMillis() + 5 * 1000L;
-		HeartBeatCon hbCon = new HeartBeatCon(timeOutTimestamp, conn);
-		conn.setRunning(true);
-		conn.setResponseHandler(this);
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("do heartbeat for con " + conn);
+		}
+
 		try {
-			conn.query(sql);
-			addHeartBeatCon(hbCon);
+
+			HeartBeatCon hbCon = new HeartBeatCon((BackendConnection) conn);
+			boolean notExist = (allCons.putIfAbsent(hbCon.conn.getId(), hbCon) == null);
+			if (notExist) {
+				conn.setRunning(true);
+				conn.setResponseHandler(this);
+				conn.query(sql);
+
+			}
 		} catch (Exception e) {
 			executeException(conn, e);
-		}
-	}
-
-	private void addHeartBeatCon(HeartBeatCon hbCon) {
-		lock.lock();
-		try {
-			allCons.add(hbCon);
-		} finally {
-			lock.unlock();
 		}
 	}
 
@@ -74,26 +75,22 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 		if (allCons.isEmpty()) {
 			return;
 		}
-		Collection<PhysicalConnection> abandCons = new LinkedList<PhysicalConnection>();
+		Collection<BackendConnection> abandCons = new LinkedList<BackendConnection>();
 		long curTime = System.currentTimeMillis();
-		lock.lock();
-		try {
-			Iterator<HeartBeatCon> itors = allCons.iterator();
-			while (itors.hasNext()) {
-				HeartBeatCon hbCon = (HeartBeatCon) itors.next();
-				if (hbCon.timeOutTimestamp < curTime) {
-					abandCons.add(hbCon.conn);
-					itors.remove();
-				}
+		Iterator<Entry<Long, HeartBeatCon>> itors = allCons.entrySet()
+				.iterator();
+		while (itors.hasNext()) {
+			HeartBeatCon hbCon =itors.next().getValue();
+			if (hbCon.timeOutTimestamp < curTime) {
+				abandCons.add(hbCon.conn);
+				itors.remove();
 			}
-
-		} finally {
-			lock.unlock();
 		}
 
 		if (!abandCons.isEmpty()) {
-			for (PhysicalConnection con : abandCons) {
+			for (BackendConnection con : abandCons) {
 				try {
+					// if(con.isBorrowed())
 					con.close("heartbeat timeout ");
 				} catch (Exception e) {
 					LOGGER.warn("close err:" + e);
@@ -120,12 +117,8 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("errorResponse " + err.errno + " "
-					+ new String(err.message));
-		}
-
-		conn.setRunning(false);
+		LOGGER.warn("errorResponse " + err.errno + " "
+				+ new String(err.message));
 		conn.release();
 
 	}
@@ -143,16 +136,10 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
 	@Override
 	public void rowResponse(byte[] row, PhysicalConnection conn) {
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("received row from " + conn);
-		}
 	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
-		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("received row data end from " + conn);
-		}
 		removeFinished(conn);
 		conn.setRunning(false);
 		conn.release();
@@ -160,26 +147,14 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
 	private void executeException(PhysicalConnection c, Throwable e) {
 		removeFinished(c);
-		LOGGER.warn("executeException   " + e);
-		c.setRunning(false);
+		LOGGER.warn("executeException   ", e);
 		c.close("heatbeat exception:" + e);
 
 	}
 
 	private void removeFinished(PhysicalConnection con) {
-		lock.lock();
-		try {
-			Iterator<HeartBeatCon> itors = allCons.iterator();
-			while (itors.hasNext()) {
-				if (((HeartBeatCon) itors.next()).conn == con) {
-					itors.remove();
-					break;
-				}
-			}
-
-		} finally {
-			lock.unlock();
-		}
+		Long id = ((BackendConnection) con).getId();
+		this.allCons.remove(id);
 	}
 
 	@Override
@@ -205,11 +180,11 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
 class HeartBeatCon {
 	public final long timeOutTimestamp;
-	public final PhysicalConnection conn;
+	public final BackendConnection conn;
 
-	public HeartBeatCon(long timeOutTimestamp, PhysicalConnection conn) {
+	public HeartBeatCon(BackendConnection conn) {
 		super();
-		this.timeOutTimestamp = timeOutTimestamp;
+		this.timeOutTimestamp = System.currentTimeMillis() + 20 * 1000L;
 		this.conn = conn;
 	}
 

@@ -33,6 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
+import org.opencloudb.MycatServer;
 import org.opencloudb.config.Alarms;
 import org.opencloudb.heartbeat.DBHeartbeat;
 import org.opencloudb.mysql.nio.handler.GetConnectionHandler;
@@ -141,7 +142,7 @@ public class PhysicalDBPool {
 			if (current != newIndex) {
 				// switch index
 				activedIndex = newIndex;
-				//init again
+				// init again
 				this.init(activedIndex);
 				// clear all connections
 				this.getSources()[current].clearCons("switch datasource");
@@ -187,6 +188,7 @@ public class PhysicalDBPool {
 			activedIndex = active;
 			initSuccess = true;
 			LOGGER.info(getMessage(active, " init success"));
+			MycatServer.getInstance().saveDataHostIndex(hostName, activedIndex);
 		} else {
 			initSuccess = false;
 			StringBuilder s = new StringBuilder();
@@ -263,13 +265,14 @@ public class PhysicalDBPool {
 	}
 
 	/**
-	 * 绌洪棽妫�煡
+	 * back physical connection heartbeat check
 	 */
-	public void idleCheck(long ildCheckPeriod) {
+	public void heartbeatCheck(long ildCheckPeriod) {
 		for (PhysicalDatasource ds : allDs) {
 			// only readnode and current write node will check
 			if (ds != null && (ds.isReadNode() || ds == this.getSource())) {
-				ds.idleCheck(ds.getConfig().getIdleTimeout(), ildCheckPeriod);
+				ds.heatBeatCheck(ds.getConfig().getIdleTimeout(),
+						ildCheckPeriod);
 			}
 		}
 	}
