@@ -154,7 +154,7 @@ public class ServerRouteUtilTest extends TestCase {
 		schema = schemaMap.get("TESTDB");
 		rrs = ServerRouterUtil.route(schema, -1, sql, null, null, cachePool);
 		Assert.assertEquals(1, rrs.getNodes().length);
-		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(true, rrs.isCacheAble());
 		 
 	}
 
