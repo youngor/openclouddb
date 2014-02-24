@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -74,6 +75,7 @@ import com.akiban.sql.unparser.NodeToString;
 public final class ServerRouterUtil {
 	private static final Logger LOGGER = Logger
 			.getLogger(ServerRouterUtil.class);
+	private static final Random rand = new Random();
 
 	public static RouteResultset route(SchemaConfig schema, int sqlType,
 			String stmt, String charset, Object info, LayerCachePool cachePool)
@@ -175,9 +177,9 @@ public final class ServerRouterUtil {
 					// route by sql query root parent's datanode
 					String findRootTBSql = tc.getLocateRTableKeySql()
 							+ joinKeyVal;
-					if(LOGGER.isDebugEnabled())
-					{
-						LOGGER.debug("find root parent's node sql "+findRootTBSql);
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("find root parent's node sql "
+								+ findRootTBSql);
 					}
 					FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler();
 					String dn = fetchHandler.execute(schema.getName(),
@@ -538,9 +540,7 @@ public final class ServerRouterUtil {
 		}
 
 		if (tbCondMap.size() > 1) {
-			LOGGER.warn("multi route tables found in this sql ,tables:"
-					+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
-					+ sql);
+
 			Set<String> curRNodeSet = new LinkedHashSet<String>();
 			String curTableName = null;
 			Map<String, ArrayList<String>> globalTableDataNodesMap = new LinkedHashMap<String, ArrayList<String>>();
@@ -593,43 +593,39 @@ public final class ServerRouterUtil {
 				}
 
 			}
-			 
-			// judge if global table contains all dataNodes of other tables
-			if (!globalTableDataNodesMap.isEmpty()&&curRNodeSet.isEmpty()) {
-				ArrayList<String> list1=new ArrayList<String>();
-				for (Map.Entry<String, ArrayList<String>> entry : globalTableDataNodesMap
-						.entrySet()) {
-					
-					if(list1.isEmpty()){
-						list1=entry.getValue();   
+			// only global table contains in sql
+			if (!globalTableDataNodesMap.isEmpty() && curRNodeSet.isEmpty()) {
+				ArrayList<String> resultList = new ArrayList<String>();
+				for (ArrayList<String> nodeList : globalTableDataNodesMap
+						.values()) {
+					if (resultList.isEmpty()) {
+						resultList = nodeList;
 
-					}else  if (list1.retainAll(entry.getValue())||list1.containsAll(entry.getValue())) { 
-						if(!list1.isEmpty()){
-							
-							continue;
-						}else{
-							String errMsg = "invalid route in sql, " + curTableName
-									+ " route to :"
-									+ Arrays.toString(curRNodeSet.toArray())
-									+ " ,but " + entry.getKey() + " to "
-									+ Arrays.toString(entry.getValue().toArray())
+					} else {
+						if (resultList.retainAll(nodeList)
+								&& resultList.isEmpty()) {
+							String errMsg = "invalid route in sql, multi global tables found but datanode has no intersection "
 									+ " sql:" + sql;
 							LOGGER.warn(errMsg);
 							throw new SQLNonTransientException(errMsg);
 						}
-					}else{
-						String errMsg = "invalid route in sql, " + curTableName
-								+ " route to :"
-								+ Arrays.toString(curRNodeSet.toArray())
-								+ " ,but " + entry.getKey() + " to "
-								+ Arrays.toString(entry.getValue().toArray())
-								+ " sql:" + sql;
-						LOGGER.warn(errMsg);
-						throw new SQLNonTransientException(errMsg);
+
 					}
-				} 
-				curRNodeSet.add(list1.get(0)); 
-			}else if (!globalTableDataNodesMap.isEmpty()&&!curRNodeSet.isEmpty()) {
+
+				}
+				if (resultList.size() == 1) {
+					rrs.setCacheAble(true);
+					rrs = routeToSingleNode(rrs, resultList.get(0), sql);
+				} else {
+					// mulit routes ,not cache route result
+					rrs.setCacheAble(false);
+					rrs = routeToSingleNode(rrs, getRandomDataNode(resultList),
+							sql);
+				}
+				return rrs;
+			} else if (!globalTableDataNodesMap.isEmpty()
+					&& !curRNodeSet.isEmpty()) {
+				// judge if global table contains all dataNodes of other tables
 				for (Map.Entry<String, ArrayList<String>> entry : globalTableDataNodesMap
 						.entrySet()) {
 					if (!entry.getValue().containsAll(curRNodeSet)) {
@@ -643,8 +639,11 @@ public final class ServerRouterUtil {
 						throw new SQLNonTransientException(errMsg);
 					}
 				}
-				
+
 			}
+			LOGGER.warn("multi route tables found in this sql ,tables:"
+					+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
+					+ sql);
 			return routeToMultiNode(isSelect, isSelect, ast, rrs, curRNodeSet,
 					sql);
 		} else {// only one table
@@ -728,6 +727,11 @@ public final class ServerRouterUtil {
 			}
 			return dataNode;
 		}
+	}
+
+	private static String getRandomDataNode(ArrayList<String> dataNodes) {
+		int index = Math.abs(rand.nextInt()) % dataNodes.size();
+		return dataNodes.get(index);
 	}
 
 	private static String removeSchema(String stmt, String schema) {
