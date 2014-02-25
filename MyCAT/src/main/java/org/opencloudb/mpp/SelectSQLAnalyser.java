@@ -44,7 +44,6 @@ import com.foundationdb.sql.parser.FromList;
 import com.foundationdb.sql.parser.FromSubquery;
 import com.foundationdb.sql.parser.FromTable;
 import com.foundationdb.sql.parser.GroupByList;
-import com.foundationdb.sql.parser.HalfOuterJoinNode;
 import com.foundationdb.sql.parser.InListOperatorNode;
 import com.foundationdb.sql.parser.JoinNode;
 import com.foundationdb.sql.parser.NodeTypes;
@@ -264,35 +263,7 @@ public class SelectSQLAnalyser {
 				andTableName(parsInf, (FromBaseTable) fromT);
 
 			} else if (fromT instanceof JoinNode) {
-				JoinNode joinNd = (JoinNode) fromT;
-				// FromSubquery
-				ResultSetNode leftNode = joinNd.getLeftResultSet();
-				if (leftNode instanceof FromSubquery) {
-					FromSubquery theSub = (FromSubquery) leftNode;
-					addTableName(theSub, parsInf);
-					analyseSQL(parsInf, theSub, notOpt);
-
-				} else if (leftNode instanceof FromBaseTable) {
-					andTableName(parsInf, (FromBaseTable) leftNode);
-				}else if(leftNode instanceof HalfOuterJoinNode)
-				{
-					leftNode.treePrint();
-				}
-				ResultSetNode rightNode = joinNd.getRightResultSet();
-				if (rightNode instanceof FromSubquery) {
-					FromSubquery theSub = (FromSubquery) rightNode;
-					addTableName(theSub, parsInf);
-					analyseSQL(parsInf, theSub, notOpt);
-
-				} else {
-					andTableName(parsInf, (FromBaseTable) rightNode);
-				}
-
-				BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinNd
-						.getJoinClause();
-				addTableJoinInf(parsInf.ctx,
-						(ColumnReference) joinOpt.getLeftOperand(),
-						(ColumnReference) joinOpt.getRightOperand());
+				anlyseJoinNode(parsInf, notOpt, (JoinNode) fromT);
 
 			} else if (fromT instanceof FromSubquery) {
 				analyseSQL(parsInf, ((FromSubquery) fromT).getSubquery(),
@@ -310,6 +281,38 @@ public class SelectSQLAnalyser {
 			return;
 		}
 		analyseWhereCondition(parsInf, notOpt, defaultTableName, valueNode);
+	}
+
+	private static void anlyseJoinNode(SelectParseInf parsInf, boolean notOpt,
+			JoinNode joinNd) throws StandardException {
+		// FromSubquery
+		ResultSetNode leftNode = joinNd.getLeftResultSet();
+		if (leftNode instanceof FromSubquery) {
+			FromSubquery theSub = (FromSubquery) leftNode;
+			addTableName(theSub, parsInf);
+			analyseSQL(parsInf, theSub, notOpt);
+
+		} else if (leftNode instanceof FromBaseTable) {
+			andTableName(parsInf, (FromBaseTable) leftNode);
+		} else if (leftNode instanceof JoinNode) {
+			anlyseJoinNode(parsInf, notOpt, (JoinNode) leftNode);
+
+		}
+		ResultSetNode rightNode = joinNd.getRightResultSet();
+		if (rightNode instanceof FromSubquery) {
+			FromSubquery theSub = (FromSubquery) rightNode;
+			addTableName(theSub, parsInf);
+			analyseSQL(parsInf, theSub, notOpt);
+
+		} else {
+			andTableName(parsInf, (FromBaseTable) rightNode);
+		}
+
+		BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinNd
+				.getJoinClause();
+		addTableJoinInf(parsInf.ctx,
+				(ColumnReference) joinOpt.getLeftOperand(),
+				(ColumnReference) joinOpt.getRightOperand());
 	}
 
 	public static void analyseWhereCondition(SelectParseInf parsInf,
