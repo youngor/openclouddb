@@ -262,7 +262,13 @@ public class SelectSQLAnalyser {
 				}
 			}
 
+		} else{
+			FromTable fromT = fromList.get(0);
+			FromBaseTable baseT = ((FromBaseTable) fromT);
+			defaultTableName = baseT.getOrigTableName().getTableName();
 		}
+		
+		
 		for (int i = 0; i < formSize; i++) {
 			FromTable fromT = fromList.get(i);
 			if (fromT instanceof FromBaseTable) {
