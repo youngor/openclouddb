@@ -31,9 +31,8 @@ import org.junit.Test;
 import org.opencloudb.mpp.JoinRel;
 import org.opencloudb.mpp.UpdateParsInf;
 import org.opencloudb.mpp.UpdateSQLAnalyser;
-import org.opencloudb.parser.SQLParserDelegate;
 
-import com.akiban.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.QueryTreeNode;
 
 public class TestUpdateSQLAnalyser {
 	@Test

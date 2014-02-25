@@ -27,10 +27,10 @@ import java.util.List;
 
 import org.opencloudb.route.RouteParseInf;
 
-import com.akiban.sql.parser.GroupByList;
-import com.akiban.sql.parser.NumericConstantNode;
-import com.akiban.sql.parser.OrderByList;
-import com.akiban.sql.parser.ResultColumn;
+import com.foundationdb.sql.parser.GroupByList;
+import com.foundationdb.sql.parser.NumericConstantNode;
+import com.foundationdb.sql.parser.OrderByList;
+import com.foundationdb.sql.parser.ResultColumn;
 
 public class SelectParseInf extends RouteParseInf {
 	public ShardingParseInfo ctx;

@@ -34,8 +34,8 @@ import org.opencloudb.mpp.SelectSQLAnalyser;
 import org.opencloudb.mpp.ShardingParseInfo;
 import org.opencloudb.route.RouteResultset;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.QueryTreeNode;
 
 public class MergeSQLParserTest {
 	@Test

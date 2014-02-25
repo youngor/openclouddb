@@ -25,10 +25,10 @@ package org.opencloudb.parser;
 
 import java.sql.SQLSyntaxErrorException;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.SQLParser;
-import com.akiban.sql.parser.SQLParserFeature;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.SQLParser;
+import com.foundationdb.sql.parser.SQLParserFeature;
 
 /**
  * @author mycat

@@ -27,14 +27,14 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.akiban.sql.parser.ConstantNode;
-import com.akiban.sql.parser.InsertNode;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.ResultColumnList;
-import com.akiban.sql.parser.ResultSetNode;
-import com.akiban.sql.parser.RowResultSetNode;
-import com.akiban.sql.parser.RowsResultSetNode;
-import com.akiban.sql.parser.ValueNode;
+import com.foundationdb.sql.parser.ConstantNode;
+import com.foundationdb.sql.parser.InsertNode;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.ResultColumnList;
+import com.foundationdb.sql.parser.ResultSetNode;
+import com.foundationdb.sql.parser.RowResultSetNode;
+import com.foundationdb.sql.parser.RowsResultSetNode;
+import com.foundationdb.sql.parser.ValueNode;
 
 /**
  * insert sql analyser

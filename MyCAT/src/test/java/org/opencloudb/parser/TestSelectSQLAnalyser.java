@@ -35,8 +35,9 @@ import org.opencloudb.mpp.SelectParseInf;
 import org.opencloudb.mpp.SelectSQLAnalyser;
 import org.opencloudb.mpp.ShardingParseInfo;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.QueryTreeNode;
+
 
 public class TestSelectSQLAnalyser {
 
@@ -309,7 +310,20 @@ public class TestSelectSQLAnalyser {
 						+ "currentdate".toUpperCase(),
 				parsInf.ctx.joinList.get(0).joinSQLExp);
 
+		sql = "select i.*,Description,DescriptionType,QuestionNumber,Name,RelationType,q.Gender,q.Birthday,q.DepartmentName,q.SimpleDescription,q.StateDescription,q.ExamedTag,q.ExamedDescription,q.DiseaseTag,q.IsSystem,q.Attachment,q.Age,q.AgeType,q.LocalID,ap.NickName AS PatientName,ad.Realname AS DoctorName from bjd_consult_inquiry i left join bjd_consult_question q on q.QuestionID=i.QuestionID left join bjd_account ap on ap.AccountID=i.PatientID left join bjd_doctor ad on ad.AccountID=i.DoctorID where q.LocalID='301002' and q.IsSystem=true and i.State in (6,5,9) order by q.IsSystem desc limit 0,5";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		Assert.assertEquals(2, tablesAndCondtions.size());
 		
+		
+		sql = "select distinct c.*,l.Name LocalName from  aaa c left join bjd_local l on c.LocalID=l.LocalID where ContentID='xxxxxb838'";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		Assert.assertEquals(2, tablesAndCondtions.size());
 
 	}
 }

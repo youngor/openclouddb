@@ -30,9 +30,8 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.opencloudb.mpp.InsertParsInf;
 import org.opencloudb.mpp.InsertSQLAnalyser;
-import org.opencloudb.parser.SQLParserDelegate;
 
-import com.akiban.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.QueryTreeNode;
 
 public class TestInsertSQLAnalyser {
 

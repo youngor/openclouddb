@@ -28,10 +28,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.DeleteNode;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.SelectNode;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.DeleteNode;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.SelectNode;
 
 /**
  * delete sql analyser

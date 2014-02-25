@@ -25,13 +25,13 @@ package org.opencloudb.mpp;
 
 import java.sql.SQLSyntaxErrorException;
 
-import com.akiban.sql.parser.AlterTableNode;
-import com.akiban.sql.parser.CreateIndexNode;
-import com.akiban.sql.parser.CreateTableNode;
-import com.akiban.sql.parser.DDLStatementNode;
-import com.akiban.sql.parser.DropIndexNode;
-import com.akiban.sql.parser.DropTableNode;
-import com.akiban.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.AlterTableNode;
+import com.foundationdb.sql.parser.CreateIndexNode;
+import com.foundationdb.sql.parser.CreateTableNode;
+import com.foundationdb.sql.parser.DDLStatementNode;
+import com.foundationdb.sql.parser.DropIndexNode;
+import com.foundationdb.sql.parser.DropTableNode;
+import com.foundationdb.sql.parser.QueryTreeNode;
 
 /**
  * DDL sql analyser

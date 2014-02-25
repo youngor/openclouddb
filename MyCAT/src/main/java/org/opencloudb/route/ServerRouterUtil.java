@@ -32,8 +32,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -59,14 +59,14 @@ import org.opencloudb.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.server.parser.ServerParse;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.CursorNode;
-import com.akiban.sql.parser.DDLStatementNode;
-import com.akiban.sql.parser.NodeTypes;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.ResultSetNode;
-import com.akiban.sql.parser.SelectNode;
-import com.akiban.sql.unparser.NodeToString;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.CursorNode;
+import com.foundationdb.sql.parser.DDLStatementNode;
+import com.foundationdb.sql.parser.NodeTypes;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.ResultSetNode;
+import com.foundationdb.sql.parser.SelectNode;
+import com.foundationdb.sql.unparser.NodeToString;
 
 /**
  * @author mycat

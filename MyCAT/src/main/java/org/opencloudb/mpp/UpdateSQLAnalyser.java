@@ -29,14 +29,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.ColumnReference;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.ResultColumn;
-import com.akiban.sql.parser.ResultColumnList;
-import com.akiban.sql.parser.SelectNode;
-import com.akiban.sql.parser.UpdateNode;
-import com.akiban.sql.parser.ValueNode;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.ColumnReference;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.ResultColumn;
+import com.foundationdb.sql.parser.ResultColumnList;
+import com.foundationdb.sql.parser.SelectNode;
+import com.foundationdb.sql.parser.UpdateNode;
+import com.foundationdb.sql.parser.ValueNode;
 
 /**
  * update sql analyser

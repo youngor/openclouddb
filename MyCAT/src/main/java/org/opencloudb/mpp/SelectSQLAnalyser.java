@@ -32,36 +32,37 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.opencloudb.route.RouteResultset;
 
-import com.akiban.sql.StandardException;
-import com.akiban.sql.parser.AggregateNode;
-import com.akiban.sql.parser.BinaryOperatorNode;
-import com.akiban.sql.parser.BinaryRelationalOperatorNode;
-import com.akiban.sql.parser.ColumnReference;
-import com.akiban.sql.parser.ConstantNode;
-import com.akiban.sql.parser.CursorNode;
-import com.akiban.sql.parser.FromBaseTable;
-import com.akiban.sql.parser.FromList;
-import com.akiban.sql.parser.FromSubquery;
-import com.akiban.sql.parser.FromTable;
-import com.akiban.sql.parser.GroupByList;
-import com.akiban.sql.parser.InListOperatorNode;
-import com.akiban.sql.parser.JoinNode;
-import com.akiban.sql.parser.NodeTypes;
-import com.akiban.sql.parser.NumericConstantNode;
-import com.akiban.sql.parser.OrderByColumn;
-import com.akiban.sql.parser.OrderByList;
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.parser.ResultColumn;
-import com.akiban.sql.parser.ResultColumnList;
-import com.akiban.sql.parser.ResultSetNode;
-import com.akiban.sql.parser.RowConstructorNode;
-import com.akiban.sql.parser.SelectNode;
-import com.akiban.sql.parser.SubqueryNode;
-import com.akiban.sql.parser.UnaryLogicalOperatorNode;
-import com.akiban.sql.parser.UnionNode;
-import com.akiban.sql.parser.ValueNode;
-import com.akiban.sql.parser.ValueNodeList;
-import com.akiban.sql.unparser.NodeToString;
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.AggregateNode;
+import com.foundationdb.sql.parser.BinaryOperatorNode;
+import com.foundationdb.sql.parser.BinaryRelationalOperatorNode;
+import com.foundationdb.sql.parser.ColumnReference;
+import com.foundationdb.sql.parser.ConstantNode;
+import com.foundationdb.sql.parser.CursorNode;
+import com.foundationdb.sql.parser.FromBaseTable;
+import com.foundationdb.sql.parser.FromList;
+import com.foundationdb.sql.parser.FromSubquery;
+import com.foundationdb.sql.parser.FromTable;
+import com.foundationdb.sql.parser.GroupByList;
+import com.foundationdb.sql.parser.HalfOuterJoinNode;
+import com.foundationdb.sql.parser.InListOperatorNode;
+import com.foundationdb.sql.parser.JoinNode;
+import com.foundationdb.sql.parser.NodeTypes;
+import com.foundationdb.sql.parser.NumericConstantNode;
+import com.foundationdb.sql.parser.OrderByColumn;
+import com.foundationdb.sql.parser.OrderByList;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.parser.ResultColumn;
+import com.foundationdb.sql.parser.ResultColumnList;
+import com.foundationdb.sql.parser.ResultSetNode;
+import com.foundationdb.sql.parser.RowConstructorNode;
+import com.foundationdb.sql.parser.SelectNode;
+import com.foundationdb.sql.parser.SubqueryNode;
+import com.foundationdb.sql.parser.UnaryLogicalOperatorNode;
+import com.foundationdb.sql.parser.UnionNode;
+import com.foundationdb.sql.parser.ValueNode;
+import com.foundationdb.sql.parser.ValueNodeList;
+import com.foundationdb.sql.unparser.NodeToString;
 
 public class SelectSQLAnalyser {
 	private static final Logger LOGGER = Logger
@@ -271,8 +272,11 @@ public class SelectSQLAnalyser {
 					addTableName(theSub, parsInf);
 					analyseSQL(parsInf, theSub, notOpt);
 
-				} else {
+				} else if (leftNode instanceof FromBaseTable) {
 					andTableName(parsInf, (FromBaseTable) leftNode);
+				}else if(leftNode instanceof HalfOuterJoinNode)
+				{
+					leftNode.treePrint();
 				}
 				ResultSetNode rightNode = joinNd.getRightResultSet();
 				if (rightNode instanceof FromSubquery) {

@@ -33,8 +33,8 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.akiban.sql.parser.QueryTreeNode;
-import com.akiban.sql.unparser.NodeToString;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.unparser.NodeToString;
 
 public class SequenceParserTest {
 
