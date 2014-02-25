@@ -254,6 +254,12 @@ public class SelectSQLAnalyser {
 			if (fromT instanceof FromBaseTable) {
 				FromBaseTable baseT = ((FromBaseTable) fromT);
 				defaultTableName = baseT.getOrigTableName().getTableName();
+			}else if (fromT instanceof JoinNode) {
+				ResultSetNode leftNode=((JoinNode)fromT).getLeftResultSet();
+				if(leftNode instanceof FromBaseTable)
+				{
+					defaultTableName = ((FromBaseTable) leftNode).getOrigTableName().getTableName();
+				}
 			}
 
 		}

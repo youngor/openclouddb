@@ -315,15 +315,20 @@ public class TestSelectSQLAnalyser {
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
 		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
-		Assert.assertEquals(2, tablesAndCondtions.size());
+		Assert.assertEquals(4, tablesAndCondtions.size());
+		Assert.assertEquals(3, parsInf.ctx.joinList.size());
+		Assert.assertEquals(4, parsInf.ctx.tableAliasMap.size());
+		Assert.assertEquals(1, parsInf.ctx.tablesAndCondtions.get("BJD_CONSULT_INQUIRY").size());
+		Assert.assertEquals(2, parsInf.ctx.tablesAndCondtions.get("BJD_CONSULT_QUESTION").size());
 		
 		
-		sql = "select distinct c.*,l.Name LocalName from  aaa c left join bjd_local l on c.LocalID=l.LocalID where ContentID='xxxxxb838'";
+		sql = "select distinct c.*,l.Name LocalName from  tablea c left join bjd_local l on c.LocalID=l.LocalID where ContentID='xxxxxb838'";
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
 		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
 		Assert.assertEquals(2, tablesAndCondtions.size());
+		Assert.assertEquals(true, tablesAndCondtions.get("TABLEA").containsKey("CONTENTID"));
 
 	}
 }
