@@ -34,7 +34,7 @@ public final class BufferQueue {
 
 	private int takeIndex;
 	private int putIndex;
-	private int count;
+	private volatile int count;
 	private final ByteBuffer[] items;
 	private final ReentrantLock lock;
 	private final Condition notFull;
@@ -111,12 +111,12 @@ public final class BufferQueue {
 	}
 
 	public ByteBuffer poll() {
+		if (count == 0) {
+			return null;
+		}
 		final ReentrantLock lock = this.lock;
 		lock.lock();
 		try {
-			if (count == 0) {
-				return null;
-			}
 			return extract();
 		} finally {
 			lock.unlock();

@@ -144,9 +144,15 @@ public final class NIOProcessor {
 	/**
 	 * 定时执行该方法，回收部分资源。
 	 */
-	public void check() {
-		frontendCheck();
+	public void checkBackendCons() {
 		backendCheck();
+	}
+
+	/**
+	 * 定时执行该方法，回收部分资源。
+	 */
+	public void checkFrontCons() {
+		frontendCheck();
 	}
 
 	// 前端连接检查

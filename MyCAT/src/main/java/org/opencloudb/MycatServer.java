@@ -315,7 +315,16 @@ public class MycatServer {
 					@Override
 					public void run() {
 						for (NIOProcessor p : processors) {
-							p.check();
+							p.checkBackendCons();
+						}
+
+					}
+				});
+				timerExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						for (NIOProcessor p : processors) {
+							p.checkFrontCons();
 						}
 					}
 				});

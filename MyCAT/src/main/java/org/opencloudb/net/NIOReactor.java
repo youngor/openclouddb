@@ -84,7 +84,7 @@ public final class NIOReactor {
 
 				++reactCount;
 				try {
-					selector.select(1000L);
+					selector.select(500L);
 					register(selector);
 					keys = selector.selectedKeys();
 					for (SelectionKey key : keys) {
@@ -117,7 +117,14 @@ public final class NIOReactor {
 					}
 
 				}
-
+				for (SelectionKey key : selector.keys()) {
+					Object att = key.attachment();
+					if (att != null) {
+						AbstractConnection con = (AbstractConnection) att;
+						// LOGGER.info("enable write "+this);
+						con.checkWriteOpts(false);
+					}
+				}
 			}
 		}
 

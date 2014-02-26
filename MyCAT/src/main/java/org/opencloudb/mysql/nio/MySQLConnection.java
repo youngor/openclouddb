@@ -441,6 +441,13 @@ public class MySQLConnection extends BackendConnection implements
 
 		}
 
+		@Override
+		public String toString() {
+			return "StatusSync [schemaCmd=" + schemaCmd + ", charCmd="
+					+ charCmd + ", isoCmd=" + isoCmd + ", acCmd=" + acCmd
+					+ ", executed=" + executed + "]";
+		}
+
 		private static CommandPacket getTxIsolationCommand(int txIsolation) {
 			switch (txIsolation) {
 			case Isolations.READ_UNCOMMITTED:
@@ -690,6 +697,7 @@ public class MySQLConnection extends BackendConnection implements
 				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
 				+ ", attachment=" + attachment + ", respHandler=" + respHandler
 				+ ", host=" + host + ", port=" + port
+				+ ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().snapshotSize()
 				+ ", suppressReadTemporay=" + suppressReadTemporay
 				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
 	}

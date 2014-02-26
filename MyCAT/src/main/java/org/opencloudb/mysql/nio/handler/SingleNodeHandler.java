@@ -290,4 +290,11 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	public void clearResources() {
 
 	}
+
+	@Override
+	public String toString() {
+		return "SingleNodeHandler [node=" + node + ", packetId=" + packetId
+				+ "]";
+	}
+	
 }

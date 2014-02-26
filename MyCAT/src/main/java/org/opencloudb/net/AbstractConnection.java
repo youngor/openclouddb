@@ -273,8 +273,9 @@ public abstract class AbstractConnection implements NIOConnection {
 			try {
 				int writeQueueStatus = writeQueue.put(buffer);
 				if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-					enableWrite();
+					enableWrite(true);
 				}
+
 				switch (writeQueueStatus) {
 				case BufferQueue.NEARLY_EMPTY: {
 					this.writeQueueAvailable();
@@ -314,7 +315,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		} else {
 			emptyWriteTimes = 0;
 			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-				enableWrite();
+				enableWrite(false);
 			}
 		}
 
@@ -388,12 +389,11 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	protected void idleCheck() {
-		if ((this.getWriteQueue().snapshotSize() > 0)
-				&& ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0)) {
-			enableWrite();
-		} else if (isIdleTimeout()) {
+		if (isIdleTimeout()) {
 			LOGGER.info(toString() + " idle timeout");
 			close(" idle ");
+		} else {
+			this.checkWriteOpts(true);
 		}
 	}
 
@@ -524,7 +524,14 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	}
 
-	private void enableWrite() {
+	public void checkWriteOpts(boolean wakeup) {
+		if (this.writeQueue.snapshotSize() > 1
+				&& (processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+			enableWrite(wakeup);
+		}
+	}
+
+	private void enableWrite(boolean wakeup) {
 		boolean needWakeup = false;
 		try {
 			SelectionKey key = this.processKey;
@@ -534,7 +541,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			LOGGER.warn("can't enable write " + e);
 
 		}
-		if (needWakeup) {
+		if (needWakeup && wakeup) {
 			processKey.selector().wakeup();
 		}
 	}
