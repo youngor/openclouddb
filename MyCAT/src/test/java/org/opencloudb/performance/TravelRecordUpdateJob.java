@@ -62,11 +62,11 @@ public class TravelRecordUpdateJob implements Runnable {
 			throws SQLException {
 		PreparedStatement ps;
 
-		String sql = "update travelrecord set user =? ,traveldate=?,fee=?,days=? where id=?";
+		String sql = "update travelrecord set user_id =? ,traveldate=?,fee=?,days=? where id=?";
 		ps = con.prepareStatement(sql);
 		for (Map<String, String> map : list) {
 
-			ps.setString(1, (String) map.get("user"));
+			ps.setString(1, (String) map.get("user_id"));
 			ps.setString(2, (String) map.get("traveldate"));
 			ps.setString(3, (String) map.get("fee"));
 			ps.setString(4, (String) map.get("days"));
@@ -93,7 +93,7 @@ public class TravelRecordUpdateJob implements Runnable {
 		for (int i = finsihed; i <= end; i++) {
 			Map<String, String> m = new HashMap<String, String>();
 			m.put("id", i + "");
-			m.put("user", "user " + i);
+			m.put("user_id", "user " + i);
 			m.put("traveldate", getRandomDay(i));
 			m.put("fee", i % 10000 + "");
 			m.put("days", i % 7 + "");

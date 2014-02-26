@@ -62,11 +62,11 @@ public class TravelRecordInsertJob implements Runnable {
 			throws SQLException {
 		PreparedStatement ps;
 
-		String sql = "insert into travelrecord (id,user,traveldate,fee,days) values(?,?,?,?,?)";
+		String sql = "insert into travelrecord (id,user_id,traveldate,fee,days) values(?,?,?,?,?)";
 		ps = con.prepareStatement(sql);
 		for (Map<String, String> map : list) {
 			ps.setLong(1, Long.parseLong(map.get("id")));
-			ps.setString(2, (String) map.get("user"));
+			ps.setString(2, (String) map.get("user_id"));
 			ps.setString(3, (String) map.get("traveldate"));
 			ps.setString(4, (String) map.get("fee"));
 			ps.setString(5, (String) map.get("days"));
@@ -92,7 +92,7 @@ public class TravelRecordInsertJob implements Runnable {
 		for (int i = finsihed; i <= end; i++) {
 			Map<String, String> m = new HashMap<String, String>();
 			m.put("id", i + "");
-			m.put("user", "user " + i);
+			m.put("user_id", "user " + i);
 			m.put("traveldate", getRandomDay(i));
 			m.put("fee", i % 10000 + "");
 			m.put("days", i % 10000 + "");
