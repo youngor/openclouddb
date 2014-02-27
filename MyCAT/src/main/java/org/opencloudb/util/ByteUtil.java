@@ -60,8 +60,14 @@ public class ByteUtil {
 			// first byte compare
 			return result;
 		} else {
-			int lenDelta = b1.length - b2.length;
-			return isNegetive ? 0 - lenDelta : lenDelta;
+            if( b1.length != b2.length ) {
+
+                int lenDelta = b1.length - b2.length;
+                return isNegetive ? 0 - lenDelta : lenDelta;
+
+            } else {
+                return isNegetive ? 0 - result : result;
+            }
 		}
 	}
 
