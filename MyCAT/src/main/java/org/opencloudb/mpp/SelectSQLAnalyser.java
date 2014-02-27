@@ -100,6 +100,7 @@ public class SelectSQLAnalyser {
 		NumericConstantNode offsetNode = null;
 		NumericConstantNode offCountNode = null;
 		ResultSetNode resultNode = rsNode.getResultSetNode();
+        Map<String, ResultColumn> nameToColumn = new HashMap<String, ResultColumn>();
 		if (resultNode instanceof SelectNode) {
 			Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 			boolean hasAggrColumn = false;
@@ -107,6 +108,7 @@ public class SelectSQLAnalyser {
 			ResultColumnList colums = selNode.getResultColumns();
 			for (int i = 0; i < colums.size(); i++) {
 				ResultColumn col = colums.get(i);
+                nameToColumn.put(col.getExpression().getColumnName(), col);
 				ValueNode exp = col.getExpression();
 				if (exp instanceof AggregateNode) {
 					hasAggrColumn = true;
@@ -145,7 +147,12 @@ public class SelectSQLAnalyser {
 					throw new SQLSyntaxErrorException(
 							" aggregated column should has a alias in order to be used in order by clause");
 				}
-				orderCols.put(orderExp.getColumnName(),
+                String columnName = orderExp.getColumnName();
+                ResultColumn rc = nameToColumn.get(orderExp.getColumnName());
+                if (rc != null) {
+                    columnName = rc.getName();
+                }
+				orderCols.put(columnName,
 						orderCol.isAscending() ? OrderCol.COL_ORDER_TYPE_ASC
 								: OrderCol.COL_ORDER_TYPE_DESC);
 			}
