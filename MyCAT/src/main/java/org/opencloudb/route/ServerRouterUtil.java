@@ -68,15 +68,29 @@ import com.foundationdb.sql.parser.ResultSetNode;
 import com.foundationdb.sql.parser.SelectNode;
 import com.foundationdb.sql.unparser.NodeToString;
 
-/**
- * @author mycat
- * @author mycat
- */
+/** 
+* 数据路由服务工具类
+* @author mycat  
+*  
+*/ 
+
 public final class ServerRouterUtil {
 	private static final Logger LOGGER = Logger
 			.getLogger(ServerRouterUtil.class);
 	private static final Random rand = new Random();
 
+	/**
+	 *  根据 数据库名，执行Sql类型，执行的语句等获取数据路由集合
+	 * @param schema 数据库名
+	 * @param sqlType 语句类型
+	 * @param stmt 执行的语句
+	 * @param charset 字符集
+	 * @param info
+	 * @param cachePool the cachePool is a map of CacheStatic
+	 * @return RouteResultset(数据路由集合)
+	 * @throws SQLNonTransientException
+	 * @author mycat
+	 */
 	public static RouteResultset route(SchemaConfig schema, int sqlType,
 			String stmt, String charset, Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
@@ -266,6 +280,17 @@ public final class ServerRouterUtil {
 
 	}
 
+	/**
+	 *根据 ER分片规则获取路由集合
+	 * @param stmt 执行的语句
+	 * @param rrs 数据路由集合
+	 * @param tc 表实体
+	 * @param joinKeyVal 连接属性
+	 * @return RouteResultset(数据路由集合)
+	 * @throws SQLNonTransientException
+	 * @author mycat
+	 */
+	 
 	private static RouteResultset routeByERParentKey(String stmt,
 			RouteResultset rrs, TableConfig tc, String joinKeyVal)
 			throws SQLNonTransientException {
@@ -298,6 +323,13 @@ public final class ServerRouterUtil {
 		return null;
 	}
 
+	/**
+	 *  获取语句中前关键字位置和占位个数表名位置 
+	 * @param upStmt 执行语句
+	 * @param start  开始位置
+	 * @return int[]关键字位置和占位个数
+	 * @author mycat
+	 */
 	private static int[] getSpecPos(String upStmt, int start) {
 		String token1 = " FROM ";
 		String token2 = " IN ";
@@ -314,6 +346,14 @@ public final class ServerRouterUtil {
 		}
 	}
 
+	/**
+	 *  根据表明获取表的对象
+	 * @param schema 数据库名
+	 * @param tableName 表名
+	 * @return  TableConfig(表的对象)
+	 * @throws SQLNonTransientException
+	 * @author mycat
+	 */
 	private static TableConfig getTableConfig(SchemaConfig schema,
 			String tableName) throws SQLNonTransientException {
 		TableConfig tc = schema.getTables().get(tableName);
@@ -326,6 +366,13 @@ public final class ServerRouterUtil {
 		return tc;
 	}
 
+	/**
+	 *  获取开始位置后的   LIKE、WHERE 位置 如果不含 LIKE、WHERE 则返回执行语句的长度
+	 * @param upStmt 执行sql
+	 * @param start 开发位置
+	 * @return int 
+	 * @author mycat
+	 */
 	private static int getSpecEndPos(String upStmt, int start) {
 		int tabInd = upStmt.indexOf(" LIKE ", start);
 		if (tabInd < 0) {
@@ -337,6 +384,15 @@ public final class ServerRouterUtil {
 		return tabInd;
 	}
 
+	/**
+	 *  根据执行语句判断数据路由 
+	 * @param schema 数据库名
+	 * @param rrs 数据路由集合
+	 * @param stmt 执行sql
+	 * @return RouteResultset数据路由集合
+	 * @throws SQLSyntaxErrorException
+	 * @author mycat
+	 */
 	private static RouteResultset analyseDoubleAtSgin(SchemaConfig schema,
 			RouteResultset rrs, String stmt) throws SQLSyntaxErrorException {
 		String upStmt = stmt.toUpperCase();
@@ -350,6 +406,15 @@ public final class ServerRouterUtil {
 		return routeToSingleNode(rrs, schema.getRandomDataNode(), stmt);
 	}
 
+	/**
+	 *  根据show语句获取数据路由集合
+	 * @param schema 数据库名
+	 * @param rrs 数据路由集合
+	 * @param stmt 执行的语句
+	 * @return RouteResultset数据路由集合
+	 * @throws SQLSyntaxErrorException
+	 * @author mycat
+	 */ 
 	private static RouteResultset analyseShowSQL(SchemaConfig schema,
 			RouteResultset rrs, String stmt) throws SQLSyntaxErrorException {
 		String upStmt = stmt.toUpperCase();
@@ -388,6 +453,13 @@ public final class ServerRouterUtil {
 		return routeToSingleNode(rrs, schema.getRandomDataNode(), stmt);
 	}
 
+	/**
+	 *  获取table名字 
+	 * @param stmt 执行语句
+	 * @param repPos 开始位置和位数
+	 * @return 表名
+	 * @author mycat
+	 */
 	private static String getTableName(String stmt, int[] repPos) {
 		int startPos = repPos[0];
 		int secInd = stmt.indexOf(' ', startPos + 1);
@@ -403,6 +475,15 @@ public final class ServerRouterUtil {
 		return tableName;
 	}
 
+	/**
+	 *  对Desc语句进行分析 返回数据路由集合 
+	 * @param schema 数据库名
+	 * @param rrs 数据路由集合
+	 * @param stmt 执行语句
+	 * @param ind 第一个' '的位置
+	 * @return RouteResultset(数据路由集合)
+	 * @author mycat
+	 */
 	private static RouteResultset analyseDescrSQL(SchemaConfig schema,
 			RouteResultset rrs, String stmt, int ind) {
 		int[] repPos = { ind, 0 };
@@ -412,6 +493,21 @@ public final class ServerRouterUtil {
 		return rrs;
 	}
 
+	/**
+	 *  简单描述该方法的实现功能 
+	 * @param ast QueryTreeNode
+	 * @param schema 数据库名
+	 * @param rrs 数据路由集合
+	 * @param isSelect 是否是select语句标志
+	 * @param sql 执行语句
+	 * @param tc 表实体
+	 * @param ruleCol2Val 一个ColumnRoutePair集合
+	 * @param allColConds 一个ColumnRoutePair集合
+	 * @param cachePool
+	 * @return 一个数据路由集合
+	 * @throws SQLNonTransientException
+	 * @author mycat
+	 */
 	private static RouteResultset tryRouteForTable(QueryTreeNode ast,
 			SchemaConfig schema, RouteResultset rrs, boolean isSelect,
 			String sql, TableConfig tc, Set<ColumnRoutePair> ruleCol2Val,
@@ -493,6 +589,19 @@ public final class ServerRouterUtil {
 		return routeToMultiNode(isSelect, isSelect, ast, rrs, dataNodeSet, sql);
 	}
 
+	/**
+	 *  简单描述该方法的实现功能 
+	 * @param ast QueryTreeNode
+	 * @param isSelect 是否是select语句
+	 * @param rrs 数据路由集合
+	 * @param schema 数据库名 the name of datebase
+	 * @param ctx  ShardingParseInfo(分片)
+	 * @param sql 执行sql
+	 * @param cachePool
+	 * @return 一个数据路由集合
+	 * @throws SQLNonTransientException
+	 * @author mycat
+	 */
 	private static RouteResultset tryRouteForTables(QueryTreeNode ast,
 			boolean isSelect, RouteResultset rrs, SchemaConfig schema,
 			ShardingParseInfo ctx, String sql, LayerCachePool cachePool)
@@ -542,6 +651,8 @@ public final class ServerRouterUtil {
 		if (tbCondMap.size() > 1) {
 
 			Set<String> curRNodeSet = new LinkedHashSet<String>();
+			Set<String> routePairSet = new LinkedHashSet<String>();//拆分字段后路由节点
+			
 			String curTableName = null;
 			Map<String, ArrayList<String>> globalTableDataNodesMap = new LinkedHashMap<String, ArrayList<String>>();
 			for (Entry<String, Map<String, Set<ColumnRoutePair>>> e : tbCondMap
@@ -575,23 +686,66 @@ public final class ServerRouterUtil {
 				} else {
 					// match table with where condtion of partion colum values
 					newDataNodes = ruleCalculate(tc, col2Val);
+					 
+					
 				}
+				
+				
+				
+				
 				if (curRNodeSet.isEmpty()) {
 					curTableName = tc.getName();
 					curRNodeSet.addAll(newDataNodes);
-				} else {
-					if (!checkIfValidMultiTableRoute(curRNodeSet, newDataNodes)) {
-						String errMsg = "invalid route in sql, " + curTableName
-								+ " route to :"
-								+ Arrays.toString(curRNodeSet.toArray())
-								+ " ,but " + tc.getName() + " to "
-								+ Arrays.toString(newDataNodes.toArray())
-								+ " sql:" + sql;
-						LOGGER.warn(errMsg);
-						throw new SQLNonTransientException(errMsg);
+					if (col2Val != null &&! col2Val.isEmpty()) {
+						routePairSet.addAll(newDataNodes); 
+					} 
+				} else {  
+					if (col2Val == null || col2Val.isEmpty()) {
+						
+						if(curRNodeSet.retainAll(newDataNodes)
+								&& routePairSet.isEmpty()){
+							String errMsg = "invalid route in sql, multi global tables found but datanode has no intersection "
+									+ " sql:" + sql;
+							LOGGER.warn(errMsg);
+							throw new SQLNonTransientException(errMsg);
+							
+						}   
+						
+					}else{
+						
+						if(routePairSet.isEmpty()){ 
+							routePairSet.addAll(newDataNodes);  
+						}else if (!checkIfValidMultiTableRoute(routePairSet, newDataNodes)||(curRNodeSet.retainAll(newDataNodes)
+								&& routePairSet.isEmpty())) {
+							String errMsg = "invalid route in sql, " + routePairSet
+									+ " route to :"
+									+ Arrays.toString(routePairSet.toArray())
+									+ " ,but " + tc.getName() + " to "
+									+ Arrays.toString(newDataNodes.toArray())
+									+ " sql:" + sql;
+							LOGGER.warn(errMsg);
+							throw new SQLNonTransientException(errMsg);
+							  
+							
+						} 
+						
 					}
+					
+					
+					 
+//					if (!checkIfValidMultiTableRoute(curRNodeSet, newDataNodes)) {
+//						String errMsg = "invalid route in sql, " + curTableName
+//								+ " route to :"
+//								+ Arrays.toString(curRNodeSet.toArray())
+//								+ " ,but " + tc.getName() + " to "
+//								+ Arrays.toString(newDataNodes.toArray())
+//								+ " sql:" + sql;
+//						LOGGER.warn(errMsg);
+//						throw new SQLNonTransientException(errMsg);
+//					}
 				}
 
+				
 			}
 			// only global table contains in sql
 			if (!globalTableDataNodesMap.isEmpty() && curRNodeSet.isEmpty()) {
@@ -657,6 +811,13 @@ public final class ServerRouterUtil {
 		}
 	}
 
+	/**
+	 *  判断两个表所在节点集合是否相等 
+	 * @param curRNodeSet 当前表所在的节点集合
+	 * @param newNodeSet  新表所在节点集合
+	 * @return 返回fase(不相等)或true(相等)
+	 * @author mycat
+	 */
 	private static boolean checkIfValidMultiTableRoute(Set<String> curRNodeSet,
 			Collection<String> newNodeSet) {
 
@@ -673,6 +834,14 @@ public final class ServerRouterUtil {
 
 	}
 
+	/**
+	 *  获取第一个节点作为路由
+	 * @param rrs 数据路由集合
+	 * @param dataNode 数据库所在节点
+	 * @param stmt 执行语句
+	 * @return 数据路由集合
+	 * @author mycat
+	 */
 	private static RouteResultset routeToSingleNode(RouteResultset rrs,
 			String dataNode, String stmt) {
 		if (dataNode == null) {
@@ -683,7 +852,7 @@ public final class ServerRouterUtil {
 		rrs.setNodes(nodes);
 		return rrs;
 	}
-
+ 
 	private static RouteResultset routeToMultiNode(boolean isSelect,
 			boolean cache, QueryTreeNode ast, RouteResultset rrs,
 			Collection<String> dataNodes, String stmt)
@@ -706,6 +875,14 @@ public final class ServerRouterUtil {
 		return rrs;
 	}
 
+	/** 
+	* @ClassName: MetaRouter 
+	* @Description: (获取数据路由集合) 
+	* @author Mycat 
+	* @date 2014-2-20 下午4:18:46 
+	*  
+	*/ 
+	
 	private static class MetaRouter {
 		public static void routeForTableMeta(RouteResultset rrs,
 				SchemaConfig schema, String tableName, String sql) {
@@ -715,6 +892,13 @@ public final class ServerRouterUtil {
 			rrs.setNodes(nodes);
 		}
 
+		/**
+		 *  根据标名随机获取一个节点 
+		 * @param schema 数据库名
+		 * @param table 表名
+		 * @return 数据节点
+		 * @author mycat
+		 */
 		private static String getMetaReadDataNode(SchemaConfig schema,
 				String table) {
 			// Table名字被转化为大写的，存储在schema
@@ -728,12 +912,19 @@ public final class ServerRouterUtil {
 			return dataNode;
 		}
 	}
-
 	private static String getRandomDataNode(ArrayList<String> dataNodes) {
 		int index = Math.abs(rand.nextInt()) % dataNodes.size();
 		return dataNodes.get(index);
 	}
-
+ 
+	/**
+	 *  移除执行语句中的数据库名
+	 * @param stmt 执行语句
+	 * @param schema 数据库名
+	 * @return 执行语句
+	 * @author mycat
+	 */
+	
 	private static String removeSchema(String stmt, String schema) {
 		final String upStmt = stmt.toUpperCase();
 		final String upSchema = schema.toUpperCase() + ".";
