@@ -521,7 +521,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	public void checkWriteOpts(boolean wakeup) {
 		if (this.writeQueue.snapshotSize() > 1
 				&& (processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-			LOGGER.info("enable write "+this);
+			//LOGGER.info("enable write "+this);
 			enableWrite(wakeup);
 		}
 	}

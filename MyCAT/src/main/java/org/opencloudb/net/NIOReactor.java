@@ -25,6 +25,7 @@ package org.opencloudb.net;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
@@ -88,7 +89,7 @@ public final class NIOReactor {
 					register(selector);
 					keys = selector.selectedKeys();
 					for (SelectionKey key : keys) {
-						AbstractConnection con=null;
+						AbstractConnection con = null;
 						try {
 							Object att = key.attachment();
 							if (att != null && key.isValid()) {
@@ -105,26 +106,33 @@ public final class NIOReactor {
 								key.cancel();
 							}
 						} catch (Throwable e) {
-							LOGGER.warn(con+" "+ e);
+							if (e instanceof CancelledKeyException) {
+								if (LOGGER.isDebugEnabled()) {
+									LOGGER.debug(con + " socket key canceled");
+								}
+							} else {
+								LOGGER.warn(con + " " + e);
+							}
+
 						}
 
 					}
 				} catch (Throwable e) {
-					LOGGER.warn(name,e);
+					LOGGER.warn(name, e);
 				} finally {
 					if (keys != null) {
 						keys.clear();
 					}
 
 				}
-				for (SelectionKey key : selector.keys()) {
-					Object att = key.attachment();
-					if (att != null) {
-						AbstractConnection con = (AbstractConnection) att;
-						// LOGGER.info("enable write "+this);
-						con.checkWriteOpts(false);
-					}
-				}
+//				for (SelectionKey key : selector.keys()) {
+//					Object att = key.attachment();
+//					if (att != null) {
+//						AbstractConnection con = (AbstractConnection) att;
+//						// LOGGER.info("enable write "+this);
+//						con.checkWriteOpts(false);
+//					}
+//				}
 			}
 		}
 
