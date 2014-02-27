@@ -65,7 +65,6 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected int writeAttempts;
 	protected final ReentrantLock keyLock = new ReentrantLock();
 	private long idleTimeout;
-	private int emptyWriteTimes;
 
 	public AbstractConnection(SocketChannel channel) {
 		this.channel = channel;
@@ -313,7 +312,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		if (noMoreData) {
 			disableWrite();
 		} else {
-			emptyWriteTimes = 0;
 			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
 				enableWrite(false);
 			}
@@ -511,15 +509,11 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	private void disableWrite() {
-		// close when twice call
-		if (++emptyWriteTimes > 1) {
-			try {
-				SelectionKey key = this.processKey;
-				key.interestOps(key.interestOps() & OP_NOT_WRITE);
-				emptyWriteTimes = 0;
-			} catch (Exception e) {
-				LOGGER.warn("can't disable write " + e);
-			}
+		try {
+			SelectionKey key = this.processKey;
+			key.interestOps(key.interestOps() & OP_NOT_WRITE);
+		} catch (Exception e) {
+			LOGGER.warn("can't disable write " + e);
 		}
 
 	}
@@ -527,6 +521,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	public void checkWriteOpts(boolean wakeup) {
 		if (this.writeQueue.snapshotSize() > 1
 				&& (processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+			LOGGER.info("enable write "+this);
 			enableWrite(wakeup);
 		}
 	}

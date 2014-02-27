@@ -88,16 +88,16 @@ public final class NIOReactor {
 					register(selector);
 					keys = selector.selectedKeys();
 					for (SelectionKey key : keys) {
+						AbstractConnection con=null;
 						try {
 							Object att = key.attachment();
 							if (att != null && key.isValid()) {
-								AbstractConnection con = (AbstractConnection) att;
-								int readyOps = key.readyOps();
-								if ((readyOps & SelectionKey.OP_READ) != 0) {
+								con = (AbstractConnection) att;
+								if (key.isReadable()) {
 									// System.out.println("xxx read " + att);
 									read(con);
 								}
-								if ((readyOps & SelectionKey.OP_WRITE) != 0) {
+								if (key.isWritable()) {
 									con.writeByQueue();
 								}
 							} else {
@@ -105,12 +105,12 @@ public final class NIOReactor {
 								key.cancel();
 							}
 						} catch (Throwable e) {
-							LOGGER.warn(name, e);
+							LOGGER.warn(con+" "+ e);
 						}
 
 					}
 				} catch (Throwable e) {
-					LOGGER.warn(name, e);
+					LOGGER.warn(name,e);
 				} finally {
 					if (keys != null) {
 						keys.clear();
