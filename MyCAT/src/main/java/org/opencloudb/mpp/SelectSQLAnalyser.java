@@ -100,7 +100,7 @@ public class SelectSQLAnalyser {
 		NumericConstantNode offsetNode = null;
 		NumericConstantNode offCountNode = null;
 		ResultSetNode resultNode = rsNode.getResultSetNode();
-        Map<String, ResultColumn> nameToColumn = new HashMap<String, ResultColumn>();
+		Map<String, ResultColumn> nameToColumn = new HashMap<String, ResultColumn>();
 		if (resultNode instanceof SelectNode) {
 			Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 			boolean hasAggrColumn = false;
@@ -108,9 +108,13 @@ public class SelectSQLAnalyser {
 			ResultColumnList colums = selNode.getResultColumns();
 			for (int i = 0; i < colums.size(); i++) {
 				ResultColumn col = colums.get(i);
-                nameToColumn.put(col.getExpression().getColumnName(), col);
+
 				ValueNode exp = col.getExpression();
+				if (exp != null) {
+					nameToColumn.put(exp.getColumnName(), col);
+				}
 				if (exp instanceof AggregateNode) {
+
 					hasAggrColumn = true;
 					String colName = col.getName();
 					String aggName = ((AggregateNode) exp).getAggregateName();
@@ -147,11 +151,11 @@ public class SelectSQLAnalyser {
 					throw new SQLSyntaxErrorException(
 							" aggregated column should has a alias in order to be used in order by clause");
 				}
-                String columnName = orderExp.getColumnName();
-                ResultColumn rc = nameToColumn.get(orderExp.getColumnName());
-                if (rc != null) {
-                    columnName = rc.getName();
-                }
+				String columnName = orderExp.getColumnName();
+				ResultColumn rc = nameToColumn.get(orderExp.getColumnName());
+				if (rc != null) {
+					columnName = rc.getName();
+				}
 				orderCols.put(columnName,
 						orderCol.isAscending() ? OrderCol.COL_ORDER_TYPE_ASC
 								: OrderCol.COL_ORDER_TYPE_DESC);
@@ -261,21 +265,20 @@ public class SelectSQLAnalyser {
 			if (fromT instanceof FromBaseTable) {
 				FromBaseTable baseT = ((FromBaseTable) fromT);
 				defaultTableName = baseT.getOrigTableName().getTableName();
-			}else if (fromT instanceof JoinNode) {
-				ResultSetNode leftNode=((JoinNode)fromT).getLeftResultSet();
-				if(leftNode instanceof FromBaseTable)
-				{
-					defaultTableName = ((FromBaseTable) leftNode).getOrigTableName().getTableName();
+			} else if (fromT instanceof JoinNode) {
+				ResultSetNode leftNode = ((JoinNode) fromT).getLeftResultSet();
+				if (leftNode instanceof FromBaseTable) {
+					defaultTableName = ((FromBaseTable) leftNode)
+							.getOrigTableName().getTableName();
 				}
 			}
 
-		} else{
+		} else {
 			FromTable fromT = fromList.get(0);
 			FromBaseTable baseT = ((FromBaseTable) fromT);
 			defaultTableName = baseT.getOrigTableName().getTableName();
 		}
-		
-		
+
 		for (int i = 0; i < formSize; i++) {
 			FromTable fromT = fromList.get(i);
 			if (fromT instanceof FromBaseTable) {
