@@ -94,7 +94,12 @@ public class TestSorter {
 		Assert.assertEquals(true, ByteUtil.compareNumberByte(b1, b2)<0);
 		
 		b1 = "-98".getBytes();
-		b2 = "-98000".getBytes();
+		b2= "-98000".getBytes();
 		Assert.assertEquals(true, ByteUtil.compareNumberByte(b1, b2)>0);
+		
+		b1="12002585786".getBytes();
+        b2="12002585785".getBytes();
+        Assert.assertEquals(true, ByteUtil.compareNumberByte(b1, b2)>0);
+
 	}
 }
