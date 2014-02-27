@@ -89,7 +89,7 @@ public abstract class AbstractMultiTreadBatchTester {
 			int myCount = endId - startId + 1;
 			Runnable job = createJob(getConPool(), myCount, 100, startId,
 					finshiedCount, failedCount);
-			System.out.println("job record id is " + startId + "-" + endId);
+			//System.out.println("job record id is " + startId + "-" + endId);
 			jobs.add(job);
 
 		}
@@ -129,11 +129,13 @@ public abstract class AbstractMultiTreadBatchTester {
 	@SuppressWarnings("unchecked")
 	public void startTest() throws Exception {
 		executor = Executors.newFixedThreadPool(threadCount);
+		System.out.println("create jobs ...");
 		ArrayList<Runnable>[] allJobs = createAllJobs();
 		Iterator<Runnable>[] itors = new Iterator[allJobs.length];
 		for (int i = 0; i < allJobs.length; i++) {
 			itors[i] = allJobs[i].iterator();
 		}
+		System.out.println("create jobs finished ,begin run test...");
 		int total = 0;
 		start = System.currentTimeMillis();
 		boolean finished = false;
