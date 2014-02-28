@@ -48,18 +48,6 @@ public final class UseHandler {
                 schema = schema.substring(1, length - 1);
             }
         }
-
-        // 表示当前连接已经指定了schema
-        if (c.getSchema() != null) {
-            if (c.getSchema().equals(schema)) {
-                ByteBuffer buffer = c.allocate();
-                c.write(c.writeToBuffer(OkPacket.OK, buffer));
-            } else {
-                c.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, "Not allowed to change the database!");
-            }
-            return;
-        }
-
         // 检查schema的有效性
         FrontendPrivileges privileges = c.getPrivileges();
         if (schema == null || !privileges.schemaExists(schema)) {
