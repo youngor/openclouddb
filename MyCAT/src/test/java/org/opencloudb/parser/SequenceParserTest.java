@@ -59,38 +59,43 @@ public class SequenceParserTest {
 	@Test
 	public void testParseSequence() throws Exception {
 
-		NodeToString strHandler = new NodeToString();
+		ExtNodeToString4SEQ strHandler = new ExtNodeToString4SEQ();
 		QueryTreeNode ast = null;
 		String sqlText = "SELECT NEXT VALUE FOR MYCATSEQ_TEST from sys.tb1";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
 		Assert.assertEquals("SELECT 111 FROM sys.tb1", strHandler.toString(ast));
-		
+
 		sqlText = "SELECT NEXT VALUE FOR MyCatSEQ_TEST from sys.tb2";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
 		Assert.assertEquals("SELECT 112 FROM sys.tb2", strHandler.toString(ast));
-		
+
 		sqlText = "select * from sys.systables where ( next value for MYCATSEQ_test ) > col_a";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
-		Assert.assertEquals("SELECT * FROM sys.systables WHERE 113 > col_a", strHandler.toString(ast));
-		
+		Assert.assertEquals("SELECT * FROM sys.systables WHERE 113 > col_a",
+				strHandler.toString(ast));
+
 		sqlText = "select * from sys.systables where ( next value for seq_a ) > col_b";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
-		Assert.assertEquals("SELECT * FROM sys.systables WHERE (NEXT VALUE FOR seq_a) > col_b", strHandler.toString(ast));
-		
+		Assert.assertEquals(
+				"SELECT * FROM sys.systables WHERE (NEXT VALUE FOR seq_a) > col_b",
+				strHandler.toString(ast));
+
 		sqlText = "insert into tb3( a,b ) values ( next value for mycatseq_test,'micmiu' )";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
-		Assert.assertEquals("INSERT INTO tb3(a, b) VALUES(114, 'micmiu')", strHandler.toString(ast));
-		
+		Assert.assertEquals("INSERT INTO tb3(a, b) VALUES(114, 'micmiu')",
+				strHandler.toString(ast));
+
 		sqlText = "insert into tb4( a,b ) values ( next value for seq_b,'micmiu' )";
 		ast = SQLParserDelegate.parse(sqlText,
 				SQLParserDelegate.DEFAULT_CHARSET);
-		Assert.assertEquals("INSERT INTO tb4(a, b) VALUES((NEXT VALUE FOR seq_b), 'micmiu')", strHandler.toString(ast));
-		
+		Assert.assertEquals(
+				"INSERT INTO tb4(a, b) VALUES((NEXT VALUE FOR seq_b), 'micmiu')",
+				strHandler.toString(ast));
 
 	}
 
