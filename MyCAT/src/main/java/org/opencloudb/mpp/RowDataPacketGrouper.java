@@ -54,7 +54,6 @@ public class RowDataPacketGrouper {
 	}
 
 	public void addRow(RowDataPacket rowDataPkg) {
-
 		for (RowDataPacket row : result) {
 			if (sameGropuColums(rowDataPkg, row)) {
 				aggregateRow(row, rowDataPkg);
@@ -86,6 +85,13 @@ public class RowDataPacketGrouper {
 	private byte[] mertFields(byte[] bs, byte[] bs2, int colType, int mergeType) {
 		// System.out.println("mergeType:"+ mergeType+" colType "+colType+
 		// " field:"+Arrays.toString(bs)+ " ->  "+Arrays.toString(bs2));
+		if(bs2.length==0)
+		{
+			return bs;
+		}else if(bs.length==0)
+		{
+			return bs2;
+		}
 		switch (mergeType) {
 		case MergeCol.MERGE_SUM:
 			if (colType == ColMeta.COL_TYPE_NEWDECIMAL
