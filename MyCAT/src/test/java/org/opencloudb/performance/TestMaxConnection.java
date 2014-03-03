@@ -37,13 +37,23 @@ public class TestMaxConnection {
 		String password = args[2];
 		Integer poolsize = Integer.parseInt(args[3]);
 		SimpleConPool pool = null;
+        long start=System.currentTimeMillis();
 		try {
 			pool = new SimpleConPool(url, user, password, poolsize);
-			for (int i = 0; i < poolsize; i++) {
-				pool.getConnection().createStatement().execute("select * from company limit 1");
-			}
+
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}
+		System.out.println("success create threadpool ,used time "+(System.currentTimeMillis()-start));
+		int i = 0;
+		try {
+			for (i = 0; i < poolsize; i++) {
+				pool.getConnection().createStatement()
+						.execute("select * from company limit 1");
+			}
+		} catch (SQLException e) {
+			System.out.println("exectute  sql err " + i + " err:"
+					+ e.toString());
 		} finally {
 			pool.close();
 		}

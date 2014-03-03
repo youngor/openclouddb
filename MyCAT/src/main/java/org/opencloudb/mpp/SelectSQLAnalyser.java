@@ -100,7 +100,7 @@ public class SelectSQLAnalyser {
 		NumericConstantNode offsetNode = null;
 		NumericConstantNode offCountNode = null;
 		ResultSetNode resultNode = rsNode.getResultSetNode();
-		Map<String, ResultColumn> nameToColumn = new HashMap<String, ResultColumn>();
+
 		if (resultNode instanceof SelectNode) {
 			Map<String, Integer> aggrColumns = new HashMap<String, Integer>();
 			boolean hasAggrColumn = false;
@@ -108,11 +108,7 @@ public class SelectSQLAnalyser {
 			ResultColumnList colums = selNode.getResultColumns();
 			for (int i = 0; i < colums.size(); i++) {
 				ResultColumn col = colums.get(i);
-
 				ValueNode exp = col.getExpression();
-				if (exp != null) {
-					nameToColumn.put(exp.getColumnName(), col);
-				}
 				if (exp instanceof AggregateNode) {
 
 					hasAggrColumn = true;
@@ -142,6 +138,18 @@ public class SelectSQLAnalyser {
 		}
 		OrderByList orderBy = rsNode.getOrderByList();
 		if (orderBy != null && !orderBy.isEmpty()) {
+
+			// get column and alias map
+			Map<String, ResultColumn> nameToColumn = new HashMap<String, ResultColumn>();
+			ResultColumnList colums = ((SelectNode) resultNode)
+					.getResultColumns();
+			for (int j = 0; j < colums.size(); j++) {
+				ResultColumn col = colums.get(j);
+				ValueNode exp = col.getExpression();
+				if (exp != null) {
+					nameToColumn.put(exp.getColumnName(), col);
+				}
+			}
 			LinkedHashMap<String, Integer> orderCols = new LinkedHashMap<String, Integer>();
 
 			for (int i = 0; i < orderBy.size(); i++) {

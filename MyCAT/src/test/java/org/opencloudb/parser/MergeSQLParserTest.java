@@ -94,6 +94,14 @@ public class MergeSQLParserTest {
 		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
 		Assert.assertEquals(true, rrs.isHasAggrColumn());
 		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_DESC), rrs.getOrderByCols().get("total"));
+		
+		
+		// order by column has alias and should be 'modified' to alias 
+		sql = "select id as myid from person order by id";
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		rrs = new RouteResultset(sql,0);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_ASC), rrs.getOrderByCols().get("myid"));
 
 	}
 }
