@@ -330,5 +330,11 @@ public class TestSelectSQLAnalyser {
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		Assert.assertEquals(true, tablesAndCondtions.get("TABLEA").containsKey("CONTENTID"));
 
+		sql="SELECT  A.names FROM (SELECT *  FROM (SELECT * FROM customer   WHERE sharding_ID = '10000') B  LEFT JOIN (SELECT  NAME  NAMES FROM employee WHERE sharding_ID = '10000') C ON B.name = C.names UNION ALL SELECT *  FROM (SELECT * FROM customer  WHERE sharding_ID = '10000') B LEFT JOIN (SELECT NAME  NAMES FROM employee WHERE sharding_ID = '10000') C  ON B.name = C.names) AS A ORDER BY NAME DESC";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		Assert.assertEquals(2, tablesAndCondtions.size());
 	}
 }

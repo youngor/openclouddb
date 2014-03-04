@@ -258,6 +258,13 @@ public class SelectSQLAnalyser {
 			selNode = (SelectNode) subq.getSubquery();
 			break;
 		}
+		case NodeTypes.UNION_NODE:
+		{
+			UnionNode unionNode = (UnionNode) ast;
+			analyseSQL(parsInf, unionNode.getLeftResultSet(), notOpt);
+			analyseSQL(parsInf, unionNode.getRightResultSet(), notOpt);
+			return;
+		}
 		default: {
 			LOGGER.info("todo :not select node "
 					+ ast.getClass().getCanonicalName());
