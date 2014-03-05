@@ -26,7 +26,7 @@ package org.opencloudb.route.function;
 import org.opencloudb.config.model.rule.RuleAlgorithm;
 import org.opencloudb.route.util.PartitionUtil;
 
-public final class PartitionByLong implements RuleAlgorithm {
+public final class PartitionByLong extends AbstractPartionAlgorithm implements RuleAlgorithm {
 	protected int[] count;
 	protected int[] length;
 	protected PartitionUtil partitionUtil;

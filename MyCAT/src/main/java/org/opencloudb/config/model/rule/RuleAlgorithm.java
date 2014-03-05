@@ -42,4 +42,6 @@ public interface RuleAlgorithm {
 	 * @return never null
 	 */
 	Integer calculate(String columnValue);
+	
+	Integer[] calculateRange(String beginValue,String endValue);
 }

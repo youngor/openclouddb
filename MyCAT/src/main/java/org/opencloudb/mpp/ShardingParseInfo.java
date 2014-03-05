@@ -24,6 +24,7 @@
 package org.opencloudb.mpp;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -45,6 +46,7 @@ public class ShardingParseInfo {
 		}
 		String uperColName = columnName.toUpperCase();
 		Set<ColumnRoutePair> columValues = tableColumnsMap.get(uperColName);
+
 		if (columValues == null) {
 			columValues = new LinkedHashSet<ColumnRoutePair>();
 			tablesAndCondtions.get(tableName).put(uperColName, columValues);
@@ -53,7 +55,9 @@ public class ShardingParseInfo {
 			for (Object item : (Object[]) value) {
 				columValues.add(new ColumnRoutePair(item.toString()));
 			}
-		} else {
+		}else if( value instanceof RangeValue ){
+			columValues.add(new ColumnRoutePair((RangeValue)value));
+		}else {
 			columValues.add(new ColumnRoutePair(value.toString()));
 		}
 	}
@@ -84,11 +88,11 @@ public class ShardingParseInfo {
 	public Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndCondtions = new LinkedHashMap<String, Map<String, Set<ColumnRoutePair>>>();
 	public Set<String> shardingKeySet = new HashSet<String>();
 	public List<JoinRel> joinList = new ArrayList<JoinRel>(1);
+
 	/**
 	 * key table alias, value talbe realname;
 	 */
 	public Map<String, String> tableAliasMap = new LinkedHashMap<String, String>();
-	
 
 	public void addJoin(JoinRel joinRel) {
 		joinList.add(joinRel);

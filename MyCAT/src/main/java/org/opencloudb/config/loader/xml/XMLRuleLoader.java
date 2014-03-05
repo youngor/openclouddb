@@ -37,6 +37,7 @@ import org.opencloudb.config.model.rule.TableRuleConfig;
 import org.opencloudb.config.util.ConfigException;
 import org.opencloudb.config.util.ConfigUtil;
 import org.opencloudb.config.util.ParameterMapping;
+import org.opencloudb.route.function.AbstractPartionAlgorithm;
 import org.opencloudb.util.SplitUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -52,12 +53,12 @@ public class XMLRuleLoader {
 
 	private final Map<String, TableRuleConfig> tableRules;
 	// private final Set<RuleConfig> rules;
-	private final Map<String, RuleAlgorithm> functions;
+	private final Map<String, AbstractPartionAlgorithm> functions;
 
 	public XMLRuleLoader(String ruleFile) {
 		// this.rules = new HashSet<RuleConfig>();
 		this.tableRules = new HashMap<String, TableRuleConfig>();
-		this.functions = new HashMap<String, RuleAlgorithm>();
+		this.functions = new HashMap<String, AbstractPartionAlgorithm>();
 		load(DEFAULT_DTD, ruleFile == null ? DEFAULT_XML : ruleFile);
 	}
 
@@ -122,7 +123,7 @@ public class XMLRuleLoader {
 				}
 				RuleConfig rule = loadRule((Element) ruleNodes.item(0));
 				String funName = rule.getFunctionName();
-				RuleAlgorithm func = functions.get(funName);
+				AbstractPartionAlgorithm func = functions.get(funName);
 				if (func == null) {
 					throw new ConfigException("can't find function of name :"
 							+ funName);
@@ -160,7 +161,7 @@ public class XMLRuleLoader {
 							+ " duplicated!");
 				}
 				String clazz = e.getAttribute("class");
-				RuleAlgorithm function = createFunction(name, clazz);
+				AbstractPartionAlgorithm function = createFunction(name, clazz);
 				ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
 				function.init();
 				functions.put(name, function);
@@ -168,15 +169,15 @@ public class XMLRuleLoader {
 		}
 	}
 
-	private RuleAlgorithm createFunction(String name, String clazz)
+	private AbstractPartionAlgorithm createFunction(String name, String clazz)
 			throws ClassNotFoundException, InstantiationException,
 			IllegalAccessException, InvocationTargetException {
 		Class<?> clz = Class.forName(clazz);
-		if (!RuleAlgorithm.class.isAssignableFrom(clz)) {
+		if (!AbstractPartionAlgorithm.class.isAssignableFrom(clz)) {
 			throw new IllegalArgumentException("rule function must implements "
-					+ RuleAlgorithm.class.getName() + ", name=" + name);
+					+ AbstractPartionAlgorithm.class.getName() + ", name=" + name);
 		}
-		return (RuleAlgorithm) clz.newInstance();
+		return (AbstractPartionAlgorithm) clz.newInstance();
 	}
 
 }

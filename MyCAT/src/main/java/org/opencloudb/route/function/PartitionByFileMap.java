@@ -34,7 +34,7 @@ import org.opencloudb.config.model.rule.RuleAlgorithm;
 /**
  * @author mycat
  */
-public class PartitionByFileMap implements RuleAlgorithm {
+public class PartitionByFileMap extends AbstractPartionAlgorithm implements RuleAlgorithm {
 
 	private String mapFile;
 	private Map<Integer, Integer> app2Partition;

@@ -23,6 +23,8 @@
  */
 package org.opencloudb.config.model.rule;
 
+import org.opencloudb.route.function.AbstractPartionAlgorithm;
+
 
 /**
  * 分片规则，column是用于分片的数据库物理字段
@@ -31,7 +33,7 @@ package org.opencloudb.config.model.rule;
 public class RuleConfig {
 	private final String column;
 	private final String functionName;
-	private RuleAlgorithm ruleAlgorithm;
+	private AbstractPartionAlgorithm ruleAlgorithm;
 
 	public RuleConfig(String column, String functionName) {
 		if (functionName == null) {
@@ -44,13 +46,19 @@ public class RuleConfig {
 		this.column = column;
 	}
 
-	public RuleAlgorithm getRuleAlgorithm() {
+	
+
+	public AbstractPartionAlgorithm getRuleAlgorithm() {
 		return ruleAlgorithm;
 	}
 
-	public void setRuleAlgorithm(RuleAlgorithm ruleAlgorithm) {
+
+
+	public void setRuleAlgorithm(AbstractPartionAlgorithm ruleAlgorithm) {
 		this.ruleAlgorithm = ruleAlgorithm;
 	}
+
+
 
 	/**
 	 * @return unmodifiable, upper-case

@@ -5,7 +5,7 @@ import org.opencloudb.config.model.rule.RuleAlgorithm;
 /**
  * Created by bingoohuang on 14-2-28.
  */
-public class PartitionDirectBySubString implements RuleAlgorithm {
+public class PartitionDirectBySubString extends AbstractPartionAlgorithm implements RuleAlgorithm {
     private int startIndex;
     private int size;
 
