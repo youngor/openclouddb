@@ -59,5 +59,10 @@ public final class PartitionByLong extends AbstractPartionAlgorithm implements R
 		long key = Long.parseLong(columnValue);
 		return partitionUtil.partition(key);
 	}
+	
+	@Override
+	public Integer[] calculateRange(String beginValue, String endValue) {
+		return AbstractPartionAlgorithm.calculateSequenceRange(this, beginValue, endValue);
+	}
 
 }

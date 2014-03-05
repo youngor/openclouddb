@@ -35,13 +35,13 @@ public class TestSelectBetweenSqlParser {
 		SchemaConfig schema = schemaMap.get("cndb");
 		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null,
 				null, cachePool);
-		Assert.assertEquals(128, rrs.getNodes().length);
+		Assert.assertEquals(5, rrs.getNodes().length);
 		
 		sql = "select * from offer_detail where col_1 = 33 and offer_id between 1 and 33 and col_2 = 18";
 		schema = schemaMap.get("cndb");
 		rrs = ServerRouterUtil.route(schema, -1, sql, null,
 				null, cachePool);
-		Assert.assertEquals(128, rrs.getNodes().length);
+		Assert.assertEquals(5, rrs.getNodes().length);
 		
 //		sql = "select b.* from offer_date b join  offer_detail a on a.id=b.id " +
 //				"where b.col_date between '2014-02-02' and '2014-04-12' and col_1 = 3 and offer_id between 1 and 33";
@@ -54,7 +54,7 @@ public class TestSelectBetweenSqlParser {
 		schema = schemaMap.get("cndb");
 		rrs = ServerRouterUtil.route(schema, -1, sql, null,
 				null, cachePool);
-		Assert.assertEquals(128, rrs.getNodes().length);
+		Assert.assertEquals(5, rrs.getNodes().length);
 		
 		sql = "select * from offer_date where col_1 = 33 and col_date between '2014-01-02' and '2014-01-12'";
 		schema = schemaMap.get("cndb");

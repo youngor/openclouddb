@@ -53,22 +53,7 @@ public class PartionByDate extends AbstractPartionAlgorithm implements RuleAlgor
 
 	@Override
 	public Integer[] calculateRange(String beginValue, String endValue) {
-		int begin = 0, end = 0;
-		begin = calculate(beginValue);
-		end = calculate(endValue);
-
-		if (end >= begin) {
-			int len = end-begin+1;
-			Integer [] re = new Integer[len];
-			
-			for(int i =0;i<len;i++){
-				re[i]=begin+i;
-			}
-			
-			return re;
-		}else{
-			return null;
-		}
+		return AbstractPartionAlgorithm.calculateSequenceRange(this, beginValue, endValue);
 	}
 
 	public void setsBeginDate(String sBeginDate) {

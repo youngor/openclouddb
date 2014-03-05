@@ -61,6 +61,11 @@ public class AutoPartitionByLong extends AbstractPartionAlgorithm implements Rul
 		}
 		return rst;
 	}
+	
+	@Override
+	public Integer[] calculateRange(String beginValue, String endValue) {
+		return AbstractPartionAlgorithm.calculateSequenceRange(this, beginValue, endValue);
+	}
 
 	private void initialize() {
 		BufferedReader in = null;
