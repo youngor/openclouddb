@@ -40,13 +40,14 @@ public class MergeCol {
 	}
 
 	public static int getMergeType(String mergeType) {
-		if ("COUNT".equalsIgnoreCase(mergeType)) {
+		String upper=mergeType.toUpperCase();
+		if (upper.startsWith("COUNT")) {
 			return MERGE_COUNT;
-		} else if ("SUM".equalsIgnoreCase(mergeType)) {
+		} else if (upper.startsWith("SUM")) {
 			return MERGE_SUM;
-		} else if ("MIN".equalsIgnoreCase(mergeType)) {
+		} else if (upper.startsWith("MIN")) {
 			return MERGE_MIN;
-		} else if ("MAX".equalsIgnoreCase(mergeType)) {
+		} else if (upper.startsWith("MAX")) {
 			return MERGE_MAX;
 		} else {
 			return MERGE_UNSUPPORT;
