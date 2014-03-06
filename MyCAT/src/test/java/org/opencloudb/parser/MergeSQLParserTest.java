@@ -24,10 +24,12 @@
 package org.opencloudb.parser;
 
 import java.sql.SQLSyntaxErrorException;
+import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
+import org.opencloudb.mpp.MergeCol;
 import org.opencloudb.mpp.OrderCol;
 import org.opencloudb.mpp.SelectParseInf;
 import org.opencloudb.mpp.SelectSQLAnalyser;
@@ -102,6 +104,18 @@ public class MergeSQLParserTest {
 		rrs = new RouteResultset(sql,0);
 		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
 		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_ASC), rrs.getOrderByCols().get("myid"));
+		
+		
+		// aggregate column has alias
+		sql = "select counT(*)  as TOTaL from person order by toTal";
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		rrs = new RouteResultset(sql,0);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		Map<String,Integer> mergeCols=rrs.getMergeCols();
+		Assert.assertEquals(1,mergeCols.size());
+		Assert.assertEquals(Integer.valueOf(MergeCol.MERGE_COUNT),mergeCols.get("total"));
+		Assert.assertEquals(1,rrs.getOrderByCols().size());
+		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_ASC),rrs.getOrderByCols().get("total"));
 
 	}
 }

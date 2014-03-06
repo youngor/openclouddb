@@ -108,14 +108,14 @@ public class DataMergeService {
 			if (rrs.getMergeCols() != null) {
 				for (Map.Entry<String, Integer> mergEntry : rrs.getMergeCols()
 						.entrySet()) {
-					String colName = mergEntry.getKey();
+					String colName = mergEntry.getKey().toUpperCase();
 					ColMeta colMeta = columToIndx.get(colName);
 					mergCols.add(new MergeCol(colMeta, mergEntry.getValue()));
 				}
 			}
 			// add no alias merg column
 			for (Map.Entry<String, ColMeta> fieldEntry : columToIndx.entrySet()) {
-				String colName = fieldEntry.getKey().toUpperCase();
+				String colName = fieldEntry.getKey();
 				int result = MergeCol.tryParseAggCol(colName);
 				if (result != MergeCol.MERGE_UNSUPPORT
 						&& result != MergeCol.MERGE_NOMERGE) {
@@ -131,7 +131,7 @@ public class DataMergeService {
 			int i=0;
 			for (Map.Entry<String, Integer> entry:orders.entrySet()) {
 				orderCols[i++] = new OrderCol(
-						columToIndx.get(entry.getKey()),
+						columToIndx.get(entry.getKey().toUpperCase()),
 						entry.getValue());
 			}
 			sorter = new RowDataPacketSorter(orderCols);
@@ -166,7 +166,7 @@ public class DataMergeService {
 			Map<String, ColMeta> toIndexMap) {
 		int[] result = new int[columns.length];
 		for (int i = 0; i < columns.length; i++) {
-			result[i] = toIndexMap.get(columns[i]).colIndex;
+			result[i] = toIndexMap.get(columns[i].toUpperCase()).colIndex;
 		}
 		return result;
 	}

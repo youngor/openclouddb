@@ -329,7 +329,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				if (needMerg) {
 					FieldPacket fieldPkg = new FieldPacket();
 					fieldPkg.read(field);
-					String fieldName = new String(fieldPkg.name);
+					String fieldName = new String(fieldPkg.name).toUpperCase();
 					if (columToIndx != null
 							&& !columToIndx.containsKey(fieldName)) {
 
