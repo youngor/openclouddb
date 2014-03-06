@@ -53,9 +53,9 @@ public class BaseSQLExeTest {
 				"select * from travelrecord where id=1",
 				"select * from travelrecord limit 100",
 				"select sum(fee) total_fee, days,count(id),max(fee),min(fee) from  travelrecord  group by days  order by days desc limit 99 ",
-				"update travelrecord set user=user where id =1",
+				"update travelrecord set user_id=user_id where id =1",
 				"delete from travelrecord where id =1 ",
-				"insert into travelrecord (id,user,traveldate,fee,days) values(1,'wang','2014-01-05',510.5,3)"};
+				"insert into travelrecord (id,user_id,traveldate,fee,days) values(1,'wang','2014-01-05',510.5,3)"};
 		Statement stmt = theCon.createStatement();
 		for (String sql : sqls) {
 			stmt.execute(sql);
@@ -100,8 +100,8 @@ public class BaseSQLExeTest {
 				"update company set name=name where id =-1",
 				"insert into company(id,name) values(1,'hp')",
 				"insert into company(id,name,badname) values(1,'hp')",
-				"insert into travelrecord (id,user,traveldate,fee,days) values(1,’wang’,’2014-01-05’,510.5,3)",
-				"insert into travelrecord (id,user,traveldate,fee,days,badcolumn) values(1,’wang’,’2014-01-05’,510.5,3)",
+				"insert into travelrecord (id,user_id,traveldate,fee,days) values(1,’wang’,’2014-01-05’,510.5,3)",
+				"insert into travelrecord (id,user_id,traveldate,fee,days,badcolumn) values(1,’wang’,’2014-01-05’,510.5,3)",
 				"select sum(fee) total_fee, days,count(id),max(fee),min(fee) from  travelrecord  group by count(id)  order by count(id) desc limit 99 " };
 		for (String sql : sqls) {
 			try {

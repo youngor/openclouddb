@@ -40,7 +40,6 @@ import org.apache.log4j.Logger;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.TableConfig;
-import org.opencloudb.config.model.rule.RuleAlgorithm;
 import org.opencloudb.config.model.rule.RuleConfig;
 import org.opencloudb.mpp.ColumnRoutePair;
 import org.opencloudb.mpp.DDLParsInf;
@@ -1048,9 +1047,10 @@ public final class ServerRouterUtil {
 					if (nodeRange.length == 0) {
 						routeNodeSet.addAll(tc.getDataNodes());
 					} else {
+						ArrayList<String> dataNodes=tc.getDataNodes();
 						String dataNode = null;
 						for (Integer nodeId : nodeRange) {
-							dataNode = tc.getDataNodes().get(nodeId);
+							dataNode = dataNodes.get(nodeId);
 							routeNodeSet.add(dataNode);
 						}
 					}

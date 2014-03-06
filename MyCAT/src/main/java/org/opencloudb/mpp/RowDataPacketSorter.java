@@ -65,12 +65,11 @@ public class RowDataPacketSorter {
 
 	private RowDataPacket[] mergeSort(RowDataPacket[] result) throws Exception {
 		this.sorted.clear();
+		array = result;
 		if (result == null || result.length < 2 || this.orderCols == null
 				|| orderCols.length < 1) {
 			return result;
 		}
-
-		array = result;
 		mergeR(0, result.length - 1);
 
 		return array;
