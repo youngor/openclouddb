@@ -23,138 +23,145 @@
  */
 package org.opencloudb.net;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.nio.channels.CompletionHandler;
 
 import org.apache.log4j.Logger;
+import org.opencloudb.buffer.BufferQueue;
 import org.opencloudb.config.ErrorCode;
 
 /**
  * @author mycat
  */
-public final class NIOConnector extends Thread {
-    private static final Logger LOGGER = Logger.getLogger(NIOConnector.class);
-    private static final ConnectIdGenerator ID_GENERATOR = new ConnectIdGenerator();
+public final class NIOConnector implements
+		CompletionHandler<Void, BackendConnection> {
+	private static final Logger LOGGER = Logger.getLogger(NIOConnector.class);
+	private static final ConnectIdGenerator ID_GENERATOR = new ConnectIdGenerator();
+	protected int socketRecvBuffer = 16 * 1024;
+	protected int socketSendBuffer = 8 * 1024;
+	protected int packetHeaderSize = 4;
+	protected int maxPacketSize = 16 * 1024 * 1024;
+	protected int writeQueueCapcity = 8;
+	protected long idleTimeout = 8 * 3600 * 1000L;
+	private NIOProcessor[] processors;
+	private int nextProcessor;
+	private long connectCount;
 
-    private final String name;
-    private final Selector selector;
-    private final BlockingQueue<BackendConnection> connectQueue;
-    private NIOProcessor[] processors;
-    private int nextProcessor;
-    private long connectCount;
+	@Override
+	public void completed(Void result, BackendConnection attachment) {
+		finishConnect(attachment);
+		System.out.println("completed connect " + attachment);
+	}
 
-    public NIOConnector(String name) throws IOException {
-        super.setName(name);
-        this.name = name;
-        this.selector = Selector.open();
-        this.connectQueue = new LinkedBlockingQueue<BackendConnection>();
-    }
+	public int getSocketRecvBuffer() {
+		return socketRecvBuffer;
+	}
 
-    public long getConnectCount() {
-        return connectCount;
-    }
+	public void setSocketRecvBuffer(int socketRecvBuffer) {
+		this.socketRecvBuffer = socketRecvBuffer;
+	}
 
-    public void setProcessors(NIOProcessor[] processors) {
-        this.processors = processors;
-    }
+	public int getSocketSendBuffer() {
+		return socketSendBuffer;
+	}
 
-    public void postConnect(BackendConnection c) {
-        connectQueue.offer(c);
-        selector.wakeup();
-    }
+	public void setSocketSendBuffer(int socketSendBuffer) {
+		this.socketSendBuffer = socketSendBuffer;
+	}
 
-    @Override
-    public void run() {
-        final Selector selector = this.selector;
-        for (;;) {
-            ++connectCount;
-            try {
-                selector.select(1000L);
-                connect(selector);
-                Set<SelectionKey> keys = selector.selectedKeys();
-                try {
-                    for (SelectionKey key : keys) {
-                        Object att = key.attachment();
-                        if (att != null && key.isValid() && key.isConnectable()) {
-                            finishConnect(key, att);
-                        } else {
-                            key.cancel();
-                        }
-                    }
-                } finally {
-                    keys.clear();
-                }
-            } catch (Throwable e) {
-                LOGGER.warn(name, e);
-            }
-        }
-    }
+	public int getPacketHeaderSize() {
+		return packetHeaderSize;
+	}
 
-    private void connect(Selector selector) {
-        BackendConnection c = null;
-        while ((c = connectQueue.poll()) != null) {
-            try {
-                c.connect(selector);
-            } catch (Throwable e) {
-                c.error(ErrorCode.ERR_CONNECT_SOCKET, e);
-            }
-        }
-    }
+	public void setPacketHeaderSize(int packetHeaderSize) {
+		this.packetHeaderSize = packetHeaderSize;
+	}
 
-    private void finishConnect(SelectionKey key, Object att) {
-        BackendConnection c = (BackendConnection) att;
-        try {
-            if (c.finishConnect()) {
-                clearSelectionKey(key);
-                c.setId(ID_GENERATOR.getId());
-                NIOProcessor processor = nextProcessor();
-                c.setProcessor(processor);
-                processor.postRegister(c);
-            }
-        } catch (Throwable e) {
-            clearSelectionKey(key);
-            c.error(ErrorCode.ERR_CONNECT_SOCKET, e);
-        }
-    }
+	public int getMaxPacketSize() {
+		return maxPacketSize;
+	}
 
-    private void clearSelectionKey(SelectionKey key) {
-        if (key.isValid()) {
-            key.attach(null);
-            key.cancel();
-        }
-    }
+	public void setMaxPacketSize(int maxPacketSize) {
+		this.maxPacketSize = maxPacketSize;
+	}
 
-    private NIOProcessor nextProcessor() {
-        if (++nextProcessor == processors.length) {
-            nextProcessor = 0;
-        }
-        return processors[nextProcessor];
-    }
+	public int getWriteQueueCapcity() {
+		return writeQueueCapcity;
+	}
 
-    /**
-     * 后端连接ID生成器
-     * 
-     * @author mycat
-     */
-    private static class ConnectIdGenerator {
+	public void setWriteQueueCapcity(int writeQueueCapcity) {
+		this.writeQueueCapcity = writeQueueCapcity;
+	}
 
-        private static final long MAX_VALUE = Long.MAX_VALUE;
+	public long getIdleTimeout() {
+		return idleTimeout;
+	}
 
-        private long connectId = 0L;
-        private final Object lock = new Object();
+	public void setIdleTimeout(long idleTimeout) {
+		this.idleTimeout = idleTimeout;
+	}
 
-        private long getId() {
-            synchronized (lock) {
-                if (connectId >= MAX_VALUE) {
-                    connectId = 0L;
-                }
-                return ++connectId;
-            }
-        }
-    }
+	@Override
+	public void failed(Throwable exc, BackendConnection attachment) {
+		System.out.println("failed connect " + attachment);
+	}
+
+	private void postConnect(BackendConnection c) {
+		c.setPacketHeaderSize(packetHeaderSize);
+		c.setMaxPacketSize(maxPacketSize);
+		c.setWriteQueue(new BufferQueue(writeQueueCapcity));
+		c.setIdleTimeout(idleTimeout);
+	}
+
+	public long getConnectCount() {
+		return connectCount;
+	}
+
+	public void setProcessors(NIOProcessor[] processors) {
+		this.processors = processors;
+	}
+
+	private void finishConnect(BackendConnection c) {
+		postConnect(c);
+		try {
+			if (c.finishConnect()) {
+				c.setId(ID_GENERATOR.getId());
+				NIOProcessor processor = nextProcessor();
+				c.setProcessor(processor);
+				c.register();
+			}
+		} catch (Throwable e) {
+			LOGGER.info("connect err " + e);
+			c.error(ErrorCode.ERR_CONNECT_SOCKET, e);
+		}
+	}
+
+	private NIOProcessor nextProcessor() {
+		if (++nextProcessor == processors.length) {
+			nextProcessor = 0;
+		}
+		return processors[nextProcessor];
+	}
+
+	/**
+	 * 后端连接ID生成器
+	 * 
+	 * @author mycat
+	 */
+	private static class ConnectIdGenerator {
+
+		private static final long MAX_VALUE = Long.MAX_VALUE;
+
+		private long connectId = 0L;
+		private final Object lock = new Object();
+
+		private long getId() {
+			synchronized (lock) {
+				if (connectId >= MAX_VALUE) {
+					connectId = 0L;
+				}
+				return ++connectId;
+			}
+		}
+	}
 
 }

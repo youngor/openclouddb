@@ -39,7 +39,6 @@ import org.opencloudb.util.NameableExecutor;
  */
 public final class NIOProcessor {
 	private final String name;
-	private final NIOReactor reactor;
 	private final BufferPool bufferPool;
 	// private final NameableExecutor handler;
 	private final NameableExecutor executor;
@@ -52,7 +51,6 @@ public final class NIOProcessor {
 	public NIOProcessor(String name, int bufferPoolSize, int bufferchunk,
 			int threadPoolSize) throws IOException {
 		this.name = name;
-		this.reactor = new NIOReactor(name);
 		this.bufferPool = new BufferPool(bufferPoolSize, bufferchunk);
 		this.executor = (threadPoolSize > 0) ? ExecutorUtil.create(name + "-E",
 				threadPoolSize) : null;
@@ -69,9 +67,7 @@ public final class NIOProcessor {
 		return bufferPool;
 	}
 
-	public int getRegisterQueueSize() {
-		return reactor.getRegisterQueue().size();
-	}
+	
 
 	public int getWriteQueueSize() {
 		int total = 0;
@@ -94,11 +90,7 @@ public final class NIOProcessor {
 	}
 
 	public void startup() {
-		reactor.startup();
-	}
-
-	public void postRegister(NIOConnection c) {
-		reactor.postRegister(c);
+	
 	}
 
 	public CommandCount getCommands() {
@@ -121,9 +113,7 @@ public final class NIOProcessor {
 		netOutBytes += bytes;
 	}
 
-	public long getReactCount() {
-		return reactor.getReactCount();
-	}
+	
 
 	public void addFrontend(FrontendConnection c) {
 		frontends.put(c.getId(), c);

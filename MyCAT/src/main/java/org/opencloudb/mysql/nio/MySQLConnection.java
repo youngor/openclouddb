@@ -24,7 +24,7 @@
 package org.opencloudb.mysql.nio;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -148,7 +148,8 @@ public class MySQLConnection extends BackendConnection implements
 	private final AtomicBoolean isQuit;
 	private volatile StatusSync statusSync;
 
-	public MySQLConnection(SocketChannel channel, boolean fromSlaveDB) {
+	public MySQLConnection(AsynchronousSocketChannel channel,
+			boolean fromSlaveDB) {
 		super(channel);
 		this.clientFlags = CLIENT_FLAGS;
 		this.lastTime = TimeUtil.currentTimeMillis();
@@ -525,7 +526,7 @@ public class MySQLConnection extends BackendConnection implements
 		RouteResultsetNode rrn = new RouteResultsetNode("default",
 				ServerParse.SELECT, query);
 		StatusSync sync = new StatusSync(this, rrn, this.charsetIndex,
-				 this.txIsolation, true);
+				this.txIsolation, true);
 		doExecute(sync);
 	}
 
@@ -563,7 +564,7 @@ public class MySQLConnection extends BackendConnection implements
 		if (isClosed.get()) {
 			if (this.respHandler != null) {
 				this.respHandler.connectionClose(this, reason);
-				respHandler=null;
+				respHandler = null;
 			}
 
 		}
@@ -690,16 +691,41 @@ public class MySQLConnection extends BackendConnection implements
 
 	@Override
 	public String toString() {
-		return "MySQLConnection [id=" + id + ", isRunning=" + isRunning
-				+ ", lastTime=" + lastTime + ", schema=" + schema
-				+ ", borrowed=" + borrowed + ", fromSlaveDB=" + fromSlaveDB
-				+ ", threadId=" + threadId + ", charset=" + charset
-				+ ", txIsolation=" + txIsolation + ", autocommit=" + autocommit
-				+ ", attachment=" + attachment + ", respHandler=" + respHandler
-				+ ", host=" + host + ", port=" + port
-				+ ", statusSync=" + statusSync + ", writeQueue=" + this.getWriteQueue().snapshotSize()
-				+ ", suppressReadTemporay=" + suppressReadTemporay
-				+ ", modifiedSQLExecuted=" + modifiedSQLExecuted + "]";
+		return "MySQLConnection [id="
+				+ id
+				+ ", isRunning="
+				+ isRunning
+				+ ", lastTime="
+				+ lastTime
+				+ ", schema="
+				+ schema
+				+ ", borrowed="
+				+ borrowed
+				+ ", fromSlaveDB="
+				+ fromSlaveDB
+				+ ", threadId="
+				+ threadId
+				+ ", charset="
+				+ charset
+				+ ", txIsolation="
+				+ txIsolation
+				+ ", autocommit="
+				+ autocommit
+				+ ", attachment="
+				+ attachment
+				+ ", respHandler="
+				+ respHandler
+				+ ", host="
+				+ host
+				+ ", port="
+				+ port
+				+ ", statusSync="
+				+ statusSync
+				+ ", writeQueue="
+				+ ((this.getWriteQueue() == null) ? 0 : getWriteQueue()
+						.snapshotSize()) + ", suppressReadTemporay="
+				+ suppressReadTemporay + ", modifiedSQLExecuted="
+				+ modifiedSQLExecuted + "]";
 	}
 
 	@Override

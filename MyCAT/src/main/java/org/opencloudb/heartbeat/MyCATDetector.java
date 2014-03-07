@@ -23,7 +23,7 @@
  */
 package org.opencloudb.heartbeat;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -56,7 +56,7 @@ public class MyCATDetector extends BackendConnection {
     private long heartbeatTimeout;
     private final AtomicBoolean isQuit;
 
-    public MyCATDetector(SocketChannel channel) {
+    public MyCATDetector(AsynchronousSocketChannel channel) {
         super(channel);
         this.clientFlags = CLIENT_FLAGS;
         this.handler = new MyCATDetectorAuthenticator(this);

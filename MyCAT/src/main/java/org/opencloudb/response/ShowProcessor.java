@@ -135,8 +135,8 @@ public final class ShowProcessor {
         row.add(processor.getName().getBytes());
         row.add(LongUtil.toBytes(processor.getNetInBytes()));
         row.add(LongUtil.toBytes(processor.getNetOutBytes()));
-        row.add(LongUtil.toBytes(processor.getReactCount()));
-        row.add(IntegerUtil.toBytes(processor.getRegisterQueueSize()));
+        row.add(LongUtil.toBytes(0));
+        row.add(IntegerUtil.toBytes(0));
         row.add(IntegerUtil.toBytes(processor.getWriteQueueSize()));
         row.add(IntegerUtil.toBytes(bufferSize));
         row.add(IntegerUtil.toBytes(bufferCapacity));

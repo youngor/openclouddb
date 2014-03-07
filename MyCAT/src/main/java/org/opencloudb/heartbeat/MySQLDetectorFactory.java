@@ -24,7 +24,8 @@
 package org.opencloudb.heartbeat;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.MycatServer;
 import org.opencloudb.config.model.DBHostConfig;
@@ -34,14 +35,9 @@ import org.opencloudb.net.factory.BackendConnectionFactory;
  * @author mycat
  */
 public class MySQLDetectorFactory extends BackendConnectionFactory {
-
-    public MySQLDetectorFactory() {
-        this.idleTimeout = 300 * 1000L;
-    }
-
     public MySQLDetector make(MySQLHeartbeat heartbeat) throws IOException {
-        SocketChannel channel = openSocketChannel();
         DBHostConfig dsc = heartbeat.getSource().getConfig();
+        AsynchronousSocketChannel channel = openSocketChannel();
         MySQLDetector detector = new MySQLDetector(channel);
         detector.setHost(dsc.getIp());
         detector.setPort(dsc.getPort());
@@ -50,8 +46,8 @@ public class MySQLDetectorFactory extends BackendConnectionFactory {
         //detector.setSchema(dsc.getDatabase());
         detector.setHeartbeatTimeout(heartbeat.getHeartbeatTimeout());
         detector.setHeartbeat(heartbeat);
-        postConnect(detector, MycatServer.getInstance().getConnector());
-        return detector;
+        channel.connect(new InetSocketAddress(dsc.getIp(), dsc.getPort()),detector,MycatServer.getInstance().getConnector());
+       return detector;
     }
 
 }

@@ -24,7 +24,8 @@
 package org.opencloudb.heartbeat;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.MycatServer;
 import org.opencloudb.config.model.MycatNodeConfig;
@@ -37,13 +38,14 @@ import org.opencloudb.net.factory.BackendConnectionFactory;
 public class MyCATDetectorFactory extends BackendConnectionFactory {
 
     public MyCATDetectorFactory() {
-        this.idleTimeout = 120 * 1000L;
+      
     }
 
     public MyCATDetector make(MyCATHeartbeat heartbeat) throws IOException {
-        SocketChannel channel = openSocketChannel();
+    	
         MycatNodeConfig cnc = heartbeat.getNode().getConfig();
         SystemConfig sys = MycatServer.getInstance().getConfig().getSystem();
+        AsynchronousSocketChannel channel = openSocketChannel();
         MyCATDetector detector = new MyCATDetector(channel);
         detector.setHost(cnc.getHost());
         detector.setPort(cnc.getPort());
@@ -51,7 +53,7 @@ public class MyCATDetectorFactory extends BackendConnectionFactory {
         detector.setPassword(sys.getClusterHeartbeatPass());
         detector.setHeartbeatTimeout(sys.getClusterHeartbeatTimeout());
         detector.setHeartbeat(heartbeat);
-        postConnect(detector, MycatServer.getInstance().getConnector());
+        channel.connect(new InetSocketAddress(cnc.getHost(), cnc.getPort()),detector,MycatServer.getInstance().getConnector());
         return detector;
     }
 

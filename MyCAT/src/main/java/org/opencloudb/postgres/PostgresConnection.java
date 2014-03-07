@@ -23,7 +23,7 @@
  */
 package org.opencloudb.postgres;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.net.BackendConnection;
 
@@ -32,14 +32,13 @@ import org.opencloudb.net.BackendConnection;
  */
 public class PostgresConnection extends BackendConnection {
 
-    public PostgresConnection(SocketChannel channel) {
+    public PostgresConnection(AsynchronousSocketChannel channel) {
         super(channel);
-        // TODO Auto-generated constructor stub
+
     }
 
     @Override
     public void error(int errCode, Throwable t) {
-        // TODO Auto-generated method stub
 
     }
 

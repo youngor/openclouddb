@@ -27,10 +27,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
@@ -60,6 +63,7 @@ public class MycatServer {
 	private final RouteService routerService;
 	private final CacheService cacheService;
 	private Properties dnIndexProperties;
+	private final AsynchronousChannelGroup asyncChannelGroup;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -80,6 +84,14 @@ public class MycatServer {
 	private MycatServer() {
 		this.config = new MycatConfig();
 		SystemConfig system = config.getSystem();
+		ExecutorService executor = Executors.newFixedThreadPool(system
+				.getProcessorExecutor());
+		try {
+			asyncChannelGroup = AsynchronousChannelGroup
+					.withThreadPool(executor);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		this.timer = new Timer(NAME + "Timer", true);
 		this.timerExecutor = ExecutorUtil.create("TimerExecutor",
 				system.getTimerExecutor());
@@ -92,17 +104,18 @@ public class MycatServer {
 		this.startupTime = TimeUtil.currentTimeMillis();
 	}
 
+	public AsynchronousChannelGroup getAsyncChannelGroup() {
+		return asyncChannelGroup;
+	}
+
 	public MycatConfig getConfig() {
 		return config;
 	}
 
 	public void beforeStart() {
-
 		String home = SystemConfig.getHomePath();
-
 		Log4jInitializer.configureAndWatch(home + "/conf/log4j.xml",
 				LOG_WATCH_DELAY);
-
 	}
 
 	public void startup() throws IOException {
@@ -116,9 +129,6 @@ public class MycatServer {
 		dnIndexProperties = loadDnIndexProps();
 		// startup processors
 		int executor = system.getProcessorExecutor();
-
-		// int handler = system.getProcessorHandler();
-
 		processors = new NIOProcessor[system.getProcessors()];
 		int processBuferPool = system.getProcessorBufferPool();
 		int processBufferChunk = system.getProcessorBufferChunk();
@@ -140,9 +150,8 @@ public class MycatServer {
 
 		// startup connector
 		LOGGER.info("Startup connector ...");
-		connector = new NIOConnector(NAME + "Connector");
+		connector = new NIOConnector();
 		connector.setProcessors(processors);
-		connector.start();
 
 		// init datahost
 		Map<String, PhysicalDBPool> dataHosts = config.getDataHosts();
@@ -167,7 +176,8 @@ public class MycatServer {
 		ManagerConnectionFactory mf = new ManagerConnectionFactory();
 		mf.setCharset(system.getCharset());
 		mf.setIdleTimeout(system.getIdleTimeout());
-		manager = new NIOAcceptor(NAME + "Manager", system.getManagerPort(), mf);
+		manager = new NIOAcceptor(NAME + "Manager", system.getManagerPort(),
+				mf, this.asyncChannelGroup);
 		manager.setProcessors(processors);
 		manager.start();
 		LOGGER.info(manager.getName() + " is started and listening on "
@@ -177,7 +187,8 @@ public class MycatServer {
 		ServerConnectionFactory sf = new ServerConnectionFactory();
 		sf.setCharset(system.getCharset());
 		sf.setIdleTimeout(system.getIdleTimeout());
-		server = new NIOAcceptor(NAME + "Server", system.getServerPort(), sf);
+		server = new NIOAcceptor(NAME + "Server", system.getServerPort(), sf,
+				this.asyncChannelGroup);
 		server.setProcessors(processors);
 		server.start();
 		timer.schedule(clusterHeartbeat(), 0L,

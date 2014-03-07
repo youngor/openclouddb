@@ -24,11 +24,10 @@
 package org.opencloudb.net;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,16 +42,16 @@ import org.opencloudb.util.TimeUtil;
 public abstract class AbstractConnection implements NIOConnection {
 	protected static final Logger LOGGER = Logger
 			.getLogger(AbstractConnection.class);
-	private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
-	private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
-	protected final SocketChannel channel;
+	protected final AsynchronousSocketChannel channel;
 	protected NIOProcessor processor;
 	protected NIOHandler handler;
 	protected SelectionKey processKey;
 	protected int packetHeaderSize;
 	protected int maxPacketSize;
-	protected int readBufferOffset;
-	private ByteBuffer readBuffer;
+	protected volatile int readBufferOffset;
+	private volatile ByteBuffer readBuffer;
+	private volatile ByteBuffer writeBuffer;
+	private volatile boolean writing = false;
 	protected BufferQueue writeQueue;
 	protected boolean isRegistered;
 	protected final AtomicBoolean isClosed;
@@ -63,10 +62,13 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected long netInBytes;
 	protected long netOutBytes;
 	protected int writeAttempts;
+
 	protected final ReentrantLock keyLock = new ReentrantLock();
 	private long idleTimeout;
+	private static AIOReadHandler aioReadHandler = new AIOReadHandler();
+	private static AIOWriteHandler aioWriteHandler = new AIOWriteHandler();
 
-	public AbstractConnection(SocketChannel channel) {
+	public AbstractConnection(AsynchronousSocketChannel channel) {
 		this.channel = channel;
 		this.isClosed = new AtomicBoolean(false);
 		this.startupTime = TimeUtil.currentTimeMillis();
@@ -88,7 +90,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	}
 
-	public SocketChannel getChannel() {
+	public AsynchronousSocketChannel getChannel() {
 		return channel;
 	}
 
@@ -182,6 +184,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
+			e.printStackTrace();
 			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
@@ -192,21 +195,27 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	@Override
-	public void register(Selector selector) throws IOException {
-		try {
-			processKey = channel.register(selector, SelectionKey.OP_READ, this);
-			isRegistered = true;
-		} finally {
-			if (isClosed.get()) {
-				clearSelectionKey();
-			}
+	public void register() throws IOException {
+
+	}
+
+	public void asynRead() {
+		ByteBuffer theBuffer = readBuffer;
+		if (theBuffer == null) {
+			theBuffer = ByteBuffer.allocate(1024);
+			this.readBuffer = theBuffer;
+			channel.read(theBuffer, this, aioReadHandler);
+
+		} else if (theBuffer.hasRemaining()) {
+			// theBuffer.compact();
+			channel.read(theBuffer, this, aioReadHandler);
+		} else {
+			throw new java.lang.IllegalArgumentException("full buffer to read ");
 		}
 	}
 
-	@Override
-	public void read() throws IOException {
+	public void onReadData(int got) throws IOException {
 		ByteBuffer buffer = this.readBuffer;
-		int got = channel.read(buffer);
 		lastReadTime = TimeUtil.currentTimeMillis();
 		if (got < 0) {
 			if (!this.isClosed()) {
@@ -268,13 +277,9 @@ public abstract class AbstractConnection implements NIOConnection {
 			recycle(buffer);
 			return;
 		}
-		if (isRegistered) {
+		if (writing) {
 			try {
 				int writeQueueStatus = writeQueue.put(buffer);
-				if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-					enableWrite(true);
-				}
-
 				switch (writeQueueStatus) {
 				case BufferQueue.NEARLY_EMPTY: {
 					this.writeQueueAvailable();
@@ -285,62 +290,21 @@ public abstract class AbstractConnection implements NIOConnection {
 					break;
 				}
 				}
-
 			} catch (InterruptedException e) {
 				error(ErrorCode.ERR_PUT_WRITE_QUEUE, e);
 				return;
 			}
-
-		} else {
-			recycle(buffer);
-			close("not registed con");
-		}
-	}
-
-	@Override
-	public void writeByQueue() throws IOException {
-
-		// System.out.println("writeByQueue ");
-		if (isClosed.get()) {
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("not write queue ,connection closed " + this);
-			}
-			return;
-		}
-
-		boolean noMoreData = write0();
-		if (noMoreData) {
-			disableWrite();
-		} else {
-			if ((processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-				enableWrite(false);
-			}
+		} else {// not write now
+			writing = true;
+			asynWrite(buffer);
 		}
 
 	}
 
-	public void enableRead() {
-
-		boolean needWakeup = false;
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-			needWakeup = true;
-		} catch (Exception e) {
-			LOGGER.warn("enable read fail " + e);
-		}
-		if (needWakeup) {
-			processKey.selector().wakeup();
-		}
-	}
-
-	/**
-	 * 鍏抽棴璇讳簨浠�
-	 */
-	public void disableRead() {
-
-		SelectionKey key = this.processKey;
-		key.interestOps(key.interestOps() & OP_NOT_READ);
+	private void asynWrite(ByteBuffer buffer) {
+		writeBuffer = buffer;
+		buffer.flip();
+		this.channel.write(buffer, this, aioWriteHandler);
 	}
 
 	public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity) {
@@ -391,7 +355,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			LOGGER.info(toString() + " idle timeout");
 			close(" idle ");
 		} else {
-			this.checkWriteOpts(true);
+			// this.checkWriteOpts(true);
 		}
 	}
 
@@ -450,122 +414,29 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	/**
-	 * if has more data to write ,return false else retun true
-	 * 
-	 * @return
-	 * @throws IOException
-	 */
-	private boolean write0() throws IOException {
-		int written = 0;
-		ByteBuffer buffer = writeQueue.attachment();
-		if (buffer != null) {
-			while (buffer.hasRemaining()) {
-				written = channel.write(buffer);
-				if (written > 0) {
-					netOutBytes += written;
-					processor.addNetOutBytes(written);
-					lastWriteTime = TimeUtil.currentTimeMillis();
-				} else {
-					break;
-				}
-			}
-
-			if (buffer.hasRemaining()) {
-				writeAttempts++;
-				return false;
+	protected void onWriteFinished(int result) {
+		netOutBytes += result;
+		processor.addNetOutBytes(result);
+		lastWriteTime = TimeUtil.currentTimeMillis();
+		ByteBuffer theBuffer = writeBuffer;
+		if (theBuffer.hasRemaining()) {
+			asynWrite(theBuffer);
+		} else {// write finished
+			writeBuffer = null;
+			this.recycle(theBuffer);
+			theBuffer = writeQueue.poll();
+			if (theBuffer == null) {
+				this.writing = false;
 			} else {
-				writeQueue.attach(null);
-				recycle(buffer);
+				asynWrite(theBuffer);
 			}
-		}
-		while ((buffer = writeQueue.poll()) != null) {
-			if (buffer.position() == 0) {
-				recycle(buffer);
-				this.close("quit send");
-				return true;
-			}
-			buffer.flip();
-			while (buffer.hasRemaining()) {
-				written = channel.write(buffer);
-				if (written > 0) {
-					lastWriteTime = TimeUtil.currentTimeMillis();
-					netOutBytes += written;
-					processor.addNetOutBytes(written);
-					lastWriteTime = TimeUtil.currentTimeMillis();
-				} else {
-					break;
-				}
-			}
-			if (buffer.hasRemaining()) {
-				writeQueue.attach(buffer);
-				writeAttempts++;
-				return false;
-			} else {
-				recycle(buffer);
-			}
-		}
-		return true;
-	}
-
-	private void disableWrite() {
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() & OP_NOT_WRITE);
-		} catch (Exception e) {
-			LOGGER.warn("can't disable write " + e);
-		}
-
-	}
-
-	public void checkWriteOpts(boolean wakeup) {
-		if (this.writeQueue.snapshotSize() > 1
-				&& (processKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
-			//LOGGER.info("enable write "+this);
-			enableWrite(wakeup);
-		}
-	}
-
-	private void enableWrite(boolean wakeup) {
-		boolean needWakeup = false;
-		try {
-			SelectionKey key = this.processKey;
-			key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-			needWakeup = true;
-		} catch (Exception e) {
-			LOGGER.warn("can't enable write " + e);
-
-		}
-		if (needWakeup && wakeup) {
-			processKey.selector().wakeup();
-		}
-	}
-
-	private void clearSelectionKey() {
-		try {
-			SelectionKey key = this.processKey;
-			if (key != null && key.isValid()) {
-				key.attach(null);
-				key.cancel();
-			}
-		} catch (Exception e) {
-			LOGGER.warn("clear selector keys err:" + e);
 		}
 	}
 
 	private void closeSocket() {
-		clearSelectionKey();
-		SocketChannel channel = this.channel;
+
 		if (channel != null) {
 			boolean isSocketClosed = true;
-			Socket socket = channel.socket();
-			if (socket != null) {
-				try {
-					socket.close();
-				} catch (Throwable e) {
-				}
-				isSocketClosed = socket.isClosed();
-			}
 			try {
 				channel.close();
 			} catch (Throwable e) {
@@ -578,4 +449,57 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
+	public void disableRead() {
+
+	}
+
+	public void enableRead() {
+
+	}
+
+}
+
+class AIOWriteHandler implements CompletionHandler<Integer, AbstractConnection> {
+
+	@Override
+	public void completed(Integer result, AbstractConnection con) {
+		if (result > 0) {
+			con.onWriteFinished(result);
+		} else {
+			con.close("write erro " + result);
+		}
+	}
+
+	@Override
+	public void failed(Throwable exc, AbstractConnection con) {
+		con.close("write failed " + exc);
+	}
+
+}
+
+class AIOReadHandler implements CompletionHandler<Integer, AbstractConnection> {
+
+	@Override
+	public void completed(Integer i, AbstractConnection con) {
+		if (i > 0) {
+			try {
+				con.onReadData(i);
+				con.asynRead();
+			} catch (IOException e) {
+				con.close("handle err:" + e);
+			}
+		} else if (i == 0) {
+			System.out.println("receive 0 length " + con);
+		} else if (i == -1) {
+			con.close("client close");
+		}
+
+	}
+
+	@Override
+	public void failed(Throwable exc, AbstractConnection con) {
+		exc.printStackTrace();
+		con.close(exc.toString());
+
+	}
 }

@@ -24,7 +24,8 @@
 package org.opencloudb.mysql.nio;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.MycatServer;
 import org.opencloudb.config.model.DBHostConfig;
@@ -37,10 +38,11 @@ import org.opencloudb.net.factory.BackendConnectionFactory;
 public class MySQLConnectionFactory extends BackendConnectionFactory {
 	public MySQLConnection make(MySQLDataSource pool, ResponseHandler handler)
 			throws IOException {
-		SocketChannel channel = openSocketChannel();
-		DBHostConfig dsc = pool.getConfig();
 
+		DBHostConfig dsc = pool.getConfig();
+		AsynchronousSocketChannel channel = openSocketChannel();
 		MySQLConnection c = new MySQLConnection(channel, pool.isReadNode());
+
 		c.setHost(dsc.getIp());
 		c.setPort(dsc.getPort());
 		c.setUser(dsc.getUser());
@@ -49,7 +51,8 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
 		c.setHandler(new MySQLConnectionAuthenticator(c, handler));
 		c.setPool(pool);
 		c.setIdleTimeout(pool.getConfig().getIdleTimeout());
-		postConnect(c, MycatServer.getInstance().getConnector());
+		channel.connect(new InetSocketAddress(dsc.getIp(), dsc.getPort()), c,
+				MycatServer.getInstance().getConnector());
 		return c;
 	}
 

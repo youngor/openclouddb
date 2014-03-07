@@ -25,9 +25,7 @@ package org.opencloudb.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.util.TimeUtil;
 
@@ -41,15 +39,18 @@ public abstract class BackendConnection extends AbstractConnection {
 	protected int port;
 	protected int localPort;
 	protected long idleTimeout;
-	protected NIOConnector connector;
 	protected boolean isFinishConnect;
 	// supress socket read event temporary ,because client
 	protected volatile boolean suppressReadTemporay;
 
-	public BackendConnection(SocketChannel channel) {
+	public BackendConnection(AsynchronousSocketChannel channel) {
 		super(channel);
 	}
 
+	public void register()
+	{
+		this.asynRead();
+	}
 	public boolean isSuppressReadTemporay() {
 		return suppressReadTemporay;
 	}
@@ -103,24 +104,11 @@ public abstract class BackendConnection extends AbstractConnection {
 				lastReadTime) + idleTimeout;
 	}
 
-	public void setConnector(NIOConnector connector) {
-		this.connector = connector;
-	}
-
-	public void connect(Selector selector) throws IOException {
-		channel.register(selector, SelectionKey.OP_CONNECT, this);
-		channel.connect(new InetSocketAddress(host, port));
-	}
 
 	public boolean finishConnect() throws IOException {
-		if (channel.isConnectionPending()) {
-			channel.finishConnect();
-			localPort = channel.socket().getLocalPort();
-			isFinishConnect = true;
-			return true;
-		} else {
-			return false;
-		}
+		localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
+		isFinishConnect = true;
+		return true;
 	}
 
 	public void setProcessor(NIOProcessor processor) {

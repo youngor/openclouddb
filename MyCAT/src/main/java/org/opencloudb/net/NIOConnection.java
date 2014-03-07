@@ -25,7 +25,6 @@ package org.opencloudb.net;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 
 /**
  * @author mycat
@@ -33,14 +32,9 @@ import java.nio.channels.Selector;
 public interface NIOConnection extends ClosableConnection{
 
     /**
-     * 注册网络事件
+     * connected 
      */
-    void register(Selector selector) throws IOException;
-
-    /**
-     * 读取数据
-     */
-    void read() throws IOException;
+    void register() throws IOException;
 
     /**
      * 处理数据
@@ -65,11 +59,7 @@ public interface NIOConnection extends ClosableConnection{
     void writeQueueBlocked();
     
 
-    /**
-     * 基于处理器队列的方式写数据
-     */
-    void writeByQueue() throws IOException;
-
+   
 
     /**
      * 发生错误

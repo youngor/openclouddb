@@ -23,7 +23,8 @@
  */
 package org.opencloudb.server;
 
-import java.nio.channels.SocketChannel;
+import java.io.IOException;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.sql.SQLNonTransientException;
 
 import org.apache.log4j.Logger;
@@ -51,7 +52,7 @@ public class ServerConnection extends FrontendConnection {
 	private NonBlockingSession session;
 	protected volatile boolean backReadSupressed = false;
 
-	public ServerConnection(SocketChannel channel) {
+	public ServerConnection(AsynchronousSocketChannel channel) throws IOException {
 		super(channel);
 		this.txInterrupted = false;
 		this.autocommit = true;

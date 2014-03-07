@@ -23,8 +23,8 @@
  */
 package org.opencloudb.manager;
 
-import java.io.EOFException;
-import java.nio.channels.SocketChannel;
+import java.io.IOException;
+import java.nio.channels.AsynchronousSocketChannel;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatServer;
@@ -40,7 +40,7 @@ public class ManagerConnection extends FrontendConnection {
 			.getLogger(ManagerConnection.class);
 	private static final long AUTH_TIMEOUT = 15 * 1000L;
 
-	public ManagerConnection(SocketChannel channel) {
+	public ManagerConnection(AsynchronousSocketChannel channel) throws IOException {
 		super(channel);
 	}
 

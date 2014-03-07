@@ -25,12 +25,11 @@ package org.opencloudb.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.Set;
+import java.net.StandardSocketOptions;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.net.factory.FrontendConnectionFactory;
@@ -39,126 +38,125 @@ import org.opencloudb.net.factory.FrontendConnectionFactory;
  * @author mycat
  */
 public final class NIOAcceptor extends Thread {
-    private static final Logger LOGGER = Logger.getLogger(NIOAcceptor.class);
-    private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
+	private static final Logger LOGGER = Logger.getLogger(NIOAcceptor.class);
+	private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
 
-    private final int port;
-    private final Selector selector;
-    private final ServerSocketChannel serverChannel;
-    private final FrontendConnectionFactory factory;
-    private NIOProcessor[] processors;
-    private int nextProcessor;
-    private long acceptCount;
+	private final int port;
+	private final AsynchronousServerSocketChannel serverChannel;
+	private final FrontendConnectionFactory factory;
+	private NIOProcessor[] processors;
+	private int nextProcessor;
+	private long acceptCount;
 
-    public NIOAcceptor(String name, int port, FrontendConnectionFactory factory) throws IOException {
-        super.setName(name);
-        this.port = port;
-        this.selector = Selector.open();
-        this.serverChannel = ServerSocketChannel.open();
-        this.serverChannel.socket().bind(new InetSocketAddress(port));
-        this.serverChannel.configureBlocking(false);
-        this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-        this.factory = factory;
-    }
+	public NIOAcceptor(String name, int port,
+			FrontendConnectionFactory factory, AsynchronousChannelGroup group)
+			throws IOException {
+		super.setName(name);
+		this.port = port;
+		this.factory = factory;
+		serverChannel = AsynchronousServerSocketChannel.open(group);
+		/** 设置TCP属性 */
+		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 16 * 1024);
+		// backlog=100
+		serverChannel.bind(new InetSocketAddress(port), 100);
+	}
 
-    public int getPort() {
-        return port;
-    }
+	public void pendingAccept() {
+		if (serverChannel.isOpen()) {
+			Future<AsynchronousSocketChannel> future = serverChannel.accept();
+			try {
+				AsynchronousSocketChannel channel = future.get();
+				accept(channel);
+			} catch (Exception e) {
 
-    public long getAcceptCount() {
-        return acceptCount;
-    }
+				e.printStackTrace();
 
-    public void setProcessors(NIOProcessor[] processors) {
-        this.processors = processors;
-    }
+			}
 
-    @Override
-    public void run() {
-        final Selector selector = this.selector;
-        for (;;) {
-            ++acceptCount;
-            try {
-                selector.select(1000L);
-                Set<SelectionKey> keys = selector.selectedKeys();
-                try {
-                    for (SelectionKey key : keys) {
-                        if (key.isValid() && key.isAcceptable()) {
-                            accept();
-                        } else {
-                            key.cancel();
-                        }
-                    }
-                } finally {
-                    keys.clear();
-                }
-            } catch (Throwable e) {
-                LOGGER.warn(getName(), e);
-            }
-        }
-    }
+		} else {
 
-    private void accept() {
-        SocketChannel channel = null;
-        try {
-            channel = serverChannel.accept();
-            channel.configureBlocking(false);
-            FrontendConnection c = factory.make(channel);
-            c.setAccepted(true);
-            c.setId(ID_GENERATOR.getId());
-            NIOProcessor processor = nextProcessor();
-            c.setProcessor(processor);
-            processor.postRegister(c);
-        } catch (Throwable e) {
-            closeChannel(channel);
-            LOGGER.warn(getName(), e);
-        }
-    }
+			throw new IllegalStateException("Controller has been closed");
 
-    private NIOProcessor nextProcessor() {
-        if (++nextProcessor == processors.length) {
-            nextProcessor = 0;
-        }
-        return processors[nextProcessor];
-    }
+		}
 
-    private static void closeChannel(SocketChannel channel) {
-        if (channel == null) {
-            return;
-        }
-        Socket socket = channel.socket();
-        if (socket != null) {
-            try {
-                socket.close();
-            } catch (IOException e) {
-            }
-        }
-        try {
-            channel.close();
-        } catch (IOException e) {
-        }
-    }
+	}
 
-    /**
-     * 前端连接ID生成器
-     * 
-     * @author mycat
-     */
-    private static class AcceptIdGenerator {
+	public int getPort() {
+		return port;
+	}
 
-        private static final long MAX_VALUE = 0xffffffffL;
+	public long getAcceptCount() {
+		return acceptCount;
+	}
 
-        private long acceptId = 0L;
-        private final Object lock = new Object();
+	public void setProcessors(NIOProcessor[] processors) {
+		this.processors = processors;
+	}
 
-        private long getId() {
-            synchronized (lock) {
-                if (acceptId >= MAX_VALUE) {
-                    acceptId = 0L;
-                }
-                return ++acceptId;
-            }
-        }
-    }
+	public void run() {
+		System.out.println("started");
+		while (true) {
+			try {
+				pendingAccept();
+
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void accept(AsynchronousSocketChannel channel) {
+		try {
+			FrontendConnection c = factory.make(channel);
+			c.setAccepted(true);
+			c.setId(ID_GENERATOR.getId());
+			NIOProcessor processor = nextProcessor();
+			c.setProcessor(processor);
+			c.register();
+		} catch (Throwable e) {
+			closeChannel(channel);
+			LOGGER.warn(getName(), e);
+		}
+	}
+
+	private NIOProcessor nextProcessor() {
+		if (++nextProcessor == processors.length) {
+			nextProcessor = 0;
+		}
+		return processors[nextProcessor];
+	}
+
+	private static void closeChannel(AsynchronousSocketChannel channel) {
+		if (channel == null) {
+			return;
+		}
+		try {
+			channel.close();
+		} catch (IOException e) {
+		}
+	}
+
+	/**
+	 * 前端连接ID生成器
+	 * 
+	 * @author mycat
+	 */
+	private static class AcceptIdGenerator {
+
+		private static final long MAX_VALUE = 0xffffffffL;
+
+		private long acceptId = 0L;
+		private final Object lock = new Object();
+
+		private long getId() {
+			synchronized (lock) {
+				if (acceptId >= MAX_VALUE) {
+					acceptId = 0L;
+				}
+				return ++acceptId;
+			}
+		}
+	}
 
 }

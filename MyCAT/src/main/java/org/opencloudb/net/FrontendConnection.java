@@ -26,9 +26,8 @@ package org.opencloudb.net;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.Socket;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -71,12 +70,13 @@ public abstract class FrontendConnection extends AbstractConnection {
 	protected boolean isAccepted;
 	protected boolean isAuthenticated;
 
-	public FrontendConnection(SocketChannel channel) {
+	public FrontendConnection(AsynchronousSocketChannel channel) throws IOException {
 		super(channel);
-		Socket socket = channel.socket();
-		this.host = socket.getInetAddress().getHostAddress();
-		this.port = socket.getPort();
-		this.localPort = socket.getLocalPort();
+		InetSocketAddress localAddr = (InetSocketAddress)channel.getLocalAddress();
+		InetSocketAddress remoteAddr = (InetSocketAddress)channel.getRemoteAddress();
+		this.host = localAddr.getHostString();
+		this.port = localAddr.getPort();
+		this.localPort = remoteAddr.getPort();
 		this.handler = new FrontendAuthenticator(this);
 	}
 
@@ -111,10 +111,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 	public void setLocalPort(int localPort) {
 		this.localPort = localPort;
 	}
-
-
-
-	
 
 	public void setAccepted(boolean isAccepted) {
 		this.isAccepted = isAccepted;
@@ -212,7 +208,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 		MySQLMessage mm = new MySQLMessage(data);
 		mm.position(5);
 		String db = mm.readString();
-
 
 		// 检查schema的有效性
 		if (db == null || !privileges.schemaExists(db)) {
@@ -329,11 +324,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 		writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
 	}
 
-	
 	@Override
-	public void register(Selector selector) throws IOException {
-		super.register(selector);
+	public void register() throws IOException {
 		if (!isClosed.get()) {
+			LOGGER.info("register server connection "+this);
 			// 生成认证数据
 			byte[] rand1 = RandomUtil.randomBytes(8);
 			byte[] rand2 = RandomUtil.randomBytes(12);
@@ -356,6 +350,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 			hs.serverStatus = 2;
 			hs.restOfScrambleBuff = rand2;
 			hs.write(this);
+			
+			//asynread response
+			this.asynRead();
 		}
 	}
 
