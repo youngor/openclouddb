@@ -394,17 +394,18 @@ public class SelectSQLAnalyser {
 			// valueNode.treePrint();
 		}
 	}
-
-	
 	//分析between操作符
-	private static void analyseBetween(BetweenOperatorNode valueNode,
-			String defaultTableName, ShardingParseInfo ctx) {
-		String columnName = valueNode.getLeftOperand().getColumnName();
-		String beginValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(0)).getValue());
-		String endValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(1)).getValue());
-		RangeValue rv = new RangeValue(beginValue, endValue, RangeValue.EE);
-		ctx.addShardingExpr(defaultTableName.toUpperCase(), columnName, rv);
-	}
+		private static void analyseBetween(BetweenOperatorNode valueNode,
+				String defaultTableName, ShardingParseInfo ctx) {
+			String columnName = valueNode.getLeftOperand().getColumnName();
+			if(columnName!=null){ 
+			String beginValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(0)).getValue());
+			String endValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(1)).getValue());
+			RangeValue rv = new RangeValue(beginValue, endValue, RangeValue.EE);
+			ctx.addShardingExpr(defaultTableName.toUpperCase(), columnName, rv);
+			}
+		}
+ 
 
 	private static void tryColumnCondition(SelectParseInf parsInf,
 			String defaultTableName, String methodName, ValueNode leftOp,
