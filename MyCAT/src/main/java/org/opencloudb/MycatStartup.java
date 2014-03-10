@@ -43,7 +43,7 @@ public final class MycatStartup {
 				System.exit(-1);
 			}
 			// init
-			MycatServer server = MycatServer.getInstance();
+			MycatServer server =MycatServer.getInstance();
 			server.beforeStart();
 
 			// startup

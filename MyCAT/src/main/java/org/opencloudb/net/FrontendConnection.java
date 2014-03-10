@@ -70,10 +70,13 @@ public abstract class FrontendConnection extends AbstractConnection {
 	protected boolean isAccepted;
 	protected boolean isAuthenticated;
 
-	public FrontendConnection(AsynchronousSocketChannel channel) throws IOException {
+	public FrontendConnection(AsynchronousSocketChannel channel)
+			throws IOException {
 		super(channel);
-		InetSocketAddress localAddr = (InetSocketAddress)channel.getLocalAddress();
-		InetSocketAddress remoteAddr = (InetSocketAddress)channel.getRemoteAddress();
+		InetSocketAddress localAddr = (InetSocketAddress) channel
+				.getLocalAddress();
+		InetSocketAddress remoteAddr = (InetSocketAddress) channel
+				.getRemoteAddress();
 		this.host = localAddr.getHostString();
 		this.port = localAddr.getPort();
 		this.localPort = remoteAddr.getPort();
@@ -327,7 +330,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 	@Override
 	public void register() throws IOException {
 		if (!isClosed.get()) {
-			LOGGER.info("register server connection "+this);
+
 			// 生成认证数据
 			byte[] rand1 = RandomUtil.randomBytes(8);
 			byte[] rand2 = RandomUtil.randomBytes(12);
@@ -350,8 +353,8 @@ public abstract class FrontendConnection extends AbstractConnection {
 			hs.serverStatus = 2;
 			hs.restOfScrambleBuff = rand2;
 			hs.write(this);
-			
-			//asynread response
+
+			// asynread response
 			this.asynRead();
 		}
 	}

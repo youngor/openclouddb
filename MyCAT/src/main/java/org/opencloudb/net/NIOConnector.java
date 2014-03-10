@@ -49,7 +49,6 @@ public final class NIOConnector implements
 	@Override
 	public void completed(Void result, BackendConnection attachment) {
 		finishConnect(attachment);
-		System.out.println("completed connect " + attachment);
 	}
 
 	public int getSocketRecvBuffer() {

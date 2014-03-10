@@ -26,7 +26,6 @@ package org.opencloudb.manager;
 import java.io.IOException;
 import java.nio.channels.AsynchronousSocketChannel;
 
-import org.apache.log4j.Logger;
 import org.opencloudb.MycatServer;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.FrontendConnection;
@@ -36,11 +35,10 @@ import org.opencloudb.util.TimeUtil;
  * @author mycat
  */
 public class ManagerConnection extends FrontendConnection {
-	private static final Logger LOGGER = Logger
-			.getLogger(ManagerConnection.class);
 	private static final long AUTH_TIMEOUT = 15 * 1000L;
 
-	public ManagerConnection(AsynchronousSocketChannel channel) throws IOException {
+	public ManagerConnection(AsynchronousSocketChannel channel)
+			throws IOException {
 		super(channel);
 	}
 
@@ -56,7 +54,7 @@ public class ManagerConnection extends FrontendConnection {
 
 	@Override
 	public void handle(final byte[] data) {
-		MycatServer.getInstance().getManagerExecutor().execute(new Runnable() {
+		MycatServer.getInstance().geAIOExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
 				try {

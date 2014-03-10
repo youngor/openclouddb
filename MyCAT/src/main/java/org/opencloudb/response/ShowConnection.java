@@ -50,7 +50,7 @@ import org.opencloudb.util.TimeUtil;
  */
 public final class ShowConnection {
 
-	private static final int FIELD_COUNT = 14;
+	private static final int FIELD_COUNT = 12;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -93,17 +93,10 @@ public final class ShowConnection {
 				Fields.FIELD_TYPE_LONGLONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("WRITE_ATTEMPTS",
-				Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
-
 		fields[i] = PacketUtil.getField("RECV_BUFFER", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
-		fields[i++].packetId = ++packetId;
-
-		fields[i] = PacketUtil.getField("CHANNELS", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
 		eof.packetId = ++packetId;
@@ -126,7 +119,8 @@ public final class ShowConnection {
 		// write rows
 		byte packetId = eof.packetId;
 		String charset = c.getCharset();
-		for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
+		NIOProcessor[] processors = MycatServer.getInstance().getProcessors();
+		for (NIOProcessor p : processors) {
 			for (FrontendConnection fc : p.getFrontends().values()) {
 				if (fc != null) {
 					RowDataPacket row = getRow(fc, charset);
@@ -158,17 +152,11 @@ public final class ShowConnection {
 		row.add(LongUtil.toBytes(c.getNetOutBytes()));
 		row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c
 				.getStartupTime()) / 1000L));
-		row.add(IntegerUtil.toBytes(c.getWriteAttempts()));
 		ByteBuffer bb = c.getReadBuffer();
 		row.add(IntegerUtil.toBytes(bb == null ? 0 : bb.capacity()));
 		BufferQueue bq = c.getWriteQueue();
 		row.add(IntegerUtil.toBytes(bq == null ? 0 : bq.snapshotSize()));
-		if (c instanceof ServerConnection) {
-			ServerConnection sc = (ServerConnection) c;
-			row.add(IntegerUtil.toBytes(sc.getSession2().getTargetCount()));
-		} else {
-			row.add(null);
-		}
+
 		return row;
 	}
 

@@ -184,7 +184,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		try {
 			handler.handle(data);
 		} catch (Throwable e) {
-			e.printStackTrace();
 			close("exeption:" + e.toString());
 			if (e instanceof ConnectionException) {
 				error(ErrorCode.ERR_CONNECT_SOCKET, e);
@@ -280,6 +279,13 @@ public abstract class AbstractConnection implements NIOConnection {
 		if (writing) {
 			try {
 				int writeQueueStatus = writeQueue.put(buffer);
+				if (!writing) {
+					writing=true;
+					ByteBuffer buf = writeQueue.poll();
+					if (buf != null) {
+						this.asynWrite(buffer);
+					}
+				}
 				switch (writeQueueStatus) {
 				case BufferQueue.NEARLY_EMPTY: {
 					this.writeQueueAvailable();
@@ -463,7 +469,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AbstractConnection> 
 
 	@Override
 	public void completed(Integer result, AbstractConnection con) {
-		if (result > 0) {
+		if (result >= 0) {
 			con.onWriteFinished(result);
 		} else {
 			con.close("write erro " + result);
@@ -488,8 +494,6 @@ class AIOReadHandler implements CompletionHandler<Integer, AbstractConnection> {
 			} catch (IOException e) {
 				con.close("handle err:" + e);
 			}
-		} else if (i == 0) {
-			System.out.println("receive 0 length " + con);
 		} else if (i == -1) {
 			con.close("client close");
 		}
@@ -498,7 +502,6 @@ class AIOReadHandler implements CompletionHandler<Integer, AbstractConnection> {
 
 	@Override
 	public void failed(Throwable exc, AbstractConnection con) {
-		exc.printStackTrace();
 		con.close(exc.toString());
 
 	}

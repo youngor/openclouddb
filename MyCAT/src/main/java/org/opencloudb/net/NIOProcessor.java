@@ -28,11 +28,10 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 
 import org.opencloudb.buffer.BufferPool;
 import org.opencloudb.statistic.CommandCount;
-import org.opencloudb.util.ExecutorUtil;
-import org.opencloudb.util.NameableExecutor;
 
 /**
  * @author mycat
@@ -41,7 +40,7 @@ public final class NIOProcessor {
 	private final String name;
 	private final BufferPool bufferPool;
 	// private final NameableExecutor handler;
-	private final NameableExecutor executor;
+	private final ExecutorService executor;
 	private final ConcurrentMap<Long, FrontendConnection> frontends;
 	private final ConcurrentMap<Long, BackendConnection> backends;
 	private final CommandCount commands;
@@ -49,11 +48,10 @@ public final class NIOProcessor {
 	private long netOutBytes;
 
 	public NIOProcessor(String name, int bufferPoolSize, int bufferchunk,
-			int threadPoolSize) throws IOException {
+			ExecutorService executor) throws IOException {
 		this.name = name;
 		this.bufferPool = new BufferPool(bufferPoolSize, bufferchunk);
-		this.executor = (threadPoolSize > 0) ? ExecutorUtil.create(name + "-E",
-				threadPoolSize) : null;
+		this.executor = executor;
 		this.frontends = new ConcurrentHashMap<Long, FrontendConnection>();
 		this.backends = new ConcurrentHashMap<Long, BackendConnection>();
 		this.commands = new CommandCount();
@@ -67,8 +65,6 @@ public final class NIOProcessor {
 		return bufferPool;
 	}
 
-	
-
 	public int getWriteQueueSize() {
 		int total = 0;
 		for (FrontendConnection fron : frontends.values()) {
@@ -81,16 +77,8 @@ public final class NIOProcessor {
 
 	}
 
-	// public NameableExecutor getHandler() {
-	// return handler;
-	// }
-
-	public NameableExecutor getExecutor() {
+	public ExecutorService getExecutor() {
 		return executor;
-	}
-
-	public void startup() {
-	
 	}
 
 	public CommandCount getCommands() {
@@ -112,8 +100,6 @@ public final class NIOProcessor {
 	public void addNetOutBytes(long bytes) {
 		netOutBytes += bytes;
 	}
-
-	
 
 	public void addFrontend(FrontendConnection c) {
 		frontends.put(c.getId(), c);

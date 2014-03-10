@@ -69,9 +69,7 @@ public final class NIOAcceptor extends Thread {
 				AsynchronousSocketChannel channel = future.get();
 				accept(channel);
 			} catch (Exception e) {
-
-				e.printStackTrace();
-
+				LOGGER.warn(getName(), e);
 			}
 
 		} else {
@@ -95,13 +93,11 @@ public final class NIOAcceptor extends Thread {
 	}
 
 	public void run() {
-		System.out.println("started");
 		while (true) {
 			try {
 				pendingAccept();
-
 			} catch (Throwable e) {
-				e.printStackTrace();
+				LOGGER.warn(getName(), e);
 			}
 		}
 	}

@@ -28,29 +28,20 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousSocketChannel;
 
 import org.opencloudb.MycatServer;
-import org.opencloudb.buffer.BufferQueue;
-import org.opencloudb.net.BackendConnection;
-import org.opencloudb.net.NIOConnector;
 
 /**
  * @author mycat
  */
 public abstract class BackendConnectionFactory {
 
-	
-
-	protected AsynchronousSocketChannel openSocketChannel()
-			throws IOException {
+	protected AsynchronousSocketChannel openSocketChannel() throws IOException {
 		AsynchronousSocketChannel channel = AsynchronousSocketChannel
-				.open(MycatServer.getInstance().getAsyncChannelGroup());
+				.open(MycatServer.getInstance().getNextAsyncChannelGroup());
 		channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
 		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
 		return channel;
 	}
-
-	
-
 
 }
