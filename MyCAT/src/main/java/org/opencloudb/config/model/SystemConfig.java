@@ -57,6 +57,7 @@ public final class SystemConfig {
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final int DEFAULT_USE_WR_FLUX_CONTRL = 0;
 
+	private String bindIp="localhost";
 	private int serverPort;
 	private int managerPort;
 	private String charset;
@@ -105,6 +106,14 @@ public final class SystemConfig {
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
 		this.waitTimeout = DEFAULT_WAIT_TIMEOUT;
 		this.openWRFluxControl = DEFAULT_USE_WR_FLUX_CONTRL;
+	}
+
+	public String getBindIp() {
+		return bindIp;
+	}
+
+	public void setBindIp(String bindIp) {
+		this.bindIp = bindIp;
 	}
 
 	public int getOpenWRFluxControl() {

@@ -50,7 +50,7 @@ public final class NIOAcceptor implements
 	private int nextProcessor;
 	private long acceptCount;
    private final String name;
-	public NIOAcceptor(String name, int port,
+	public NIOAcceptor(String name, String ip,int port,
 			FrontendConnectionFactory factory, AsynchronousChannelGroup group)
 			throws IOException {
 		this.name=name;
@@ -61,7 +61,7 @@ public final class NIOAcceptor implements
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 16 * 1024);
 		// backlog=100
-		serverChannel.bind(new InetSocketAddress(port), 100);
+		serverChannel.bind(new InetSocketAddress(ip,port), 100);
 	}
 
 	public String getName() {

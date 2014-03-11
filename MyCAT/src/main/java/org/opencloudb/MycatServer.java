@@ -194,7 +194,7 @@ public class MycatServer {
 		ManagerConnectionFactory mf = new ManagerConnectionFactory();
 		mf.setCharset(system.getCharset());
 		mf.setIdleTimeout(system.getIdleTimeout());
-		manager = new NIOAcceptor(NAME + "Manager", system.getManagerPort(),
+		manager = new NIOAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(),
 				mf, this.asyncChannelGroups[0]);
 		manager.setProcessors(processors);
 		manager.start();
@@ -205,7 +205,7 @@ public class MycatServer {
 		ServerConnectionFactory sf = new ServerConnectionFactory();
 		sf.setCharset(system.getCharset());
 		sf.setIdleTimeout(system.getIdleTimeout());
-		server = new NIOAcceptor(NAME + "Server", system.getServerPort(), sf,
+		server = new NIOAcceptor(NAME + "Server",  system.getBindIp(),system.getServerPort(), sf,
 				this.asyncChannelGroups[0]);
 		server.setProcessors(processors);
 		server.start();
