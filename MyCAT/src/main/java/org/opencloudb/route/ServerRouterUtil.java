@@ -55,6 +55,7 @@ import org.opencloudb.mpp.ShardingParseInfo;
 import org.opencloudb.mpp.UpdateParsInf;
 import org.opencloudb.mpp.UpdateSQLAnalyser;
 import org.opencloudb.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
+import org.opencloudb.parser.ExtNodeToString4SEQ;
 import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.route.function.AbstractPartionAlgorithm;
 import org.opencloudb.server.parser.ServerParse;
@@ -132,7 +133,8 @@ public final class ServerRouterUtil {
 		// @micmiu 简单模糊判断SQL是否包含sequence
 		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
 			try {
-				NodeToString strHandler = new NodeToString();
+				//@micmiu 扩展NodeToString实现自定义全局序列号
+				NodeToString strHandler = new ExtNodeToString4SEQ();
 				// 如果存在sequence 转化sequence为实际数值
 				stmt = strHandler.toString(ast);
 				rrs = new RouteResultset(stmt, sqlType);
