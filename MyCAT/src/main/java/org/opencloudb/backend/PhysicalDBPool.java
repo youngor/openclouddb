@@ -134,7 +134,7 @@ public class PhysicalDBPool {
 						writeSources.length - 1);
 				for (int i = 0; i < writeSources.length; i++) {
 					if (i != index) {
-						if (this.isAlive(result)) {
+						if (this.isAlive(writeSources[i])) {
 							alives.add(i);
 						}
 					}
