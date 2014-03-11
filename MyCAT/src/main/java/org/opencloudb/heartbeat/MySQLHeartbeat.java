@@ -222,13 +222,17 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	 * switch data source
 	 */
 	private void switchSourceIfNeed(String reason) {
+		PhysicalDBPool pool = source.getDbPool();
+
 		// read node can't switch ,only write node can switch
-		if (!source.isReadNode() && this.status == DBHeartbeat.OK_STATUS) {
-			PhysicalDBPool pool = source.getDbPool();
+		if (pool.getWriteType() == PhysicalDBPool.WRITE_ONLYONE_NODE
+				&& !source.isReadNode() && this.status == DBHeartbeat.OK_STATUS) {
+
 			// try to see if need switch datasource
-			int curDatasourceHB= pool.getSource().getHeartbeat().getStatus();
+			int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
 			if (pool.getSources().length > 1
-					&& curDatasourceHB!=DBHeartbeat.INIT_STATUS && curDatasourceHB!= DBHeartbeat.OK_STATUS) {
+					&& curDatasourceHB != DBHeartbeat.INIT_STATUS
+					&& curDatasourceHB != DBHeartbeat.OK_STATUS) {
 				int myIndex = -1;
 				PhysicalDatasource[] allWriteNodes = pool.getSources();
 				for (int i = 0; i < allWriteNodes.length; i++) {

@@ -157,7 +157,7 @@ public class MycatServer {
 		LOGGER.info(NAME + " is ready to startup ...");
 		SystemConfig system = config.getSystem();
 		String inf = "Startup processors ...,total processors:"
-				+ system.getProcessors() + "aio thread pool size:"
+				+ system.getProcessors() + ",aio thread pool size:"
 				+ system.getProcessorExecutor()
 				+ "    \r\n each process allocated socket buffer pool "
 				+ " bytes ,buffer chunk size:"

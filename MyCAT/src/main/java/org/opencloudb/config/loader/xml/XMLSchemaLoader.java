@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.opencloudb.backend.PhysicalDBPool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.model.DBHostConfig;
 import org.opencloudb.config.model.DataHostConfig;
@@ -336,6 +337,8 @@ public class XMLSchemaLoader implements SchemaLoader {
 			int maxCon = Integer.valueOf(element.getAttribute("maxCon"));
 			int minCon = Integer.valueOf(element.getAttribute("minCon"));
 			int balance = Integer.valueOf(element.getAttribute("balance"));
+			String writeTypStr=element.getAttribute("writeType");
+			int writeType ="".equals(writeTypStr)?PhysicalDBPool.WRITE_ONLYONE_NODE: Integer.valueOf(writeTypStr);
 			String dbDriver = element.getAttribute("dbDriver");
 			String dbType = element.getAttribute("dbType");
 			String heartbeatSQL = element.getElementsByTagName("heartbeat")
@@ -366,6 +369,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			hostConf.setMaxCon(maxCon);
 			hostConf.setMinCon(minCon);
 			hostConf.setBalance(balance);
+			hostConf.setWriteType(writeType);
 			hostConf.setHearbeatSQL(heartbeatSQL);
 			dataHosts.put(hostConf.getName(), hostConf);
 

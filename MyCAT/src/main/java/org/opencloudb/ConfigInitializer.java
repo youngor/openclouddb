@@ -141,13 +141,14 @@ public class ConfigInitializer {
 		return nodes;
 	}
 
-	private PhysicalDatasource[] createDataSource(DataHostConfig conf,String hostName,
-			String dbType, String dbDriver, DBHostConfig[] nodes, boolean isRead) {
+	private PhysicalDatasource[] createDataSource(DataHostConfig conf,
+			String hostName, String dbType, String dbDriver,
+			DBHostConfig[] nodes, boolean isRead) {
 		PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
 		if (dbType.equals("mysql") && dbDriver.equals("native")) {
 			for (int i = 0; i < nodes.length; i++) {
 				nodes[i].setIdleTimeout(system.getIdleTimeout());
-				MySQLDataSource ds = new MySQLDataSource(nodes[i],conf, isRead);
+				MySQLDataSource ds = new MySQLDataSource(nodes[i], conf, isRead);
 				dataSources[i] = ds;
 			}
 
@@ -162,18 +163,18 @@ public class ConfigInitializer {
 		String name = conf.getName();
 		String dbType = conf.getDbType();
 		String dbDriver = conf.getDbDriver();
-		PhysicalDatasource[] writeSources = createDataSource(conf,name, dbType,
-				dbDriver, conf.getWriteHosts(), false);
+		PhysicalDatasource[] writeSources = createDataSource(conf, name,
+				dbType, dbDriver, conf.getWriteHosts(), false);
 		Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
 		Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(
 				readHostsMap.size());
 		for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
-			PhysicalDatasource[] readSources = createDataSource(conf,name, dbType,
-					dbDriver, entry.getValue(), true);
+			PhysicalDatasource[] readSources = createDataSource(conf, name,
+					dbType, dbDriver, entry.getValue(), true);
 			readSourcesMap.put(entry.getKey(), readSources);
 		}
 		PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), writeSources,
-				readSourcesMap,conf.getBalance());
+				readSourcesMap, conf.getBalance(), conf.getWriteType());
 		return pool;
 	}
 

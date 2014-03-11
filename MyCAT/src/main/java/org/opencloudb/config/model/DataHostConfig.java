@@ -25,6 +25,8 @@ package org.opencloudb.config.model;
 
 import java.util.Map;
 
+import org.opencloudb.backend.PhysicalDBPool;
+
 /**
  * Datahost is a group of DB servers which is synchronized with each other
  * 
@@ -33,23 +35,32 @@ import java.util.Map;
  */
 public class DataHostConfig {
 	private String name;
-	public static final int BALANCE_NONE = 0;
 	private int maxCon = SystemConfig.DEFAULT_POOL_SIZE;
 	private int minCon = 10;
-	private int balance = BALANCE_NONE;
+	private int balance = PhysicalDBPool.BALANCE_NONE;
+	private int writeType = PhysicalDBPool.WRITE_ONLYONE_NODE;
 	private final String dbType;
 	private final String dbDriver;
 	private final DBHostConfig[] writeHosts;
-	private final Map<Integer,DBHostConfig[]> readHosts;
+	private final Map<Integer, DBHostConfig[]> readHosts;
 	private String hearbeatSQL;
+
 	public DataHostConfig(String name, String dbType, String dbDriver,
-			DBHostConfig[] writeHosts, Map<Integer,DBHostConfig[]> readHosts) {
+			DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts) {
 		super();
 		this.name = name;
 		this.dbType = dbType;
 		this.dbDriver = dbDriver;
 		this.writeHosts = writeHosts;
 		this.readHosts = readHosts;
+	}
+
+	public int getWriteType() {
+		return writeType;
+	}
+
+	public void setWriteType(int writeType) {
+		this.writeType = writeType;
 	}
 
 	public String getName() {
@@ -84,7 +95,6 @@ public class DataHostConfig {
 		this.balance = balance;
 	}
 
-	
 	public String getDbType() {
 		return dbType;
 	}
@@ -97,7 +107,6 @@ public class DataHostConfig {
 		return writeHosts;
 	}
 
-	
 	public Map<Integer, DBHostConfig[]> getReadHosts() {
 		return readHosts;
 	}
@@ -107,9 +116,8 @@ public class DataHostConfig {
 	}
 
 	public void setHearbeatSQL(String heartbeatSQL) {
-		this.hearbeatSQL=heartbeatSQL;
-		
+		this.hearbeatSQL = heartbeatSQL;
+
 	}
-	
-	
+
 }

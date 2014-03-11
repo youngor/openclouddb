@@ -40,26 +40,33 @@ import org.opencloudb.mysql.nio.handler.GetConnectionHandler;
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
 
 public class PhysicalDBPool {
-	private static final int BALANCE_NONE = 0;
-	private static final int BALANCE_ALL_BACK = 1;
-	private static final int BALANCE_ALL = 2;
+	public static final int BALANCE_NONE = 0;
+	public static final int BALANCE_ALL_BACK = 1;
+	public static final int BALANCE_ALL = 2;
+	public static final int WRITE_ONLYONE_NODE = 0;
+	public static final int WRITE_RANDOM_NODE = 1;
+	public static final int WRITE_ALL_NODE = 2;
 	protected static final Logger LOGGER = Logger
 			.getLogger(PhysicalDBPool.class);
 	private final String hostName;
-	protected PhysicalDatasource[] sources;
+	protected PhysicalDatasource[] writeSources;
 	protected Map<Integer, PhysicalDatasource[]> readSources;
 	protected volatile int activedIndex;
 	protected volatile boolean initSuccess;
 	protected final ReentrantLock switchLock = new ReentrantLock();
 	private final Collection<PhysicalDatasource> allDs;
 	private final int banlance;
+	private final int writeType;
 	private final Random random = new Random();
+	private final Random wnrandom = new Random();
 
 	public PhysicalDBPool(String name, PhysicalDatasource[] writeSources,
-			Map<Integer, PhysicalDatasource[]> readSources, int balance) {
+			Map<Integer, PhysicalDatasource[]> readSources, int balance,
+			int writeType) {
 		this.hostName = name;
-		this.sources = writeSources;
+		this.writeSources = writeSources;
 		this.banlance = balance;
+		this.writeType = writeType;
 		Iterator<Map.Entry<Integer, PhysicalDatasource[]>> entryItor = readSources
 				.entrySet().iterator();
 		while (entryItor.hasNext()) {
@@ -73,6 +80,10 @@ public class PhysicalDBPool {
 		LOGGER.info("total resouces of dataHost " + this.hostName + " is :"
 				+ allDs.size());
 		setDataSourceProps();
+	}
+
+	public int getWriteType() {
+		return writeType;
 	}
 
 	private void setDataSourceProps() {
@@ -105,11 +116,31 @@ public class PhysicalDBPool {
 	 * @return
 	 */
 	public PhysicalDatasource[] getSources() {
-		return sources;
+		return writeSources;
 	}
 
 	public PhysicalDatasource getSource() {
-		return sources[activedIndex];
+		switch (writeType) {
+		case WRITE_ONLYONE_NODE: {
+			return writeSources[activedIndex];
+		}
+		case WRITE_RANDOM_NODE: {
+			
+			int index = Math.abs(wnrandom.nextInt()) % writeSources.length;
+			PhysicalDatasource result=writeSources[index];
+			if(LOGGER.isDebugEnabled())
+			{
+				LOGGER.debug("select write source " + result.getName()
+						+ " for dataHost:" + this.getHostName());
+			}
+			return result;
+		}
+		default: {
+			throw new java.lang.IllegalArgumentException("writeType is "
+					+ writeType + " ,so can't return one write datasource ");
+		}
+		}
+
 	}
 
 	public int getActivedIndex() {
@@ -122,7 +153,7 @@ public class PhysicalDBPool {
 
 	public int next(int i) {
 		if (checkIndex(i)) {
-			return (++i == sources.length) ? 0 : i;
+			return (++i == writeSources.length) ? 0 : i;
 		} else {
 			return 0;
 		}
@@ -132,7 +163,8 @@ public class PhysicalDBPool {
 	 * 鍒囨崲鏁版嵁婧�
 	 */
 	public boolean switchSource(int newIndex, boolean isAlarm, String reason) {
-		if (!checkIndex(newIndex)) {
+		if (this.writeType != PhysicalDBPool.WRITE_ONLYONE_NODE
+				|| !checkIndex(newIndex)) {
 			return false;
 		}
 		final ReentrantLock lock = this.switchLock;
@@ -169,7 +201,7 @@ public class PhysicalDBPool {
 	}
 
 	private int loop(int i) {
-		return i < sources.length ? i : (i - sources.length);
+		return i < writeSources.length ? i : (i - writeSources.length);
 	}
 
 	public void init(int index) {
@@ -177,19 +209,23 @@ public class PhysicalDBPool {
 			index = 0;
 		}
 		int active = -1;
-		for (int i = 0; i < sources.length; i++) {
+		for (int i = 0; i < writeSources.length; i++) {
 			int j = loop(i + index);
-			if (initSource(j, sources[j])) {
+			if (initSource(j, writeSources[j])) {
 				active = j;
-				break;
+				activedIndex = active;
+				initSuccess = true;
+				LOGGER.info(getMessage(active, " init success"));
+
+				if (this.writeType == WRITE_ONLYONE_NODE) {
+					// only init one write datasource
+					MycatServer.getInstance().saveDataHostIndex(hostName,
+							activedIndex);
+					break;
+				}
 			}
 		}
-		if (checkIndex(active)) {
-			activedIndex = active;
-			initSuccess = true;
-			LOGGER.info(getMessage(active, " init success"));
-			MycatServer.getInstance().saveDataHostIndex(hostName, activedIndex);
-		} else {
+		if (!checkIndex(active)) {
 			initSuccess = false;
 			StringBuilder s = new StringBuilder();
 			s.append(Alarms.DEFAULT).append(hostName).append(" init failure");
@@ -198,7 +234,7 @@ public class PhysicalDBPool {
 	}
 
 	private boolean checkIndex(int i) {
-		return i >= 0 && i < sources.length;
+		return i >= 0 && i < writeSources.length;
 	}
 
 	private String getMessage(int index, String info) {
@@ -209,7 +245,7 @@ public class PhysicalDBPool {
 	private boolean initSource(int index, PhysicalDatasource ds) {
 		int initSize = ds.getConfig().getMinCon();
 		LOGGER.info("init backend myqsl source ,create connections total "
-				+ initSize + " for " + ds.getName());
+				+ initSize + " for " + ds.getName() + " index :" + index);
 		CopyOnWriteArrayList<PhysicalConnection> list = new CopyOnWriteArrayList<PhysicalConnection>();
 		GetConnectionHandler getConHandler = new GetConnectionHandler(list,
 				initSize);
@@ -245,7 +281,7 @@ public class PhysicalDBPool {
 	public void doHeartbeat() {
 
 		// 妫�煡鍐呴儴鏄惁鏈夎繛鎺ユ睜閰嶇疆淇℃伅
-		if (sources == null || sources.length == 0) {
+		if (writeSources == null || writeSources.length == 0) {
 			return;
 		}
 
@@ -269,8 +305,12 @@ public class PhysicalDBPool {
 	 */
 	public void heartbeatCheck(long ildCheckPeriod) {
 		for (PhysicalDatasource ds : allDs) {
-			// only readnode and current write node will check
-			if (ds != null && (ds.isReadNode() || ds == this.getSource())) {
+			// only readnode or all write node or writetype=WRITE_ONLYONE_NODE
+			// and current write node will check
+			if (ds != null
+					&& (ds.isReadNode()
+							|| (this.writeType != WRITE_ONLYONE_NODE) || (this.writeType == WRITE_ONLYONE_NODE && ds == this
+							.getSource()))) {
 				ds.heatBeatCheck(ds.getConfig().getIdleTimeout(),
 						ildCheckPeriod);
 			}
@@ -302,7 +342,7 @@ public class PhysicalDBPool {
 
 	public Collection<PhysicalDatasource> genAllDataSources() {
 		LinkedList<PhysicalDatasource> allSources = new LinkedList<PhysicalDatasource>();
-		for (PhysicalDatasource ds : sources) {
+		for (PhysicalDatasource ds : writeSources) {
 			if (ds != null) {
 				allSources.add(ds);
 			}
@@ -349,7 +389,7 @@ public class PhysicalDBPool {
 		ArrayList<PhysicalDatasource> okSources = null;
 		switch (banlance) {
 		case BALANCE_ALL_BACK: {// all read nodes and the standard by masters
-			if (sources[this.activedIndex].getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {// cur
+			if (writeSources[this.activedIndex].getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {// cur
 				okSources = getAllActiveSlaveSources();
 			} else {// at least one master alive
 				okSources = getAllActiveRWSources(false);
@@ -399,13 +439,13 @@ public class PhysicalDBPool {
 		int curActive = activedIndex;
 		ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>(
 				this.readSources.size() - 1);
-		for (int i = 0; i < this.sources.length; i++) {
+		for (int i = 0; i < this.writeSources.length; i++) {
 			if (i == curActive && includeCurWriteNode == false) {
 				// not include cur active source
 			} else {
-				okSources.add(sources[i]);
+				okSources.add(writeSources[i]);
 			}
-			if (isAlive(sources[i])) {// write node is active
+			if (isAlive(writeSources[i])) {// write node is active
 				// check all slave nodes
 				PhysicalDatasource[] allSlaves = this.readSources.get(i);
 				if (allSlaves != null) {

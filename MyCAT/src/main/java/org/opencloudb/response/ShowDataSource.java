@@ -24,6 +24,7 @@
 package org.opencloudb.response;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,6 @@ import java.util.Map;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
 import org.opencloudb.backend.PhysicalDBNode;
-import org.opencloudb.backend.PhysicalDBPool;
 import org.opencloudb.backend.PhysicalDatasource;
 import org.opencloudb.config.Fields;
 import org.opencloudb.manager.ManagerConnection;
@@ -52,7 +52,7 @@ import org.opencloudb.util.StringUtil;
  */
 public final class ShowDataSource {
 
-	private static final int FIELD_COUNT = 9;
+	private static final int FIELD_COUNT = 10;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -61,6 +61,10 @@ public final class ShowDataSource {
 		int i = 0;
 		byte packetId = 0;
 		header.packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("DATANODE",
+				Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
 
 		fields[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
 		fields[i++].packetId = ++packetId;
@@ -109,24 +113,34 @@ public final class ShowDataSource {
 		// write rows
 		byte packetId = eof.packetId;
 		MycatConfig conf = MycatServer.getInstance().getConfig();
-		Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-		List<PhysicalDatasource> dataSources = new LinkedList<PhysicalDatasource>();
+		Map<String, List<PhysicalDatasource>> dataSources = new HashMap<String, List<PhysicalDatasource>>();
 		if (null != name) {
 			PhysicalDBNode dn = conf.getDataNodes().get(name);
 			if (dn != null) {
-				dataSources.addAll(dn.getDbPool().getAllDataSources());
+				List<PhysicalDatasource> dslst = new LinkedList<PhysicalDatasource>();
+				dslst.addAll(dn.getDbPool().getAllDataSources());
+				dataSources.put(dn.getName(), dslst);
 			}
+
 		} else {
 			// add all
-			for (PhysicalDBPool pool : dataHosts.values()) {
-				dataSources.addAll(pool.getAllDataSources());
+
+			for (PhysicalDBNode dn : conf.getDataNodes().values()) {
+				List<PhysicalDatasource> dslst = new LinkedList<PhysicalDatasource>();
+				dslst.addAll(dn.getDbPool().getAllDataSources());
+				dataSources.put(dn.getName(), dslst);
 			}
+
 		}
 
-		for (PhysicalDatasource ds : dataSources) {
-			RowDataPacket row = getRow(ds, c.getCharset());
-			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+		for (Map.Entry<String, List<PhysicalDatasource>> dsEntry : dataSources
+				.entrySet()) {
+			String dnName = dsEntry.getKey();
+			for (PhysicalDatasource ds : dsEntry.getValue()) {
+				RowDataPacket row = getRow(dnName, ds, c.getCharset());
+				row.packetId = ++packetId;
+				buffer = row.write(buffer, c);
+			}
 		}
 
 		// write last eof
@@ -138,8 +152,10 @@ public final class ShowDataSource {
 		c.write(buffer);
 	}
 
-	private static RowDataPacket getRow(PhysicalDatasource ds, String charset) {
+	private static RowDataPacket getRow(String dataNode, PhysicalDatasource ds,
+			String charset) {
 		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+		row.add(StringUtil.encode(dataNode, charset));
 		row.add(StringUtil.encode(ds.getName(), charset));
 		row.add(StringUtil.encode(ds.getConfig().getDbType(), charset));
 		row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
