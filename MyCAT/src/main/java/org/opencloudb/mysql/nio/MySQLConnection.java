@@ -158,6 +158,10 @@ public class MySQLConnection extends BackendConnection implements
 		this.fromSlaveDB = fromSlaveDB;
 	}
 
+	public void onConnectFailed(Throwable e) {
+		this.error(ErrorCode.ERR_CONNECT_SOCKET, e);
+	}
+
 	public String getSchema() {
 		return this.schema;
 	}

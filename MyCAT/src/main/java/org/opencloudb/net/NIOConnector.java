@@ -100,8 +100,8 @@ public final class NIOConnector implements
 	}
 
 	@Override
-	public void failed(Throwable exc, BackendConnection attachment) {
-		System.out.println("failed connect " + attachment);
+	public void failed(Throwable exc, BackendConnection conn) {
+		conn.onConnectFailed(exc);
 	}
 
 	private void postConnect(BackendConnection c) {

@@ -42,4 +42,10 @@ public class PostgresConnection extends BackendConnection {
 
     }
 
+	@Override
+	public void onConnectFailed(Throwable e) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

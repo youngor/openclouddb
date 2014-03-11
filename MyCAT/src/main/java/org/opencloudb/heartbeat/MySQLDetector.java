@@ -24,7 +24,6 @@
 package org.opencloudb.heartbeat;
 
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -164,7 +163,8 @@ public class MySQLDetector extends BackendConnection {
 				packet.arg = sql.getBytes();
 				packet.write(this);
 			}
-		} else {
+		}
+		else {
 			// System.out.println("auth ");
 			authenticate();
 		}
@@ -192,10 +192,10 @@ public class MySQLDetector extends BackendConnection {
 				+ this);
 		switch (errCode) {
 		case ErrorCode.ERR_HANDLE_DATA:
-			heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, false);
+			heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, false,"heartbeat transfererr");
 			break;
 		default:
-			heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, true);
+			heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, true,null);
 		}
 	}
 
@@ -252,6 +252,12 @@ public class MySQLDetector extends BackendConnection {
 		System.arraycopy(hsp.seed, 0, seed, 0, sl1);
 		System.arraycopy(hsp.restOfScrambleBuff, 0, seed, sl1, sl2);
 		return SecurityUtil.scramble411(passwd, seed);
+	}
+
+	@Override
+	public void onConnectFailed(Throwable e) {
+		heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, true,"hearbeat connecterr");	
+		
 	}
 
 }

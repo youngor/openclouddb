@@ -112,7 +112,7 @@ public class MySQLDetectorHandler extends BackendAsyncHandler {
      * OK数据包处理
      */
     private void handleOkPacket() {
-        source.getHeartbeat().setResult(MySQLHeartbeat.OK_STATUS, source, false);
+        source.getHeartbeat().setResult(MySQLHeartbeat.OK_STATUS, source, false,null);
     }
 
     /**
@@ -128,7 +128,7 @@ public class MySQLDetectorHandler extends BackendAsyncHandler {
      * 行数据包结束处理
      */
     private void handleRowEofPacket() {
-        source.getHeartbeat().setResult(MySQLHeartbeat.OK_STATUS, source, false);
+        source.getHeartbeat().setResult(MySQLHeartbeat.OK_STATUS, source, false,null);
     }
 
 }

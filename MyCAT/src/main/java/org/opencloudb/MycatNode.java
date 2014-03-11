@@ -25,56 +25,31 @@ package org.opencloudb;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.config.model.MycatNodeConfig;
-import org.opencloudb.heartbeat.MyCATHeartbeat;
 
 /**
  * @author mycat
  */
 public class MycatNode {
-    private static final Logger LOGGER = Logger.getLogger(MycatNode.class);
+	private static final Logger LOGGER = Logger.getLogger(MycatNode.class);
 
-    private final String name;
-    private final MycatNodeConfig config;
-    private final MyCATHeartbeat heartbeat;
+	private final String name;
+	private final MycatNodeConfig config;
 
-    public MycatNode(MycatNodeConfig config) {
-        this.name = config.getName();
-        this.config = config;
-        this.heartbeat = new MyCATHeartbeat(this);
-    }
+	public MycatNode(MycatNodeConfig config) {
+		this.name = config.getName();
+		this.config = config;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public MycatNodeConfig getConfig() {
-        return config;
-    }
+	public MycatNodeConfig getConfig() {
+		return config;
+	}
 
-    public MyCATHeartbeat getHeartbeat() {
-        return heartbeat;
-    }
-
-    public void stopHeartbeat() {
-        heartbeat.stop();
-    }
-
-    public void startHeartbeat() {
-        heartbeat.start();
-    }
-
-    public void doHeartbeat() {
-        if (!heartbeat.isStop()) {
-            try {
-                heartbeat.heartbeat();
-            } catch (Throwable e) {
-                LOGGER.error(name + " heartbeat error.", e);
-            }
-        }
-    }
-
-    public boolean isOnline() {
-        return (heartbeat.getStatus() == MyCATHeartbeat.OK_STATUS);
-    }
+	public boolean isOnline() {
+		return (true);
+	}
 
 }

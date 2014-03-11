@@ -152,7 +152,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	}
 
 	public void setResult(int result, MySQLDetector detector,
-			boolean isTransferError) {
+			boolean isTransferError,String msg) {
 		switch (result) {
 		case OK_STATUS:
 			setOk(detector);
@@ -162,7 +162,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				isChecking.set(false);
 			} else {
 				if (isTransferError) {
-					detector.close("heartbeat transfererr");
+					detector.close(msg);
 				}
 				setError(detector);
 			}

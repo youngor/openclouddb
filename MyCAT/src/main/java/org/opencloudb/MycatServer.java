@@ -209,9 +209,6 @@ public class MycatServer {
 				this.asyncChannelGroups[0]);
 		server.setProcessors(processors);
 		server.start();
-		timer.schedule(clusterHeartbeat(), 0L,
-				system.getClusterHeartbeatPeriod());
-
 		// server started
 		LOGGER.info(server.getName() + " is started and listening on "
 				+ server.getPort());
@@ -405,24 +402,4 @@ public class MycatServer {
 			}
 		};
 	}
-
-	// 集群节点定时心跳任务
-	private TimerTask clusterHeartbeat() {
-		return new TimerTask() {
-			@Override
-			public void run() {
-				timerExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						Map<String, MycatNode> nodes = config.getCluster()
-								.getNodes();
-						for (MycatNode node : nodes.values()) {
-							node.doHeartbeat();
-						}
-					}
-				});
-			}
-		};
-	}
-
 }

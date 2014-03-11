@@ -125,11 +125,30 @@ public class PhysicalDBPool {
 			return writeSources[activedIndex];
 		}
 		case WRITE_RANDOM_NODE: {
-			
+
 			int index = Math.abs(wnrandom.nextInt()) % writeSources.length;
-			PhysicalDatasource result=writeSources[index];
-			if(LOGGER.isDebugEnabled())
-			{
+			PhysicalDatasource result = writeSources[index];
+			if (!this.isAlive(result)) {
+				// find all live nodes
+				ArrayList<Integer> alives = new ArrayList<Integer>(
+						writeSources.length - 1);
+				for (int i = 0; i < writeSources.length; i++) {
+					if (i != index) {
+						if (this.isAlive(result)) {
+							alives.add(i);
+						}
+					}
+				}
+				if (alives.isEmpty()) {
+					result = writeSources[0];
+				} else {
+					// random select one
+					index = Math.abs(wnrandom.nextInt()) % alives.size();
+					result = writeSources[alives.get(index)];
+
+				}
+			}
+			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("select write source " + result.getName()
 						+ " for dataHost:" + this.getHostName());
 			}
@@ -308,6 +327,7 @@ public class PhysicalDBPool {
 			// only readnode or all write node or writetype=WRITE_ONLYONE_NODE
 			// and current write node will check
 			if (ds != null
+					&& (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS)
 					&& (ds.isReadNode()
 							|| (this.writeType != WRITE_ONLYONE_NODE) || (this.writeType == WRITE_ONLYONE_NODE && ds == this
 							.getSource()))) {

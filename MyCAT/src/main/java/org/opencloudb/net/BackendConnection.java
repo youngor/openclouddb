@@ -47,10 +47,10 @@ public abstract class BackendConnection extends AbstractConnection {
 		super(channel);
 	}
 
-	public void register()
-	{
+	public void register() {
 		this.asynRead();
 	}
+
 	public boolean isSuppressReadTemporay() {
 		return suppressReadTemporay;
 	}
@@ -104,6 +104,7 @@ public abstract class BackendConnection extends AbstractConnection {
 				lastReadTime) + idleTimeout;
 	}
 
+	public abstract void onConnectFailed(Throwable e);
 
 	public boolean finishConnect() throws IOException {
 		localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();

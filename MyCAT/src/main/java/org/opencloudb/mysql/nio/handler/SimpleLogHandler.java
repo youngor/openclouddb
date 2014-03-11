@@ -33,7 +33,7 @@ public class SimpleLogHandler implements ResponseHandler{
 			.getLogger(SimpleLogHandler.class);
 	@Override
 	public void connectionError(Throwable e, PhysicalConnection conn) {
-		LOGGER.warn("connectionError "+e);
+		LOGGER.warn(conn+" connectionError "+e);
 		
 	}
 
