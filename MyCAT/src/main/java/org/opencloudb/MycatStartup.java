@@ -43,12 +43,16 @@ public final class MycatStartup {
 				System.exit(-1);
 			}
 			// init
-			MycatServer server =MycatServer.getInstance();
+			MycatServer server = MycatServer.getInstance();
 			server.beforeStart();
 
 			// startup
 			server.startup();
-			System.out.println("MyCAT Server startup successfully. see logs in logs/mycat.log");
+			System.out
+					.println("MyCAT Server startup successfully. see logs in logs/mycat.log");
+			while (true) {
+				Thread.sleep(300 * 1000);
+			}
 		} catch (Throwable e) {
 			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
 			LogLog.error(sdf.format(new Date()) + " startup error", e);

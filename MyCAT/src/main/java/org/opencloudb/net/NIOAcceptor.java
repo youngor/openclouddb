@@ -29,7 +29,8 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.Future;
+import java.nio.channels.CompletionHandler;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.net.factory.FrontendConnectionFactory;
@@ -37,7 +38,8 @@ import org.opencloudb.net.factory.FrontendConnectionFactory;
 /**
  * @author mycat
  */
-public final class NIOAcceptor extends Thread {
+public final class NIOAcceptor implements
+		CompletionHandler<AsynchronousSocketChannel, Long> {
 	private static final Logger LOGGER = Logger.getLogger(NIOAcceptor.class);
 	private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
 
@@ -47,11 +49,11 @@ public final class NIOAcceptor extends Thread {
 	private NIOProcessor[] processors;
 	private int nextProcessor;
 	private long acceptCount;
-
+   private final String name;
 	public NIOAcceptor(String name, int port,
 			FrontendConnectionFactory factory, AsynchronousChannelGroup group)
 			throws IOException {
-		super.setName(name);
+		this.name=name;
 		this.port = port;
 		this.factory = factory;
 		serverChannel = AsynchronousServerSocketChannel.open(group);
@@ -62,22 +64,12 @@ public final class NIOAcceptor extends Thread {
 		serverChannel.bind(new InetSocketAddress(port), 100);
 	}
 
-	public void pendingAccept() {
-		if (serverChannel.isOpen()) {
-			Future<AsynchronousSocketChannel> future = serverChannel.accept();
-			try {
-				AsynchronousSocketChannel channel = future.get();
-				accept(channel);
-			} catch (Exception e) {
-				LOGGER.warn(getName(), e);
-			}
+	public String getName() {
+		return name;
+	}
 
-		} else {
-
-			throw new IllegalStateException("Controller has been closed");
-
-		}
-
+	public void start() {
+		this.pendingAccept();
 	}
 
 	public int getPort() {
@@ -92,28 +84,43 @@ public final class NIOAcceptor extends Thread {
 		this.processors = processors;
 	}
 
-	public void run() {
-		while (true) {
-			try {
-				pendingAccept();
-			} catch (Throwable e) {
-				LOGGER.warn(getName(), e);
-			}
-		}
-	}
-
-	private void accept(AsynchronousSocketChannel channel) {
+	private void accept(AsynchronousSocketChannel channel, Long id) {
 		try {
 			FrontendConnection c = factory.make(channel);
 			c.setAccepted(true);
-			c.setId(ID_GENERATOR.getId());
+			c.setId(id);
 			NIOProcessor processor = nextProcessor();
 			c.setProcessor(processor);
 			c.register();
 		} catch (Throwable e) {
 			closeChannel(channel);
-			LOGGER.warn(getName(), e);
 		}
+	}
+
+	private void pendingAccept() {
+		if (serverChannel.isOpen()) {
+			serverChannel.accept(ID_GENERATOR.getId(), this);
+		} else {
+			throw new IllegalStateException(
+					"MyCAT Server Channel has been closed");
+		}
+
+	}
+
+	@Override
+	public void completed(AsynchronousSocketChannel result, Long id) {
+		accept(result, id);
+		// next pending waiting
+		pendingAccept();
+
+	}
+
+	@Override
+	public void failed(Throwable exc, Long id) {
+		LOGGER.info("acception connect failed:" + exc);
+		// next pending waiting
+		pendingAccept();
+
 	}
 
 	private NIOProcessor nextProcessor() {
@@ -142,17 +149,22 @@ public final class NIOAcceptor extends Thread {
 
 		private static final long MAX_VALUE = 0xffffffffL;
 
-		private long acceptId = 0L;
+		private AtomicLong acceptId = new AtomicLong();
 		private final Object lock = new Object();
 
 		private long getId() {
-			synchronized (lock) {
-				if (acceptId >= MAX_VALUE) {
-					acceptId = 0L;
+			long newValue = acceptId.getAndIncrement();
+			if (newValue >= MAX_VALUE) {
+				synchronized (lock) {
+					newValue = acceptId.getAndIncrement();
+					if (newValue >= MAX_VALUE) {
+						acceptId.set(0);
+					}
 				}
-				return ++acceptId;
+				return acceptId.getAndDecrement();
+			} else {
+				return newValue;
 			}
 		}
 	}
-
 }
