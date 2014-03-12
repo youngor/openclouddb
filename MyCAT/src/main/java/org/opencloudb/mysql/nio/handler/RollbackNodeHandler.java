@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.NonBlockingSession;
 
@@ -67,7 +67,7 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 				}
 				continue;
 			}
-			final PhysicalConnection conn = session.getTarget(node);
+			final BackendConnection conn = session.getTarget(node);
 			if (conn != null) {
 				conn.setRunning(true);
 				executor.execute(new Runnable() {
@@ -94,7 +94,7 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void okResponse(byte[] ok, PhysicalConnection conn) {
+	public void okResponse(byte[] ok, BackendConnection conn) {
 		conn.setRunning(false);
 		if (decrementCountBy(1)) {
 			// clear all resources
@@ -108,30 +108,30 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 
 	}
 
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 
 	}
 
 	@Override
-	public void connectionAcquired(PhysicalConnection conn) {
+	public void connectionAcquired(BackendConnection conn) {
 		LOGGER.error("unexpected invocation: connectionAcquired from rollback");
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());

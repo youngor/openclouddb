@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.buffer.BufferPool;
 import org.opencloudb.statistic.CommandCount;
 
@@ -71,7 +72,10 @@ public final class NIOProcessor {
 			total += fron.getWriteQueue().snapshotSize();
 		}
 		for (BackendConnection back : backends.values()) {
-			total += back.getWriteQueue().snapshotSize();
+			if (back instanceof BackendAIOConnection) {
+				total += ((BackendAIOConnection) back).getWriteQueue()
+						.snapshotSize();
+			}
 		}
 		return total;
 
@@ -169,7 +173,6 @@ public final class NIOProcessor {
 
 			// 清理已关闭连接，否则空闲检查。
 			if (c.isClosed()) {
-				c.cleanup();
 				it.remove();
 
 			} else {

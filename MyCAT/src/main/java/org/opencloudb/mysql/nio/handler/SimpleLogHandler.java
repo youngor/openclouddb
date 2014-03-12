@@ -26,49 +26,49 @@ package org.opencloudb.mysql.nio.handler;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 
 public class SimpleLogHandler implements ResponseHandler{
 	private static final Logger LOGGER = Logger
 			.getLogger(SimpleLogHandler.class);
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		LOGGER.warn(conn+" connectionError "+e);
 		
 	}
 
 	@Override
-	public void connectionAcquired(PhysicalConnection conn) {
+	public void connectionAcquired(BackendConnection conn) {
 		LOGGER.info("connectionAcquired "+conn);
 		
 	}
 
 	@Override
-	public void errorResponse(byte[] err, PhysicalConnection conn) {
+	public void errorResponse(byte[] err, BackendConnection conn) {
 		LOGGER.warn("caught error resp: " + conn + " " + new String(err));
 	}
 
 	@Override
-	public void okResponse(byte[] ok, PhysicalConnection conn) {
+	public void okResponse(byte[] ok, BackendConnection conn) {
 		LOGGER.info("okResponse: " + conn );
 		
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 		LOGGER.info("fieldEofResponse: " + conn );
 		
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 		LOGGER.info("rowResponse: " + conn );
 		
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		LOGGER.info("rowEofResponse: " + conn );
 		
 	}
@@ -80,7 +80,7 @@ public class SimpleLogHandler implements ResponseHandler{
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		
 		
 	}

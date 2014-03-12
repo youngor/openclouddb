@@ -26,7 +26,7 @@ package org.opencloudb.mysql.nio.handler;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 
 /**
  * @author mycat
@@ -38,35 +38,35 @@ public class RollbackReleaseHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionAcquired(PhysicalConnection conn) {
+    public void connectionAcquired(BackendConnection conn) {
         logger.error("unexpected invocation: connectionAcquired from rollback-release");
     }
 
     @Override
-    public void connectionError(Throwable e, PhysicalConnection conn) {
+    public void connectionError(Throwable e, BackendConnection conn) {
      
     }
 
     @Override
-    public void errorResponse(byte[] err, PhysicalConnection conn) {
+    public void errorResponse(byte[] err, BackendConnection conn) {
         conn.quit();
     }
 
     @Override
-    public void okResponse(byte[] ok, PhysicalConnection conn) {
+    public void okResponse(byte[] ok, BackendConnection conn) {
         conn.release();
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, PhysicalConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, BackendConnection conn) {
     }
 
     @Override
-    public void rowResponse(byte[] row, PhysicalConnection conn) {
+    public void rowResponse(byte[] row, BackendConnection conn) {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+    public void rowEofResponse(byte[] eof, BackendConnection conn) {
      
     }
 
@@ -76,7 +76,7 @@ public class RollbackReleaseHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		
 		
 	}

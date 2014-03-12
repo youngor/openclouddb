@@ -38,7 +38,7 @@ import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
 import org.opencloudb.backend.ConnectionMeta;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.mpp.DataMergeService;
@@ -64,7 +64,7 @@ public class NonBlockingSession implements Session {
 			.getLogger(NonBlockingSession.class);
 
 	private final ServerConnection source;
-	private final ConcurrentHashMap<RouteResultsetNode, PhysicalConnection> target;
+	private final ConcurrentHashMap<RouteResultsetNode, BackendConnection> target;
 	private final AtomicBoolean terminating;
 
 	// life-cycle: each sql execution
@@ -76,7 +76,7 @@ public class NonBlockingSession implements Session {
 
 	public NonBlockingSession(ServerConnection source, int openWRFluxContrl) {
 		this.source = source;
-		this.target = new ConcurrentHashMap<RouteResultsetNode, PhysicalConnection>(
+		this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(
 				2, 1);
 		this.terminating = new AtomicBoolean(false);
 		this.openWRFluxContrl = (openWRFluxContrl == 1);
@@ -90,7 +90,7 @@ public class NonBlockingSession implements Session {
 			return;
 		}
 		final boolean isDebug = LOGGER.isDebugEnabled();
-		for (PhysicalConnection con : target.values()) {
+		for (BackendConnection con : target.values()) {
 			if (!con.isSuppressReadTemporay()) {
 				if (isDebug) {
 					LOGGER.debug("supress backend connection read event ,for front con blocked write "
@@ -112,7 +112,7 @@ public class NonBlockingSession implements Session {
 		}
 		final boolean isDebug = LOGGER.isDebugEnabled();
 
-		for (PhysicalConnection con : target.values()) {
+		for (BackendConnection con : target.values()) {
 			if (con.isSuppressReadTemporay()) {
 				if (isDebug) {
 					LOGGER.debug("upsupress backend connection read event ,for front con can write more "
@@ -139,11 +139,11 @@ public class NonBlockingSession implements Session {
 		return target.keySet();
 	}
 
-	public PhysicalConnection getTarget(RouteResultsetNode key) {
+	public BackendConnection getTarget(RouteResultsetNode key) {
 		return target.get(key);
 	}
 
-	public PhysicalConnection removeTarget(RouteResultsetNode key) {
+	public BackendConnection removeTarget(RouteResultsetNode key) {
 		return target.remove(key);
 	}
 
@@ -252,7 +252,7 @@ public class NonBlockingSession implements Session {
 		});
 	}
 
-	public void releaseConnectionIfSafe(PhysicalConnection conn, boolean debug) {
+	public void releaseConnectionIfSafe(BackendConnection conn, boolean debug) {
 		RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
 
 		if (node != null) {
@@ -266,7 +266,7 @@ public class NonBlockingSession implements Session {
 
 	public void releaseConnection(RouteResultsetNode rrn, boolean debug) {
 
-		PhysicalConnection c = target.remove(rrn);
+		BackendConnection c = target.remove(rrn);
 		if (c != null) {
 			if (debug) {
 				LOGGER.debug("relase connection " + c);
@@ -298,8 +298,8 @@ public class NonBlockingSession implements Session {
 	/**
 	 * @return previous bound connection
 	 */
-	public PhysicalConnection bindConnection(RouteResultsetNode key,
-			PhysicalConnection conn) {
+	public BackendConnection bindConnection(RouteResultsetNode key,
+			BackendConnection conn) {
 		// System.out.println("bind connection "+conn+
 		// " to key "+key.getName()+" on sesion "+this);
 		return target.put(key, conn);
@@ -336,7 +336,7 @@ public class NonBlockingSession implements Session {
 		}
 	}
 
-	public boolean tryExistsCon(final PhysicalConnection conn,
+	public boolean tryExistsCon(final BackendConnection conn,
 			RouteResultsetNode node, Runnable runable) {
 
 		if (conn == null) {
@@ -365,13 +365,13 @@ public class NonBlockingSession implements Session {
 	private void kill(Runnable run) {
 		boolean hooked = false;
 		AtomicInteger count = null;
-		Map<RouteResultsetNode, PhysicalConnection> killees = null;
+		Map<RouteResultsetNode, BackendConnection> killees = null;
 		for (RouteResultsetNode node : target.keySet()) {
-			PhysicalConnection c = target.get(node);
+			BackendConnection c = target.get(node);
 			if (c != null && c.isRunning()) {
 				if (!hooked) {
 					hooked = true;
-					killees = new HashMap<RouteResultsetNode, PhysicalConnection>();
+					killees = new HashMap<RouteResultsetNode, BackendConnection>();
 					count = new AtomicInteger(0);
 				}
 				killees.put(node, c);
@@ -380,7 +380,7 @@ public class NonBlockingSession implements Session {
 		}
 		if (hooked) {
 			ConnectionMeta conMeta = new ConnectionMeta(null, null, -1, true);
-			for (Entry<RouteResultsetNode, PhysicalConnection> en : killees
+			for (Entry<RouteResultsetNode, BackendConnection> en : killees
 					.entrySet()) {
 				KillConnectionHandler kill = new KillConnectionHandler(
 						en.getValue(), this, run, count);
@@ -404,7 +404,7 @@ public class NonBlockingSession implements Session {
 
 	private void clearConnections(boolean pessimisticRelease) {
 		for (RouteResultsetNode node : target.keySet()) {
-			PhysicalConnection c = target.remove(node);
+			BackendConnection c = target.remove(node);
 
 			if (c == null || c.isClosedOrQuit()) {
 				continue;

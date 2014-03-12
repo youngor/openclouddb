@@ -42,6 +42,7 @@ import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.config.model.UserConfig;
 import org.opencloudb.config.util.ConfigException;
+import org.opencloudb.jdbc.JDBCDatasource;
 import org.opencloudb.mysql.nio.MySQLDataSource;
 
 /**
@@ -152,7 +153,15 @@ public class ConfigInitializer {
 				dataSources[i] = ds;
 			}
 
-		} else {
+		} else if(dbDriver.equals("jdbc"))
+			{
+			for (int i = 0; i < nodes.length; i++) {
+				nodes[i].setIdleTimeout(system.getIdleTimeout());
+				JDBCDatasource ds = new JDBCDatasource(nodes[i], conf, isRead);
+				dataSources[i] = ds;
+			}
+			}
+		else {
 			throw new ConfigException("not supported yet !" + hostName);
 		}
 		return dataSources;

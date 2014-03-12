@@ -25,7 +25,7 @@ package org.opencloudb.mysql.nio.handler;
 
 import java.util.List;
 
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 
 /**
  * @author mycat
@@ -39,38 +39,38 @@ public interface ResponseHandler {
 	 * @param e
 	 * @param conn
 	 */
-	public void connectionError(Throwable e, PhysicalConnection conn);
+	public void connectionError(Throwable e, BackendConnection conn);
 
 	/**
 	 * 已获得有效连接的响应处理
 	 */
-	void connectionAcquired(PhysicalConnection conn);
+	void connectionAcquired(BackendConnection conn);
 
 	/**
 	 * 收到错误数据包的响应处理
 	 */
-	void errorResponse(byte[] err, PhysicalConnection conn);
+	void errorResponse(byte[] err, BackendConnection conn);
 
 	/**
 	 * 收到OK数据包的响应处理
 	 */
-	void okResponse(byte[] ok, PhysicalConnection conn);
+	void okResponse(byte[] ok, BackendConnection conn);
 
 	/**
 	 * 收到字段数据包结束的响应处理
 	 */
 	void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof,
-			PhysicalConnection conn);
+			BackendConnection conn);
 
 	/**
 	 * 收到行数据包的响应处理
 	 */
-	void rowResponse(byte[] row, PhysicalConnection conn);
+	void rowResponse(byte[] row, BackendConnection conn);
 
 	/**
 	 * 收到行数据包结束的响应处理
 	 */
-	void rowEofResponse(byte[] eof, PhysicalConnection conn);
+	void rowEofResponse(byte[] eof, BackendConnection conn);
 
 	/**
 	 * 写队列为空，可以写数据了
@@ -81,7 +81,7 @@ public interface ResponseHandler {
 	/**
 	 * on connetion close event
 	 */
-	void connectionClose(PhysicalConnection conn, String reason);
+	void connectionClose(BackendConnection conn, String reason);
 
 	
 }

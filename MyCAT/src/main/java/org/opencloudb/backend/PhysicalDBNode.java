@@ -66,7 +66,7 @@ public class PhysicalDBNode {
 	 * @throws Exception
 	 */
 	public void getConnectionFromSameSource(ConnectionMeta conMeta,
-			PhysicalConnection exitsCon, ResponseHandler handler,
+			BackendConnection exitsCon, ResponseHandler handler,
 			Object attachment) throws Exception {
 		
 		PhysicalDatasource ds = this.dbPool.findDatasouce(exitsCon);

@@ -25,7 +25,7 @@ package org.opencloudb.mysql.nio.handler;
 
 import java.util.List;
 
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 
 /**
  * @author mycat
@@ -41,37 +41,37 @@ public class DelegateResponseHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionAcquired(PhysicalConnection conn) {
+    public void connectionAcquired(BackendConnection conn) {
         target.connectionAcquired(conn);
     }
 
     @Override
-    public void connectionError(Throwable e, PhysicalConnection conn) {
+    public void connectionError(Throwable e, BackendConnection conn) {
         target.connectionError(e, conn);
     }
 
     @Override
-    public void okResponse(byte[] ok, PhysicalConnection conn) {
+    public void okResponse(byte[] ok, BackendConnection conn) {
         target.okResponse(ok, conn);
     }
 
     @Override
-    public void errorResponse(byte[] err, PhysicalConnection conn) {
+    public void errorResponse(byte[] err, BackendConnection conn) {
         target.errorResponse(err, conn);
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, PhysicalConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, byte[] eof, BackendConnection conn) {
         target.fieldEofResponse(header, fields, eof, conn);
     }
 
     @Override
-    public void rowResponse(byte[] row, PhysicalConnection conn) {
+    public void rowResponse(byte[] row, BackendConnection conn) {
         target.rowResponse(row, conn);
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+    public void rowEofResponse(byte[] eof, BackendConnection conn) {
         target.rowEofResponse(eof, conn);
     }
 
@@ -82,7 +82,7 @@ public class DelegateResponseHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		target.connectionClose(conn, reason);
 	}
 

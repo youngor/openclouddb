@@ -29,7 +29,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.config.Capabilities;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.config.Isolations;
@@ -37,7 +36,7 @@ import org.opencloudb.exception.UnknownTxIsolationException;
 import org.opencloudb.mysql.CharsetUtil;
 import org.opencloudb.mysql.SecurityUtil;
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
-import org.opencloudb.net.BackendConnection;
+import org.opencloudb.net.BackendAIOConnection;
 import org.opencloudb.net.mysql.AuthPacket;
 import org.opencloudb.net.mysql.CommandPacket;
 import org.opencloudb.net.mysql.HandshakePacket;
@@ -51,8 +50,7 @@ import org.opencloudb.util.TimeUtil;
 /**
  * @author mycat
  */
-public class MySQLConnection extends BackendConnection implements
-		PhysicalConnection {
+public class MySQLConnection extends BackendAIOConnection {
 	private static final Logger LOGGER = Logger
 			.getLogger(MySQLConnection.class);
 	private static final long CLIENT_FLAGS = initClientFlags();
@@ -286,7 +284,7 @@ public class MySQLConnection extends BackendConnection implements
 			throw new RuntimeException(e);
 		}
 		lastTime = TimeUtil.currentTimeMillis();
-		packet.write((BackendConnection) this);
+		packet.write(this);
 	}
 
 	private static class StatusSync {
@@ -382,7 +380,7 @@ public class MySQLConnection extends BackendConnection implements
 				};
 				cmd = schemaCmd;
 				schemaCmd = null;
-				cmd.write((BackendConnection) conn);
+				cmd.write(conn);
 				// System.out.println("syn schema "+conn+" schema "+schema);
 				return true;
 			}
@@ -401,7 +399,7 @@ public class MySQLConnection extends BackendConnection implements
 				};
 				cmd = charCmd;
 				charCmd = null;
-				cmd.write((BackendConnection) conn);
+				cmd.write(conn);
 				// System.out.println("syn charCmd "+conn);
 				return true;
 			}
@@ -416,7 +414,7 @@ public class MySQLConnection extends BackendConnection implements
 				};
 				cmd = isoCmd;
 				isoCmd = null;
-				cmd.write((BackendConnection) conn);
+				cmd.write(conn);
 				// System.out.println("syn iso "+conn);
 				return true;
 			}
@@ -431,7 +429,7 @@ public class MySQLConnection extends BackendConnection implements
 				};
 				cmd = acCmd;
 				acCmd = null;
-				cmd.write((BackendConnection) conn);
+				cmd.write( conn);
 				// System.out.println("syn autocomit "+conn);
 				return true;
 			}
@@ -575,11 +573,11 @@ public class MySQLConnection extends BackendConnection implements
 	}
 
 	public void commit() {
-		_COMMIT.write((BackendConnection) this);
+		_COMMIT.write(this);
 	}
 
 	public void rollback() {
-		_ROLLBACK.write((BackendConnection) this);
+		_ROLLBACK.write(this);
 	}
 
 	public void release() {

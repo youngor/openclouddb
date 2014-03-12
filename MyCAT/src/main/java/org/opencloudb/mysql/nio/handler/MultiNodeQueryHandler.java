@@ -34,8 +34,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.backend.ConnectionMeta;
-import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.mpp.ColMeta;
@@ -100,7 +100,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		MycatConfig conf = MycatServer.getInstance().getConfig();
 
 		for (final RouteResultsetNode node : rrs.getNodes()) {
-			final PhysicalConnection conn = session.getTarget(node);
+			final BackendConnection conn = session.getTarget(node);
 			if (session.tryExistsCon(conn, node, new Runnable() {
 				@Override
 				public void run() {
@@ -132,7 +132,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		return buffer;
 	}
 
-	private void _execute(PhysicalConnection conn, RouteResultsetNode node) {
+	private void _execute(BackendConnection conn, RouteResultsetNode node) {
 		if (clearIfSessionClosed(session)) {
 			return;
 		}
@@ -146,7 +146,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void connectionAcquired(final PhysicalConnection conn) {
+	public void connectionAcquired(final BackendConnection conn) {
 		final RouteResultsetNode node = (RouteResultsetNode) conn
 				.getAttachment();
 		session.bindConnection(node, conn);
@@ -160,7 +160,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		String errmsg = new String(err.message);
@@ -172,7 +172,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void okResponse(byte[] data, PhysicalConnection conn) {
+	public void okResponse(byte[] data, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
 			if (clearIfSessionClosed(session)) {
@@ -224,7 +224,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		}
 	}
 
-	private boolean canClose(PhysicalConnection conn, boolean tryErrorFinish) {
+	private boolean canClose(BackendConnection conn, boolean tryErrorFinish) {
 		boolean allFinshed = false;
 		conn.setRunning(false);
 		ServerConnection source = session.getSource();
@@ -242,7 +242,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		if (clearIfSessionClosed(session)) {
 			return;
 		} else if (canClose(conn, false)) {
@@ -300,7 +300,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 		lock.lock();
 		// lazy allocate buffer
 		allocBuffer();
@@ -363,7 +363,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 		lock.lock();
 		try {
 			if (dataMergeSvr != null) {

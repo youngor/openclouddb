@@ -31,14 +31,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.backend.ConnectionMeta;
-import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.cache.CachePool;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.RowDataPacket;
 import org.opencloudb.route.RouteResultsetNode;
-import org.opencloudb.server.NonBlockingSession;
 import org.opencloudb.server.parser.ServerParse;
 
 /**
@@ -112,7 +111,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionAcquired(PhysicalConnection conn) {
+	public void connectionAcquired(BackendConnection conn) {
 		conn.setRunning(true);
 		conn.setResponseHandler(this);
 		try {
@@ -123,14 +122,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		finished.incrementAndGet();
 		LOGGER.warn("connectionError " + e);
 
 	}
 
 	@Override
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		finished.incrementAndGet();
 		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
@@ -143,7 +142,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void okResponse(byte[] ok, PhysicalConnection conn) {
+	public void okResponse(byte[] ok, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
 			finished.incrementAndGet();
@@ -154,7 +153,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 		if (result == null) {
 
 			RowDataPacket rowDataPkg = new RowDataPacket(1);
@@ -171,13 +170,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		finished.incrementAndGet();
 		conn.setRunning(false);
 		conn.release();
 	}
 
-	private void executeException(PhysicalConnection c, Throwable e) {
+	private void executeException(BackendConnection c, Throwable e) {
 		finished.incrementAndGet();
 		LOGGER.warn("executeException   " + e);
 		c.setRunning(false);
@@ -191,14 +190,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 
 		LOGGER.warn("connection closed " + conn + " reason:" + reason);
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 
 	}
 

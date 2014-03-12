@@ -67,6 +67,6 @@ public interface NIOConnection extends ClosableConnection{
     void error(int errCode, Throwable t);
 
    
-     boolean isClosed();
+   
     
 }

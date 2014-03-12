@@ -30,8 +30,8 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatConfig;
 import org.opencloudb.MycatServer;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.backend.ConnectionMeta;
-import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDBNode;
 import org.opencloudb.cache.MysqlDataSetService;
 import org.opencloudb.config.ErrorCode;
@@ -112,7 +112,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		ServerConnection sc = session.getSource();
 		this.isRunning = true;
 		this.packetId = 0;
-		final PhysicalConnection conn = session.getTarget(node);
+		final BackendConnection conn = session.getTarget(node);
 		if (!session.tryExistsCon(conn, node, new Runnable() {
 			@Override
 			public void run() {
@@ -131,7 +131,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void connectionAcquired(final PhysicalConnection conn) {
+	public void connectionAcquired(final BackendConnection conn) {
 		conn.setRunning(true);
 		session.bindConnection(node, conn);
 		session.getSource().getProcessor().getExecutor()
@@ -143,7 +143,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 				});
 	}
 
-	private void _execute(PhysicalConnection conn) {
+	private void _execute(BackendConnection conn) {
 		if (session.closed()) {
 			conn.setRunning(false);
 			endRunning();
@@ -160,7 +160,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		}
 	}
 
-	private void executeException(PhysicalConnection c) {
+	private void executeException(BackendConnection c) {
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_YES;
@@ -172,7 +172,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		conn.setRunning(false);
 		endRunning();
 		ErrorPacket err = new ErrorPacket();
@@ -185,7 +185,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		err.packetId = ++packetId;
@@ -193,7 +193,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	}
 
-	private void backConnectionErr(ErrorPacket errPkg, PhysicalConnection conn) {
+	private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
 		conn.setRunning(false);
 		endRunning();
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
@@ -204,7 +204,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void okResponse(byte[] data, PhysicalConnection conn) {
+	public void okResponse(byte[] data, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
 		;
 		if (executeResponse) {
@@ -224,7 +224,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		ServerConnection source = session.getSource();
 		conn.setRunning(false);
 		conn.recordSql(source.getHost(), source.getSchema(),
@@ -251,7 +251,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 		header[3] = ++packetId;
 		ServerConnection source = session.getSource();
 		buffer = source.writeToBuffer(header, allocBuffer());
@@ -266,7 +266,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 		row[3] = ++packetId;
 		buffer = session.getSource().writeToBuffer(row, allocBuffer());
 	}
@@ -277,7 +277,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		ErrorPacket err = new ErrorPacket();
 		err.packetId = ++packetId;
 		err.errno = ErrorCode.ER_YES;

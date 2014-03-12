@@ -33,7 +33,7 @@ import org.opencloudb.config.ErrorCode;
  * @author mycat
  */
 public final class NIOConnector implements
-		CompletionHandler<Void, BackendConnection> {
+		CompletionHandler<Void, BackendAIOConnection> {
 	private static final Logger LOGGER = Logger.getLogger(NIOConnector.class);
 	private static final ConnectIdGenerator ID_GENERATOR = new ConnectIdGenerator();
 	protected int socketRecvBuffer = 16 * 1024;
@@ -47,7 +47,7 @@ public final class NIOConnector implements
 	private long connectCount;
 
 	@Override
-	public void completed(Void result, BackendConnection attachment) {
+	public void completed(Void result, BackendAIOConnection attachment) {
 		finishConnect(attachment);
 	}
 
@@ -100,11 +100,11 @@ public final class NIOConnector implements
 	}
 
 	@Override
-	public void failed(Throwable exc, BackendConnection conn) {
+	public void failed(Throwable exc, BackendAIOConnection conn) {
 		conn.onConnectFailed(exc);
 	}
 
-	private void postConnect(BackendConnection c) {
+	private void postConnect(BackendAIOConnection c) {
 		c.setPacketHeaderSize(packetHeaderSize);
 		c.setMaxPacketSize(maxPacketSize);
 		c.setWriteQueue(new BufferQueue(writeQueueCapcity));
@@ -119,7 +119,7 @@ public final class NIOConnector implements
 		this.processors = processors;
 	}
 
-	private void finishConnect(BackendConnection c) {
+	private void finishConnect(BackendAIOConnection c) {
 		postConnect(c);
 		try {
 			if (c.finishConnect()) {

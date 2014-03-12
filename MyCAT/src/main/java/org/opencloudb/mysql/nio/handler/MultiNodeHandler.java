@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.server.NonBlockingSession;
@@ -97,12 +97,12 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		}
 	}
 
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		boolean canClose = decrementCountBy(1);
 		this.tryErrorFinished(conn, canClose);
 	}
 
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		conn.setRunning(false);
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		ErrorPacket err = new ErrorPacket();
@@ -166,7 +166,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		return err;
 	}
 
-	protected void tryErrorFinished(PhysicalConnection conn, boolean allEnd) {
+	protected void tryErrorFinished(BackendConnection conn, boolean allEnd) {
 		if (allEnd) {
 			if (session.getSource().isAutocommit()) {
 				// clear session resources,release all
@@ -181,7 +181,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 
 	}
 
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		conn.setRunning(false);
 		this.setFail("closed connection:" + reason + " con:" + conn);
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());

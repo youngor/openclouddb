@@ -32,8 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
-import org.opencloudb.net.BackendConnection;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.net.mysql.ErrorPacket;
 
 /**
@@ -48,14 +47,14 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	protected final ReentrantLock lock = new ReentrantLock();
 	private final ConcurrentHashMap<Long, HeartBeatCon> allCons = new ConcurrentHashMap<Long, HeartBeatCon>();
 
-	public void doHeartBeat(PhysicalConnection conn, String sql) {
+	public void doHeartBeat(BackendConnection conn, String sql) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("do heartbeat for con " + conn);
 		}
 
 		try {
 
-			HeartBeatCon hbCon = new HeartBeatCon((BackendConnection) conn);
+			HeartBeatCon hbCon = new HeartBeatCon(conn);
 			boolean notExist = (allCons.putIfAbsent(hbCon.conn.getId(), hbCon) == null);
 			if (notExist) {
 				conn.setRunning(true);
@@ -101,18 +100,18 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionAcquired(PhysicalConnection conn) {
+	public void connectionAcquired(BackendConnection conn) {
 		// not called
 	}
 
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		// not called
 
 	}
 
 	@Override
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		removeFinished(conn);
 		conn.setRunning(false);
 		ErrorPacket err = new ErrorPacket();
@@ -124,7 +123,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void okResponse(byte[] ok, PhysicalConnection conn) {
+	public void okResponse(byte[] ok, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
 		if (executeResponse) {
 			removeFinished(conn);
@@ -135,24 +134,24 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		removeFinished(conn);
 		conn.setRunning(false);
 		conn.release();
 	}
 
-	private void executeException(PhysicalConnection c, Throwable e) {
+	private void executeException(BackendConnection c, Throwable e) {
 		removeFinished(c);
 		LOGGER.warn("executeException   ", e);
 		c.close("heatbeat exception:" + e);
 
 	}
 
-	private void removeFinished(PhysicalConnection con) {
+	private void removeFinished(BackendConnection con) {
 		Long id = ((BackendConnection) con).getId();
 		this.allCons.remove(id);
 	}
@@ -163,14 +162,14 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		removeFinished(conn);
 		LOGGER.warn("connection closed " + conn + " reason:" + reason);
 	}
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("received field eof  from " + conn);
 		}

@@ -26,12 +26,12 @@ package org.opencloudb.response;
 import java.nio.ByteBuffer;
 
 import org.opencloudb.MycatServer;
-import org.opencloudb.backend.PhysicalConnection;
+import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.buffer.BufferQueue;
 import org.opencloudb.config.Fields;
 import org.opencloudb.manager.ManagerConnection;
 import org.opencloudb.mysql.PacketUtil;
-import org.opencloudb.net.BackendConnection;
+import org.opencloudb.net.BackendAIOConnection;
 import org.opencloudb.net.NIOProcessor;
 import org.opencloudb.net.mysql.EOFPacket;
 import org.opencloudb.net.mysql.FieldPacket;
@@ -110,7 +110,12 @@ public class ShowBackend {
 
 	private static RowDataPacket getRow(BackendConnection c, String charset) {
 		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-		row.add(c.getProcessor().getName().getBytes());
+		if (c instanceof BackendAIOConnection) {
+			row.add(((BackendAIOConnection) c).getProcessor().getName()
+					.getBytes());
+		} else {
+			row.add("N/A".getBytes());
+		}
 		row.add(LongUtil.toBytes(c.getId()));
 		row.add(StringUtil.encode(c.getHost(), charset));
 		row.add(IntegerUtil.toBytes(c.getPort()));
@@ -120,16 +125,12 @@ public class ShowBackend {
 		row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c
 				.getStartupTime()) / 1000L));
 		row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
-		if(c instanceof PhysicalConnection)
-		{
-			boolean isRunning = ((PhysicalConnection) c).isRunning();
-			row.add(isRunning ? "true".getBytes() : "false".getBytes());	
-		}else
-		{
-			row.add("N/A".getBytes());	
+		boolean isRunning = c.isRunning();
+		row.add(isRunning ? "true".getBytes() : "false".getBytes());
+		BufferQueue bq = null;
+		if (c instanceof BackendAIOConnection) {
+			bq=((BackendAIOConnection)c).getWriteQueue();
 		}
-		
-		BufferQueue bq = c.getWriteQueue();
 		row.add(IntegerUtil.toBytes(bq == null ? 0 : bq.snapshotSize()));
 		return row;
 	}

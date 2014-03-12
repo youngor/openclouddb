@@ -25,7 +25,6 @@ package org.opencloudb.mysql.nio;
 
 import java.io.IOException;
 
-import org.opencloudb.backend.PhysicalConnection;
 import org.opencloudb.backend.PhysicalDatasource;
 import org.opencloudb.config.model.DBHostConfig;
 import org.opencloudb.config.model.DataHostConfig;
@@ -39,22 +38,22 @@ import org.opencloudb.mysql.nio.handler.ResponseHandler;
 public class MySQLDataSource extends PhysicalDatasource {
 
 	private final MySQLConnectionFactory factory;
-	public MySQLDataSource(DBHostConfig config,DataHostConfig hostConfig,boolean isReadNode) {
-		super(config,hostConfig,isReadNode);
+
+	public MySQLDataSource(DBHostConfig config, DataHostConfig hostConfig,
+			boolean isReadNode) {
+		super(config, hostConfig, isReadNode);
 		this.factory = new MySQLConnectionFactory();
-	
+
 	}
 
-
 	@Override
-	public PhysicalConnection createNewConnection(ResponseHandler handler) throws IOException {
-		return factory.make(this, handler);	}
-
+	public void createNewConnection(ResponseHandler handler) throws IOException {
+		factory.make(this, handler);
+	}
 
 	@Override
 	public DBHeartbeat createHeartBeat() {
 		return new MySQLHeartbeat(this);
 	}
-
 
 }

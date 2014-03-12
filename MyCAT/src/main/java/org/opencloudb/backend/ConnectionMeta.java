@@ -66,7 +66,7 @@ public class ConnectionMeta {
 	 * @param theCon
 	 * @return
 	 */
-	public int getMetaSimilarity(PhysicalConnection theCon) {
+	public int getMetaSimilarity(BackendConnection theCon) {
 		int result = 0;
 		if (schema == null || schema.equals(theCon.getSchema())) {
 			result++;

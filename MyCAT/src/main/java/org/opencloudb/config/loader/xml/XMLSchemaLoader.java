@@ -25,8 +25,7 @@ package org.opencloudb.config.loader.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -306,10 +305,10 @@ public class XMLSchemaLoader implements SchemaLoader {
 			ip = nodeUrl.substring(0, colonIndex).trim();
 			port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
 		} else {
-			URL url;
+			URI url;
 			try {
-				url = new URL(nodeUrl);
-			} catch (MalformedURLException e) {
+				url = new URI(nodeUrl.substring(5));
+			} catch (Exception e) {
 				throw new ConfigException("invalid jdbc url " + nodeUrl
 						+ " of " + dataHost);
 			}

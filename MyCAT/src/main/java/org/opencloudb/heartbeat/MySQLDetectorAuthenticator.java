@@ -94,6 +94,7 @@ public class MySQLDetectorAuthenticator implements NIOHandler {
 		String charset = CharsetUtil.getCharset(charsetIndex);
 		if (charset != null) {
 			source.setCharsetIndex(charsetIndex);
+			source.setCharset(charset);
 		} else {
 			throw new RuntimeException("Unknown charsetIndex:" + charsetIndex);
 		}

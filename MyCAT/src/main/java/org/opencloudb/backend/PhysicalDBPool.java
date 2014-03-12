@@ -92,7 +92,7 @@ public class PhysicalDBPool {
 		}
 	}
 
-	public PhysicalDatasource findDatasouce(PhysicalConnection exitsCon) {
+	public PhysicalDatasource findDatasouce(BackendConnection exitsCon) {
 
 		for (PhysicalDatasource ds : this.allDs) {
 			if (ds.isReadNode() == exitsCon.isFromSlaveDB()) {
@@ -265,7 +265,7 @@ public class PhysicalDBPool {
 		int initSize = ds.getConfig().getMinCon();
 		LOGGER.info("init backend myqsl source ,create connections total "
 				+ initSize + " for " + ds.getName() + " index :" + index);
-		CopyOnWriteArrayList<PhysicalConnection> list = new CopyOnWriteArrayList<PhysicalConnection>();
+		CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<BackendConnection>();
 		GetConnectionHandler getConHandler = new GetConnectionHandler(list,
 				initSize);
 		// long start=System.currentTimeMillis();
@@ -291,7 +291,7 @@ public class PhysicalDBPool {
 			}
 		}
 		LOGGER.info("init result :" + getConHandler.getStatusInfo());
-		for (PhysicalConnection c : list) {
+		for (BackendConnection c : list) {
 			c.release();
 		}
 		return !list.isEmpty();

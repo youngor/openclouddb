@@ -23,6 +23,8 @@
  */
 package org.opencloudb.heartbeat;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,18 +33,21 @@ import org.apache.log4j.Logger;
 import org.opencloudb.config.Capabilities;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.mysql.SecurityUtil;
-import org.opencloudb.net.BackendConnection;
+import org.opencloudb.mysql.nio.handler.ResponseHandler;
+import org.opencloudb.net.BackendAIOConnection;
 import org.opencloudb.net.mysql.AuthPacket;
 import org.opencloudb.net.mysql.CommandPacket;
 import org.opencloudb.net.mysql.HandshakePacket;
 import org.opencloudb.net.mysql.MySQLPacket;
 import org.opencloudb.net.mysql.QuitPacket;
+import org.opencloudb.route.RouteResultsetNode;
+import org.opencloudb.server.ServerConnection;
 import org.opencloudb.util.TimeUtil;
 
 /**
  * @author mycat
  */
-public class MySQLDetector extends BackendConnection {
+public class MySQLDetector extends BackendAIOConnection {
 	private static final Logger LOGGER = Logger.getLogger(MySQLDetector.class);
 	private static final long CLIENT_FLAGS = initClientFlags();
 
@@ -56,6 +61,7 @@ public class MySQLDetector extends BackendConnection {
 	private String schema;
 	private long heartbeatTimeout;
 	private final AtomicBoolean isQuit;
+	private String charset;
 
 	public MySQLDetector(AsynchronousSocketChannel channel) {
 		super(channel);
@@ -70,6 +76,13 @@ public class MySQLDetector extends BackendConnection {
 
 	public void setHeartbeat(MySQLHeartbeat heartbeat) {
 		this.heartbeat = heartbeat;
+	}
+	public String getCharset() {
+		return charset;
+	}
+
+	public void setCharset(String charset) {
+		this.charset = charset;
 	}
 
 	public String getUser() {
@@ -200,7 +213,7 @@ public class MySQLDetector extends BackendConnection {
 	}
 
 	@Override
-	protected void idleCheck() {
+	public void idleCheck() {
 		if (isIdleTimeout()) {
 			LOGGER.warn(toString() + " heatbeat idle timeout");
 			quit();
@@ -258,6 +271,116 @@ public class MySQLDetector extends BackendConnection {
 	public void onConnectFailed(Throwable e) {
 		heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, this, true,"hearbeat connecterr");	
 		
+	}
+
+	@Override
+	public boolean isModifiedSQLExecuted() {
+		return false;
+	}
+
+	@Override
+	public boolean isFromSlaveDB() {
+		return false;
+	}
+
+	@Override
+	public long getLastTime() {
+		return 0;
+	}
+
+	@Override
+	public boolean isClosedOrQuit() {
+		return isQuit.get();
+	}
+
+	@Override
+	public void setAttachment(Object attachment) {
+		
+	}
+
+	@Override
+	public void setLastTime(long currentTimeMillis) {
+	
+		
+	}
+
+	@Override
+	public void release() {
+	
+		
+	}
+
+	@Override
+	public void setRunning(boolean running) {
+		
+		
+	}
+
+	@Override
+	public boolean setResponseHandler(ResponseHandler commandHandler) {
+		return false;
+	}
+
+	@Override
+	public void commit() {
+		
+	}
+
+	@Override
+	public void query(String sql) throws UnsupportedEncodingException {
+		
+	}
+
+	@Override
+	public Object getAttachment() {
+		return null;
+	}
+
+
+	@Override
+	public void execute(RouteResultsetNode node, ServerConnection source,
+			boolean autocommit) throws IOException {
+		
+	}
+
+	@Override
+	public void recordSql(String host, String schema, String statement) {
+		
+	}
+
+	@Override
+	public boolean syncAndExcute() {
+		return false;
+	}
+
+	@Override
+	public void rollback() {
+		
+	}
+
+	@Override
+	public boolean isRunning() {
+		return false;
+	}
+
+	@Override
+	public boolean isBorrowed() {
+		return false;
+	}
+
+	@Override
+	public void setBorrowed(boolean borrowed) {
+		
+	}
+
+	@Override
+	public int getTxIsolation() {
+		return 0;
+	}
+
+	@Override
+	public boolean isAutocommit() {
+		return false;
 	}
 
 }

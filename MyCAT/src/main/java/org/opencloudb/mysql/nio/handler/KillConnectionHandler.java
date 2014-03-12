@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.backend.PhysicalConnection;
-import org.opencloudb.net.BackendConnection;
+import org.opencloudb.backend.BackendConnection;
+import org.opencloudb.mysql.nio.MySQLConnection;
 import org.opencloudb.net.mysql.CommandPacket;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.MySQLPacket;
@@ -42,29 +42,30 @@ public class KillConnectionHandler implements ResponseHandler {
 	private static final Logger LOGGER = Logger
 			.getLogger(KillConnectionHandler.class);
 
-	private final PhysicalConnection killee;
+	private final MySQLConnection killee;
 	private final NonBlockingSession session;
 	private final Runnable finishHook;
 	private final AtomicInteger counter;
 
-	public KillConnectionHandler(PhysicalConnection killee,
+	public KillConnectionHandler(BackendConnection killee,
 			NonBlockingSession session, Runnable finishHook,
 			AtomicInteger counter) {
-		this.killee = killee;
+		this.killee = (MySQLConnection) killee;
 		this.session = session;
 		this.finishHook = finishHook;
 		this.counter = counter;
 	}
 
 	@Override
-	public void connectionAcquired(PhysicalConnection conn) {
+	public void connectionAcquired(BackendConnection conn) {
+		MySQLConnection mysqlCon = (MySQLConnection) conn;
 		conn.setResponseHandler(this);
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
 		packet.arg = new StringBuilder("KILL ").append(killee.getThreadId())
 				.toString().getBytes();
-		packet.write((BackendConnection) conn);
+		packet.write(mysqlCon);
 	}
 
 	private void finished() {
@@ -74,13 +75,13 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionError(Throwable e, PhysicalConnection conn) {
+	public void connectionError(Throwable e, BackendConnection conn) {
 		killee.close("exception:" + e.toString());
 		finished();
 	}
 
 	@Override
-	public void okResponse(byte[] ok, PhysicalConnection conn) {
+	public void okResponse(byte[] ok, BackendConnection conn) {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("kill connection success connection id:"
 					+ killee.getThreadId());
@@ -91,7 +92,7 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void rowEofResponse(byte[] eof, PhysicalConnection conn) {
+	public void rowEofResponse(byte[] eof, BackendConnection conn) {
 		LOGGER.error(new StringBuilder().append("unexpected packet for ")
 				.append(conn).append(" bound by ").append(session.getSource())
 				.append(": field's eof").toString());
@@ -101,7 +102,7 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void errorResponse(byte[] data, PhysicalConnection conn) {
+	public void errorResponse(byte[] data, BackendConnection conn) {
 		ErrorPacket err = new ErrorPacket();
 		err.read(data);
 		String msg = null;
@@ -119,11 +120,11 @@ public class KillConnectionHandler implements ResponseHandler {
 
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
-			byte[] eof, PhysicalConnection conn) {
+			byte[] eof, BackendConnection conn) {
 	}
 
 	@Override
-	public void rowResponse(byte[] row, PhysicalConnection conn) {
+	public void rowResponse(byte[] row, BackendConnection conn) {
 	}
 
 	@Override
@@ -132,7 +133,7 @@ public class KillConnectionHandler implements ResponseHandler {
 	}
 
 	@Override
-	public void connectionClose(PhysicalConnection conn, String reason) {
+	public void connectionClose(BackendConnection conn, String reason) {
 		finished();
 
 	}

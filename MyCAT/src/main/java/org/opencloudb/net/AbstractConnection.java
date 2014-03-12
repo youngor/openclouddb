@@ -280,7 +280,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			try {
 				int writeQueueStatus = writeQueue.put(buffer);
 				if (!writing) {
-					writing=true;
+					writing = true;
 					ByteBuffer buf = writeQueue.poll();
 					if (buf != null) {
 						this.asynWrite(buffer);
@@ -348,6 +348,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		if (!isClosed.get()) {
 			closeSocket();
 			isClosed.set(true);
+			this.cleanup();
 			LOGGER.info("close connection,reason:" + reason + " " + this);
 		}
 	}
@@ -356,12 +357,10 @@ public abstract class AbstractConnection implements NIOConnection {
 		return isClosed.get();
 	}
 
-	protected void idleCheck() {
+	public void idleCheck() {
 		if (isIdleTimeout()) {
 			LOGGER.info(toString() + " idle timeout");
 			close(" idle ");
-		} else {
-			// this.checkWriteOpts(true);
 		}
 	}
 
