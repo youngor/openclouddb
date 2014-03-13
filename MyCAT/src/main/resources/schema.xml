@@ -34,10 +34,11 @@
 	<dataNode name="dn1" dataHost="localhost1" database="db1" />
 	<dataNode name="dn2" dataHost="localhost1" database="db2" />
 	<dataNode name="dn3" dataHost="localhost1" database="db3" />
+	<!-- 
 	<dataNode name="jdbc_dn1" dataHost="jdbchost" database="db1" />
 	<dataNode name="jdbc_dn2" dataHost="jdbchost" database="db2" />
 	<dataNode name="jdbc_dn3" dataHost="jdbchost" database="db3" />
-
+ -->
 	<dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
 		writeType="0" dbType="mysql" dbDriver="native">
 		<heartbeat>select user()</heartbeat>
