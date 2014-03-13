@@ -213,6 +213,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);
+			ok.packetId=++packetId;
 			recycleResources();
 			source.setLastInsertId(ok.insertId);
 			ok.write(source);
