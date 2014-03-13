@@ -269,7 +269,7 @@ public class NonBlockingSession implements Session {
 		BackendConnection c = target.remove(rrn);
 		if (c != null) {
 			if (debug) {
-				LOGGER.debug("relase connection " + c);
+				LOGGER.debug("release connection " + c);
 			}
 			if (c.getAttachment() != null) {
 				c.setAttachment(null);

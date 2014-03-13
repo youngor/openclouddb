@@ -65,13 +65,13 @@ public class ShowCobarStatus {
     public static void response(ServerConnection c) {
         if (MycatServer.getInstance().isOnline()) {
             ByteBuffer buffer = c.allocate();
-            buffer = header.write(buffer, c);
+            buffer = header.write(buffer, c,true);
             for (FieldPacket field : fields) {
-                buffer = field.write(buffer, c);
+                buffer = field.write(buffer, c,true);
             }
-            buffer = eof.write(buffer, c);
-            buffer = status.write(buffer, c);
-            buffer = lastEof.write(buffer, c);
+            buffer = eof.write(buffer, c,true);
+            buffer = status.write(buffer, c,true);
+            buffer = lastEof.write(buffer, c,true);
             c.write(buffer);
         } else {
             error.write(c);

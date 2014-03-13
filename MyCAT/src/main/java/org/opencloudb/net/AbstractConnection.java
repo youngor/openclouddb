@@ -313,10 +313,19 @@ public abstract class AbstractConnection implements NIOConnection {
 		this.channel.write(buffer, this, aioWriteHandler);
 	}
 
-	public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity) {
+	public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity,
+			boolean writeSocketIfFull) {
 		if (capacity > buffer.remaining()) {
-			write(buffer);
-			return allocate();
+			if (writeSocketIfFull) {
+				write(buffer);
+				return allocate();
+			} else {// Relocate a larger buffer
+				buffer.flip();
+				ByteBuffer newBuf = ByteBuffer.allocate(capacity);
+				newBuf.put(buffer);
+				this.recycle(buffer);
+				return newBuf;
+			}
 		} else {
 			return buffer;
 		}

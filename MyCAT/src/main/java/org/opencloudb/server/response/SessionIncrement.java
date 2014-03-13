@@ -54,19 +54,19 @@ public class SessionIncrement {
 
     public static void response(ServerConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = header.write(buffer, c);
+        buffer = header.write(buffer, c,true);
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c);
+            buffer = field.write(buffer, c,true);
         }
-        buffer = eof.write(buffer, c);
+        buffer = eof.write(buffer, c,true);
         byte packetId = eof.packetId;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(1));
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c);
+        buffer = row.write(buffer, c,true);
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c);
+        buffer = lastEof.write(buffer, c,true);
         c.write(buffer);
     }
 

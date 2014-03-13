@@ -57,29 +57,29 @@ public class SelectLastInsertId {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c);
+        buffer = header.write(buffer, c,true);
 
         // write fields
         byte packetId = header.packetId;
         FieldPacket field = PacketUtil.getField(alias, ORG_NAME, Fields.FIELD_TYPE_LONGLONG);
         field.packetId = ++packetId;
-        buffer = field.write(buffer, c);
+        buffer = field.write(buffer, c,true);
 
         // write eof
         EOFPacket eof = new EOFPacket();
         eof.packetId = ++packetId;
-        buffer = eof.write(buffer, c);
+        buffer = eof.write(buffer, c,true);
 
         // write rows
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getLastInsertId()));
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c);
+        buffer = row.write(buffer, c,true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c);
+        buffer = lastEof.write(buffer, c,true);
 
         // post write
         c.write(buffer);

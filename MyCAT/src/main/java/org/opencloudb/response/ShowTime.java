@@ -60,26 +60,26 @@ public final class ShowTime {
         ByteBuffer buffer = c.allocate();
 
         // write header
-        buffer = header.write(buffer, c);
+        buffer = header.write(buffer, c,true);
 
         // write fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c);
+            buffer = field.write(buffer, c,true);
         }
 
         // write eof
-        buffer = eof.write(buffer, c);
+        buffer = eof.write(buffer, c,true);
 
         // write rows
         byte packetId = eof.packetId;
         RowDataPacket row = getRow(type);
         row.packetId = ++packetId;
-        buffer = row.write(buffer, c);
+        buffer = row.write(buffer, c,true);
 
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.packetId = ++packetId;
-        buffer = lastEof.write(buffer, c);
+        buffer = lastEof.write(buffer, c,true);
 
         // post write
         c.write(buffer);

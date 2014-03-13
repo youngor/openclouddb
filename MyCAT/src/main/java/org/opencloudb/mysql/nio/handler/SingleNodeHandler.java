@@ -181,7 +181,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		err.message = StringUtil.encode(e.getMessage(), session.getSource()
 				.getCharset());
 		ServerConnection source = session.getSource();
-		source.write(err.write(allocBuffer(), source));
+		source.write(err.write(allocBuffer(), source, true));
 	}
 
 	@Override
@@ -206,7 +206,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	@Override
 	public void okResponse(byte[] data, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
-		;
 		if (executeResponse) {
 			conn.setRunning(false);
 			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
@@ -214,9 +213,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);
-
 			recycleResources();
-			// ok.packetId = ++packetId;// OK_PACKET
 			source.setLastInsertId(ok.insertId);
 			ok.write(source);
 
@@ -296,5 +293,5 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		return "SingleNodeHandler [node=" + node + ", packetId=" + packetId
 				+ "]";
 	}
-	
+
 }

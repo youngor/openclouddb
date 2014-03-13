@@ -120,26 +120,26 @@ public class AuthPacket extends MySQLPacket {
         buffer.put((byte) charsetIndex);
         buffer = c.writeToBuffer(FILLER, buffer);
         if (user == null) {
-            buffer = c.checkWriteBuffer(buffer, 1);
+            buffer = c.checkWriteBuffer(buffer, 1,true);
             buffer.put((byte) 0);
         } else {
             byte[] userData = user.getBytes();
-            buffer = c.checkWriteBuffer(buffer, userData.length + 1);
+            buffer = c.checkWriteBuffer(buffer, userData.length + 1,true);
             BufferUtil.writeWithNull(buffer, userData);
         }
         if (password == null) {
-            buffer = c.checkWriteBuffer(buffer, 1);
+            buffer = c.checkWriteBuffer(buffer, 1,true);
             buffer.put((byte) 0);
         } else {
-            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password));
+            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password),true);
             BufferUtil.writeWithLength(buffer, password);
         }
         if (database == null) {
-            buffer = c.checkWriteBuffer(buffer, 1);
+            buffer = c.checkWriteBuffer(buffer, 1,true);
             buffer.put((byte) 0);
         } else {
             byte[] databaseData = database.getBytes();
-            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1);
+            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1,true);
             BufferUtil.writeWithNull(buffer, databaseData);
         }
         c.write(buffer);

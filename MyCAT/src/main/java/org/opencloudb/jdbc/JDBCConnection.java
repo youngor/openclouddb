@@ -2,16 +2,20 @@ package org.opencloudb.jdbc;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.opencloudb.backend.BackendConnection;
+import org.opencloudb.config.ErrorCode;
 import org.opencloudb.mysql.nio.handler.ResponseHandler;
 import org.opencloudb.net.mysql.EOFPacket;
+import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.FieldPacket;
 import org.opencloudb.net.mysql.MySQLPacket;
 import org.opencloudb.net.mysql.OkPacket;
@@ -216,14 +220,11 @@ public class JDBCConnection implements BackendConnection {
 			}
 			if (sql.startsWith("select")) {
 				rs = con.createStatement().executeQuery(orgin);
-
 				ResultSetUtil.resultSetToPacket(sc.getCharset(), con, fieldPks,
 						rs, rowsPkg);
-
-				ResultSetHeaderPacket headerPkg = new ResultSetHeaderPacket();
-				headerPkg.fieldCount = fieldPks.size();
+				ouputResultSet(sc);
 				// todo
-				headerPkg.write(sc.allocate(), sc);
+				// headerPkg.write(sc.allocate(), sc);
 
 			} else if (sql.startsWith("create") || sql.startsWith("drop")
 					|| sql.startsWith("insert")) {
@@ -233,26 +234,81 @@ public class JDBCConnection implements BackendConnection {
 				okPck.insertId = 0;
 				okPck.packetId = ++packetId;
 				okPck.message = " OK!".getBytes();
-				//okPck.write(sc.allocate(), sc);
-				this.respHandler.okResponse(okPck.write(),this);
-
+				this.respHandler.okResponse(okPck.writeToBytes(sc), this);
 			} else {
-				throw new RuntimeException("not supported");
+				ErrorPacket error = new ErrorPacket();
+				error.packetId = ++packetId;
+				error.errno = ErrorCode.ERR_NOT_SUPPORTED;
+				error.message = "not supporeted yet".getBytes();
+				this.respHandler.errorResponse(error.writeToBytes(sc), this);
 			}
 		} catch (SQLException e) {
-			// e.printStackTrace();
 			this.respHandler.errorResponse(e.getMessage().getBytes(), this);
-			// throw new IOException(e);
-			// e.printStackTrace();
-			// ErrorPacket err = new ErrorPacket();
-			// err.errno = 10101;
-			// err.message = StringUtil.encode(e.toString(), sc.getCharset());
-			// err.write(sc.allocate(), sc);
 		} finally {
 			fieldPks.clear();
 			rowsPkg.clear();
 		}
 
+	}
+
+	private void ouputResultSet(ServerConnection sc) {
+
+		ByteBuffer byteBuf = sc.allocate();
+		ResultSetHeaderPacket headerPkg = new ResultSetHeaderPacket();
+		headerPkg.fieldCount = fieldPks.size();
+		headerPkg.packetId = ++packetId;
+
+		byteBuf = headerPkg.write(byteBuf, sc, false);
+		byteBuf.flip();
+		byte[] header = new byte[byteBuf.limit()];
+		byteBuf.get(header);
+		byteBuf.clear();
+		List<byte[]> fields = new ArrayList<byte[]>(fieldPks.size());
+		Iterator<FieldPacket> itor = fieldPks.iterator();
+		while (itor.hasNext()) {
+			FieldPacket curField = itor.next();
+			curField.packetId = ++packetId;
+			byteBuf = curField.write(byteBuf, sc, false);
+			byteBuf.flip();
+			byte[] field = new byte[byteBuf.limit()];
+			byteBuf.get(field);
+			byteBuf.clear();
+			fields.add(field);
+			itor.remove();
+		}
+		EOFPacket eofPckg = new EOFPacket();
+		eofPckg.packetId = ++packetId;
+		byteBuf = eofPckg.write(byteBuf, sc, false);
+		byteBuf.flip();
+		byte[] eof = new byte[byteBuf.limit()];
+		byteBuf.get(eof);
+		byteBuf.clear();
+		this.respHandler.fieldEofResponse(header, fields, eof, this);
+
+		// output row
+		Iterator<RowDataPacket> rowItor = rowsPkg.iterator();
+		while (rowItor.hasNext()) {
+			RowDataPacket curRow = rowItor.next();
+			curRow.packetId = ++packetId;
+			rowItor.remove();
+			byteBuf = curRow.write(byteBuf, sc, false);
+			byteBuf.flip();
+			byte[] row = new byte[byteBuf.limit()];
+			byteBuf.get(row);
+			byteBuf.clear();
+			this.respHandler.rowResponse(row, this);
+
+		}
+
+		// end row
+		eofPckg = new EOFPacket();
+		eofPckg.packetId = ++packetId;
+		byteBuf = eofPckg.write(byteBuf, sc, false);
+		byteBuf.flip();
+		eof = new byte[byteBuf.limit()];
+		byteBuf.get(eof);
+		sc.recycle(byteBuf);
+		this.respHandler.rowEofResponse(eof, this);
 	}
 
 	public MySQLPacket receive() throws IOException {

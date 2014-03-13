@@ -78,17 +78,17 @@ public class RowDataPacket extends MySQLPacket {
 	}
 
 	@Override
-	public ByteBuffer write(ByteBuffer bb, FrontendConnection c) {
-		bb = c.checkWriteBuffer(bb, c.getPacketHeaderSize());
+	public ByteBuffer write(ByteBuffer bb, FrontendConnection c,boolean writeSocketIfFull) {
+		bb = c.checkWriteBuffer(bb, c.getPacketHeaderSize(),writeSocketIfFull);
 		BufferUtil.writeUB3(bb, calcPacketSize());
 		bb.put(packetId);
 		for (int i = 0; i < fieldCount; i++) {
 			byte[] fv = fieldValues.get(i);
 			if (fv == null || fv.length == 0) {
-				bb = c.checkWriteBuffer(bb, 1);
+				bb = c.checkWriteBuffer(bb, 1,writeSocketIfFull);
 				bb.put(RowDataPacket.NULL_MARK);
 			} else {
-				bb = c.checkWriteBuffer(bb, BufferUtil.getLength(fv.length));
+				bb = c.checkWriteBuffer(bb, BufferUtil.getLength(fv.length),writeSocketIfFull);
 				BufferUtil.writeLength(bb, fv.length);
 				bb = c.writeToBuffer(fv, bb);
 			}

@@ -82,15 +82,15 @@ public final class ConfFileHandler {
 		ByteBuffer buffer = c.allocate();
 
 		// write header
-		buffer = header.write(buffer, c);
+		buffer = header.write(buffer, c,true);
 
 		// write fields
 		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c);
+			buffer = field.write(buffer, c,true);
 		}
 
 		// write eof
-		buffer = eof.write(buffer, c);
+		buffer = eof.write(buffer, c,true);
 		// write rows
 		byte packetId = eof.packetId;
 		String theStmt = stmt.toUpperCase().trim();
@@ -122,7 +122,7 @@ public final class ConfFileHandler {
 		// write last eof
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c);
+		buffer = lastEof.write(buffer, c,true);
 
 		// write buffer
 		c.write(buffer);
@@ -252,7 +252,7 @@ public final class ConfFileHandler {
 		RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 		row.add(StringUtil.encode(string, c.getCharset()));
 		row.packetId = ++packetId;
-		buffer = row.write(buffer, c);
+		buffer = row.write(buffer, c,true);
 		bufINf.packetId = packetId;
 		bufINf.buffer = buffer;
 		return bufINf;
@@ -274,7 +274,7 @@ public final class ConfFileHandler {
 				RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 				row.add(StringUtil.encode(line, c.getCharset()));
 				row.packetId = ++packetId;
-				buffer = row.write(buffer, c);
+				buffer = row.write(buffer, c,true);
 			}
 			bufINf.buffer = buffer;
 			bufINf.packetId = packetId;
@@ -285,7 +285,7 @@ public final class ConfFileHandler {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(e.toString(), c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			bufINf.buffer = buffer;
 		} finally {
 			if (br != null) {
@@ -317,7 +317,7 @@ public final class ConfFileHandler {
 									+ df.format(new Date(f.lastModified())),
 							c.getCharset()));
 					row.packetId = ++packetId;
-					buffer = row.write(buffer, c);
+					buffer = row.write(buffer, c,true);
 				}
 			}
 
@@ -330,7 +330,7 @@ public final class ConfFileHandler {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(e.toString(), c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			bufINf.buffer = buffer;
 		}
 		bufINf.packetId = packetId;

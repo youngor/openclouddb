@@ -77,15 +77,15 @@ public final class ShowServerLog {
 		ByteBuffer buffer = c.allocate();
 
 		// write header
-		buffer = header.write(buffer, c);
+		buffer = header.write(buffer, c,true);
 
 		// write fields
 		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c);
+			buffer = field.write(buffer, c,true);
 		}
 
 		// write eof
-		buffer = eof.write(buffer, c);
+		buffer = eof.write(buffer, c,true);
 
 		// write rows
 
@@ -118,7 +118,7 @@ public final class ShowServerLog {
 
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c);
+		buffer = lastEof.write(buffer, c,true);
 
 		// write buffer
 		c.write(buffer);
@@ -151,7 +151,7 @@ public final class ShowServerLog {
 						row.add(StringUtil.encode(curLine + "->" + line,
 								c.getCharset()));
 						row.packetId = ++packetId;
-						buffer = row.write(buffer, c);
+						buffer = row.write(buffer, c,true);
 					}
 				}
 			}
@@ -164,7 +164,7 @@ public final class ShowServerLog {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(e.toString(), c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			bufINf.buffer = buffer;
 		} finally {
 			if (br != null) {
@@ -212,19 +212,19 @@ public final class ShowServerLog {
 			row.add(StringUtil.encode("files in log dir:" + totalLines
 					+ fileNames, c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode("Total lines " + totalLines + " ,tail "
 					+ queue.size() + " line is following:", c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			int size = queue.size() - 1;
 			for (int i = size; i >= 0; i--) {
 				String data = queue.get(i);
 				row = new RowDataPacket(FIELD_COUNT);
 				row.add(StringUtil.encode(data, c.getCharset()));
 				row.packetId = ++packetId;
-				buffer = row.write(buffer, c);
+				buffer = row.write(buffer, c,true);
 			}
 			bufINf.buffer = buffer;
 			bufINf.packetId = packetId;
@@ -235,7 +235,7 @@ public final class ShowServerLog {
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(StringUtil.encode(e.toString(), c.getCharset()));
 			row.packetId = ++packetId;
-			buffer = row.write(buffer, c);
+			buffer = row.write(buffer, c,true);
 			bufINf.buffer = buffer;
 		} finally {
 			if (br != null) {

@@ -86,11 +86,11 @@ public class ShowBackend {
 
 	public static void execute(ManagerConnection c) {
 		ByteBuffer buffer = c.allocate();
-		buffer = header.write(buffer, c);
+		buffer = header.write(buffer, c,true);
 		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c);
+			buffer = field.write(buffer, c,true);
 		}
-		buffer = eof.write(buffer, c);
+		buffer = eof.write(buffer, c,true);
 		byte packetId = eof.packetId;
 		String charset = c.getCharset();
 		for (NIOProcessor p : MycatServer.getInstance().getProcessors()) {
@@ -98,13 +98,13 @@ public class ShowBackend {
 				if (bc != null) {
 					RowDataPacket row = getRow(bc, charset);
 					row.packetId = ++packetId;
-					buffer = row.write(buffer, c);
+					buffer = row.write(buffer, c,true);
 				}
 			}
 		}
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c);
+		buffer = lastEof.write(buffer, c,true);
 		c.write(buffer);
 	}
 

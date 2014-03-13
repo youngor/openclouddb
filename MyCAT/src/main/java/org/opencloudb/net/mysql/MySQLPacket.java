@@ -186,9 +186,9 @@ public abstract class MySQLPacket {
     public byte packetId;
 
     /**
-     * 把数据包写到buffer中，如果buffer满了就把buffer通过前端连接写出。
+     * 把数据包写到buffer中，如果buffer满了就把buffer通过前端连接写出 (writeSocketIfFull=true)。
      */
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
+    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,boolean writeSocketIfFull) {
         throw new UnsupportedOperationException();
     }
 

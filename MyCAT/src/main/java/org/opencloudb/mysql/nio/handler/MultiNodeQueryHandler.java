@@ -279,7 +279,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 						}
 						i++;
 						row.packetId = ++packetId;
-						buffer = row.write(buffer, source);
+						buffer = row.write(buffer, source,true);
 					}
 				}
 				eof[3] = ++packetId;
