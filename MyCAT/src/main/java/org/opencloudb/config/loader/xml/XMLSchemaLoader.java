@@ -156,7 +156,9 @@ public class XMLSchemaLoader implements SchemaLoader {
 		NodeList nodeList = node.getElementsByTagName("table");
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Element tableElement = (Element) nodeList.item(i);
-			String tableName = tableElement.getAttribute("name").toUpperCase();
+			String tableNameElement = tableElement.getAttribute("name").toUpperCase();
+			String[] tableNames = tableNameElement.split(",");
+			
 			String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement
 					.getAttribute("primaryKey").toUpperCase() : null;
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement
@@ -181,17 +183,31 @@ public class XMLSchemaLoader implements SchemaLoader {
 						.getAttribute("ruleRequired"));
 			}
 
-			TableConfig table = new TableConfig(tableName, primaryKey,
-					tableType, dataNode,
-					(tableRule != null) ? tableRule.getRule() : null,
-					ruleRequired, null, false, null, null);
-			checkDataNodeExists(table.getDataNodes());
-			if (tables.containsKey(table.getName())) {
-				throw new ConfigException("table " + tableName + " duplicated!");
+			
+			if(tableNames == null){
+				throw new ConfigException("table name is not found!");
 			}
-			tables.put(table.getName(), table);
-			// process child tables
-			processChildTables(tables, table, dataNode, tableElement);
+			for(int j= 0; j < tableNames.length; j++){
+				String tableName = tableNames[j];
+				TableConfig table = new TableConfig(tableName, primaryKey,
+						tableType, dataNode,
+						(tableRule != null) ? tableRule.getRule() : null,
+						ruleRequired, null, false, null, null);
+				checkDataNodeExists(table.getDataNodes());
+				if (tables.containsKey(table.getName())) {
+					throw new ConfigException("table " + tableName + " duplicated!");
+				}
+				tables.put(table.getName(), table);				
+			}
+			
+			if(tableNames.length == 1){
+				TableConfig table = new TableConfig(tableNames[0], primaryKey,
+						tableType, dataNode,
+						(tableRule != null) ? tableRule.getRule() : null,
+						ruleRequired, null, false, null, null);
+				// process child tables
+				processChildTables(tables,  table, dataNode, tableElement);
+			}
 		}
 		return tables;
 	}
