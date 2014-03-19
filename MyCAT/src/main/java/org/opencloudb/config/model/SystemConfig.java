@@ -57,7 +57,7 @@ public final class SystemConfig {
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final int DEFAULT_USE_WR_FLUX_CONTRL = 0;
 
-	private String bindIp="localhost";
+	private String bindIp="0.0.0.0";
 	private int serverPort;
 	private int managerPort;
 	private String charset;
