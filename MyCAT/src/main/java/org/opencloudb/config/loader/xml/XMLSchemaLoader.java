@@ -135,7 +135,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element schemaElement = (Element) list.item(i);
 			String name = schemaElement.getAttribute("name");
 			String dataNode = schemaElement.getAttribute("dataNode");
-			// 在非空的情况下检查dataNode是否存在
+			// check dataNode already exists or not
 			if (dataNode != null && !dataNode.isEmpty()) {
 				List<String> dataNodeLst = new ArrayList<String>(1);
 				dataNodeLst.add(dataNode);
