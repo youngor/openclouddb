@@ -259,6 +259,12 @@ public class MycatServer {
 			dnIndexProperties.setProperty(dataHost, newIndex);
 			LOGGER.info("save DataHost index  " + dataHost + " cur index "
 					+ curIndex);
+		
+			File parent = file.getParentFile(); 
+			if(parent != null && !parent.exists()){ 
+				parent.mkdirs(); 
+			} 
+		
 			fileOut = new FileOutputStream(file);
 			dnIndexProperties.store(fileOut, "update");
 		} catch (Exception e) {
