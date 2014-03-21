@@ -63,7 +63,7 @@ public class EnCachePoolTest {
 		Assert.assertTrue(statics.getLastAccesTime() > 0);
 		// wait expire
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(4000);
 		} catch (InterruptedException e) {
 		}
 		Assert.assertEquals(null, enCachePool.get("2"));
