@@ -523,10 +523,9 @@ public class SelectSQLAnalyser {
 			return;
 		}
 //		System.out.println("before method name :"+method);
-		//还有between的
-//		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN")  )) {
-//			return;
-//		}
+		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN")  )) {
+			return;
+		}
 //		System.out.println("after method name :"+method);
 		if (wrightOp instanceof ConstantNode) {
 			ColumnReference leftColumRef = (ColumnReference) leftOp;
