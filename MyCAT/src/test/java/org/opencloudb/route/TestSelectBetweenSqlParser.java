@@ -56,6 +56,16 @@ public class TestSelectBetweenSqlParser {
 				null, cachePool);
 		Assert.assertEquals(5, rrs.getNodes().length);
 		
+		//确认大于小于操作符
+		sql = "select b.* from  offer_date b " +
+				"where b.col_date > '2014-02-02'";
+//		sql = "select a.* from offer_detail a join offer_date b on a.id=b.id " +
+//				"where b.col_date = '2014-04-02' and col_1 = 33 and offer_id =1";
+		schema = schemaMap.get("cndb");
+		rrs = ServerRouterUtil.route(schema, -1, sql, null,
+				null, cachePool);
+		Assert.assertEquals(128, rrs.getNodes().length);
+		
 		sql = "select * from offer_date where col_1 = 33 and col_date between '2014-01-02' and '2014-01-12'";
 		schema = schemaMap.get("cndb");
 		rrs = ServerRouterUtil.route(schema, -1, sql, null,
