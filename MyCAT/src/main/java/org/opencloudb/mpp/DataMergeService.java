@@ -46,7 +46,7 @@ public class DataMergeService {
 			.getLogger(DataMergeService.class);
 	private RowDataPacketGrouper grouper = null;
 	private RowDataPacketSorter sorter = null;
-	private Collection<RowDataPacket> result=new LinkedList<RowDataPacket>();
+	private Collection<RowDataPacket> result = new LinkedList<RowDataPacket>();
 
 	// private final Map<String, DataNodeResultInf> dataNodeResultSumMap;
 
@@ -128,11 +128,10 @@ public class DataMergeService {
 		if (rrs.getOrderByCols() != null) {
 			LinkedHashMap<String, Integer> orders = rrs.getOrderByCols();
 			OrderCol[] orderCols = new OrderCol[orders.size()];
-			int i=0;
-			for (Map.Entry<String, Integer> entry:orders.entrySet()) {
-				orderCols[i++] = new OrderCol(
-						columToIndx.get(entry.getKey().toUpperCase()),
-						entry.getValue());
+			int i = 0;
+			for (Map.Entry<String, Integer> entry : orders.entrySet()) {
+				orderCols[i++] = new OrderCol(columToIndx.get(entry.getKey()
+						.toUpperCase()), entry.getValue());
 			}
 			sorter = new RowDataPacketSorter(orderCols);
 		} else {
@@ -165,8 +164,14 @@ public class DataMergeService {
 	private static int[] toColumnIndex(String[] columns,
 			Map<String, ColMeta> toIndexMap) {
 		int[] result = new int[columns.length];
+		ColMeta curColMeta = null;
 		for (int i = 0; i < columns.length; i++) {
-			result[i] = toIndexMap.get(columns[i].toUpperCase()).colIndex;
+			curColMeta = toIndexMap.get(columns[i].toUpperCase());
+			if (curColMeta == null) {
+				throw new java.lang.IllegalArgumentException(
+						"can't find column in select fields " + columns[i]);
+			}
+			result[i] = curColMeta.colIndex;
 		}
 		return result;
 	}

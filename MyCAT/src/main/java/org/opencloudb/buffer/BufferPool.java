@@ -124,6 +124,7 @@ public final class BufferPool {
 		checkValidBuffer(buffer);
 		recycleBuffer(buffer);
 	}
+
 	private void recycleBuffer(ByteBuffer buffer) {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
@@ -134,7 +135,9 @@ public final class BufferPool {
 				insert(buffer);
 
 			} else {
-				LOGGER.warn("can't recycle  buffer ,pool is full ");
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug("can't recycle  buffer ,pool is full ");
+				}
 
 			}
 		} finally {

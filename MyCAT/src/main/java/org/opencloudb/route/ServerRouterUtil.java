@@ -133,7 +133,7 @@ public final class ServerRouterUtil {
 		// @micmiu 简单模糊判断SQL是否包含sequence
 		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
 			try {
-				//@micmiu 扩展NodeToString实现自定义全局序列号
+				// @micmiu 扩展NodeToString实现自定义全局序列号
 				NodeToString strHandler = new ExtNodeToString4SEQ();
 				// 如果存在sequence 转化sequence为实际数值
 				stmt = strHandler.toString(ast);
@@ -634,7 +634,13 @@ public final class ServerRouterUtil {
 		}
 		// match table with where condtion of partion colum values
 		Set<String> dataNodeSet = ruleCalculate(tc, ruleCol2Val);
-		return routeToMultiNode(isSelect, isSelect, ast, rrs, dataNodeSet, sql);
+		if (dataNodeSet.size() == 1) {
+			return routeToSingleNode(rrs, dataNodeSet.iterator().next(), sql);
+		} else {
+			return routeToMultiNode(isSelect, isSelect, ast, rrs, dataNodeSet,
+					sql);
+		}
+
 	}
 
 	/**
@@ -1049,7 +1055,7 @@ public final class ServerRouterUtil {
 					if (nodeRange.length == 0) {
 						routeNodeSet.addAll(tc.getDataNodes());
 					} else {
-						ArrayList<String> dataNodes=tc.getDataNodes();
+						ArrayList<String> dataNodes = tc.getDataNodes();
 						String dataNode = null;
 						for (Integer nodeId : nodeRange) {
 							dataNode = dataNodes.get(nodeId);

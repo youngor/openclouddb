@@ -68,9 +68,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	private final ReentrantLock lock;
 	private long affectedRows;
 	private long insertId;
-	private ByteBuffer buffer;
-	private boolean fieldsReturned;
 
+	private boolean fieldsReturned;
 	public MultiNodeQueryHandler(RouteResultset rrs, boolean autocommit,
 			NonBlockingSession session, DataMergeService dataMergeSvr) {
 		super(session);
@@ -166,6 +165,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		String errmsg = new String(err.message);
 		LOGGER.warn("error response from backend, code:" + err.errno
 				+ " errmsg: " + errmsg + ",from " + conn);
+		if(this.errorRepsponsed)
+		{
+			return;
+		}
 		this.setFail(errmsg);
 		// try connection and finish conditon check
 		canClose(conn, true);
@@ -212,11 +215,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					}
 					ok.write(source);
 				} catch (Exception e) {
-					LOGGER.warn("exception happens in success notification: "
-							+ session.getSource(), e);
-					// return err package
-					createErrPkg(e.toString()).write(source);
-
+					handleDataProcessException(e,conn);
 				} finally {
 					lock.unlock();
 				}
@@ -225,24 +224,23 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	}
 
 	private boolean canClose(BackendConnection conn, boolean tryErrorFinish) {
-		boolean allFinshed = false;
 		conn.setRunning(false);
-		ServerConnection source = session.getSource();
-		RouteResultsetNode curNode = (RouteResultsetNode) conn.getAttachment();
-		conn.recordSql(source.getHost(), source.getSchema(),
-				curNode.getStatement());
 		// realse this connection if safe
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+		boolean allFinished = false;
 		if (tryErrorFinish) {
-			allFinshed = this.decrementCountBy(1);
-			this.tryErrorFinished(conn, allFinshed);
+			allFinished=this.decrementCountBy(1);
+			this.tryErrorFinished(conn, allFinished);
 		}
 
-		return allFinshed;
+		return allFinished;
 	}
 
 	@Override
 	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+		if (errorRepsponsed) {
+			return;
+		}
 		if (clearIfSessionClosed(session)) {
 			return;
 		} else if (canClose(conn, false)) {
@@ -279,16 +277,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 						}
 						i++;
 						row.packetId = ++packetId;
-						buffer = row.write(buffer, source,true);
+						buffer = row.write(buffer, source, true);
 					}
 				}
 				eof[3] = ++packetId;
 				source.write(source.writeToBuffer(eof, buffer));
 			} catch (Exception e) {
-				// fix:SQL异常导致连接被关闭的问题
-				source.write(buffer);
-				this.createErrPkg("exception:multiNodeQuery process err," + e)
-						.write(source);
+				handleDataProcessException(e,conn);
 			} finally {
 				lock.unlock();
 				if (dataMergeSvr != null) {
@@ -301,6 +296,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	@Override
 	public void fieldEofResponse(byte[] header, List<byte[]> fields,
 			byte[] eof, BackendConnection conn) {
+		ServerConnection source = null;
 		lock.lock();
 		// lazy allocate buffer
 		allocBuffer();
@@ -310,7 +306,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			}
 			fieldsReturned = true;
 			header[3] = ++packetId;
-			ServerConnection source = session.getSource();
+			source = session.getSource();
 			buffer = source.writeToBuffer(header, buffer);
 			fieldCount = fields.size();
 
@@ -357,13 +353,26 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 
 			eof[3] = ++packetId;
 			buffer = source.writeToBuffer(eof, buffer);
+		} catch (Exception e) {
+			handleDataProcessException(e,conn);
 		} finally {
 			lock.unlock();
 		}
 	}
 
+	private void handleDataProcessException(Exception e, BackendConnection conn) {
+		if (!errorRepsponsed) {
+			LOGGER.warn("caught exception ", e);
+			setFail(e.toString());
+			this.tryErrorFinished(conn, true);
+		}
+	}
+
 	@Override
 	public void rowResponse(byte[] row, BackendConnection conn) {
+		if (errorRepsponsed) {
+			return;
+		}
 		lock.lock();
 		try {
 			if (dataMergeSvr != null) {
@@ -388,7 +397,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				buffer = session.getSource().writeToBuffer(row, buffer);
 			}
 
-		} finally {
+		} catch(Exception e)
+		{
+			handleDataProcessException(e,conn);
+		}
+		finally {
 			lock.unlock();
 		}
 	}

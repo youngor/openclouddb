@@ -23,6 +23,7 @@
  */
 package org.opencloudb.mysql.nio.handler;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,7 +45,8 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	private AtomicBoolean isFailed = new AtomicBoolean(false);
 	private volatile String error;
 	protected byte packetId;
-
+	protected volatile boolean errorRepsponsed = false;
+	protected ByteBuffer buffer;
 	public MultiNodeHandler(NonBlockingSession session) {
 		if (session == null) {
 			throw new IllegalArgumentException("session is null!");
@@ -117,7 +119,10 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 
 	public boolean clearIfSessionClosed(NonBlockingSession session) {
 		if (session.closed()) {
-			LOGGER.info("session closed ,clear resources " + session);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("session closed ,clear resources " + session);
+			}
+
 			session.clearResources();
 			this.clearResources();
 			return true;
@@ -167,16 +172,25 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	protected void tryErrorFinished(BackendConnection conn, boolean allEnd) {
-		if (allEnd) {
+		if (!errorRepsponsed && allEnd && !session.closed()) {
+			errorRepsponsed = true;
+			if(buffer!=null)
+			{
+				session.getSource().write(buffer);
+			}
+			createErrPkg(this.error).write(session.getSource());
+			// clear session resources,release all
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("error all end ,clear session resource ");
+			}
 			if (session.getSource().isAutocommit()) {
-				// clear session resources,release all
 				session.clearResources();
 			} else {
 				session.getSource().setTxInterrupt();
 				// clear resouces
 				clearResources();
 			}
-			createErrPkg(this.error).write(session.getSource());
+			
 		}
 
 	}

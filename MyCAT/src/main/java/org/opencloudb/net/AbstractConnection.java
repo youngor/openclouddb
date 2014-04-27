@@ -214,6 +214,9 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	public void onReadData(int got) throws IOException {
+		if (isClosed.get()) {
+			return;
+		}
 		ByteBuffer buffer = this.readBuffer;
 		lastReadTime = TimeUtil.currentTimeMillis();
 		if (got < 0) {
@@ -429,6 +432,9 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	protected void onWriteFinished(int result) {
+		if (isClosed.get()) {
+			return;
+		}
 		netOutBytes += result;
 		processor.addNetOutBytes(result);
 		lastWriteTime = TimeUtil.currentTimeMillis();
