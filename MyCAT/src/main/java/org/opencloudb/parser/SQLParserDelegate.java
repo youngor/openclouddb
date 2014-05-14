@@ -41,6 +41,8 @@ public final class SQLParserDelegate {
 			parser.getFeatures().add(SQLParserFeature.DOUBLE_QUOTED_STRING);
 			parser.getFeatures().add(SQLParserFeature.MYSQL_HINTS);
 			parser.getFeatures().add(SQLParserFeature.MYSQL_INTERVAL);
+			//fix 位操作符号解析问题 add by micmiu
+			parser.getFeatures().add(SQLParserFeature.INFIX_BIT_OPERATORS);
 			return parser;
 		}
 
