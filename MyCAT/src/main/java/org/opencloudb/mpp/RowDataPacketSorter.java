@@ -171,6 +171,11 @@ public class RowDataPacketSorter {
 		case ColMeta.COL_TYPE_NEWDECIMAL:
 		case ColMeta.COL_TYPE_DOUBLE:
 		case ColMeta.COL_TYPE_FLOAT:
+		//因为mysql的日期也是数字字符串方式表达，因此可以跟整数等一起对待
+		case ColMeta.COL_TYPE_DATE:
+		case ColMeta.COL_TYPE_TIMSTAMP:
+		case ColMeta.COL_TYPE_TIME:
+		case ColMeta.COL_TYPE_DATETIME:
 			return ByteUtil.compareNumberByte(left, right);
 		case ColMeta.COL_TYPE_VAR_STRING:
 			return CompareUtil.compareString(ByteUtil.getString(left),
@@ -178,16 +183,6 @@ public class RowDataPacketSorter {
 		case ColMeta.COL_TYPE_BIT:
 			return CompareUtil.compareChar(ByteUtil.getChar(left),
 					ByteUtil.getChar(right));
-
-		case ColMeta.COL_TYPE_DATE:
-			return CompareUtil.compareString(ByteUtil.getDate(left),
-					ByteUtil.getDate(right));
-		case ColMeta.COL_TYPE_TIMSTAMP:
-			return CompareUtil.compareString(ByteUtil.getTimestmap(left),
-					ByteUtil.getTimestmap(right));
-		case ColMeta.COL_TYPE_TIME:
-			return CompareUtil.compareString(ByteUtil.getTimestmap(left),
-					ByteUtil.getTimestmap(right));
 		}
 
 		return 0;

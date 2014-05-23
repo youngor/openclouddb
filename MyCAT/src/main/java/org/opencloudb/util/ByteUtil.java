@@ -178,8 +178,7 @@ public class ByteUtil {
 	}
 
 	public static String getString(byte[] bytes) {
-		return getString(bytes, "UFT-8");
-
+		return getString(bytes, "UTF-8");
 	}
 
 	public static String getDate(byte[] bytes) {
