@@ -165,26 +165,34 @@ public class RowDataPacketSorter {
 		byte[] right = (byte[]) r;
 		// System.out.println("------------" + colType);
 		switch (colType) {
+		case ColMeta.COL_TYPE_DECIMAL:
 		case ColMeta.COL_TYPE_INT:
+		case ColMeta.COL_TYPE_SHORT:
 		case ColMeta.COL_TYPE_LONG:
-		case ColMeta.COL_TYPE_LONGLONG:
-		case ColMeta.COL_TYPE_NEWDECIMAL:
-		case ColMeta.COL_TYPE_DOUBLE:
 		case ColMeta.COL_TYPE_FLOAT:
+		case ColMeta.COL_TYPE_DOUBLE:
+		case ColMeta.COL_TYPE_LONGLONG:
+		case ColMeta.COL_TYPE_INT24:
+		case ColMeta.COL_TYPE_NEWDECIMAL:
 		//因为mysql的日期也是数字字符串方式表达，因此可以跟整数等一起对待
 		case ColMeta.COL_TYPE_DATE:
 		case ColMeta.COL_TYPE_TIMSTAMP:
 		case ColMeta.COL_TYPE_TIME:
+		case ColMeta.COL_TYPE_YEAR:
 		case ColMeta.COL_TYPE_DATETIME:
+		case ColMeta.COL_TYPE_NEWDATE:	
+		case ColMeta.COL_TYPE_BIT:
 			return ByteUtil.compareNumberByte(left, right);
 		case ColMeta.COL_TYPE_VAR_STRING:
+		case ColMeta.COL_TYPE_STRING:
+		//ENUM和SET类型都是字符串，按字符串处理
+		case ColMeta.COL_TYPE_ENUM:
+		case ColMeta.COL_TYPE_SET:
 			return CompareUtil.compareString(ByteUtil.getString(left),
 					ByteUtil.getString(right));
-		case ColMeta.COL_TYPE_BIT:
-			return CompareUtil.compareChar(ByteUtil.getChar(left),
-					ByteUtil.getChar(right));
-		}
 
+		//BLOB相关类型和GEOMETRY类型不支持排序，略掉
+		}
 		return 0;
 	}
 }

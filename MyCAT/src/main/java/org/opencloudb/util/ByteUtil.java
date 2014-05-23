@@ -36,6 +36,10 @@ public class ByteUtil {
 	 * @return -1 means b1 < b2, or 0 means b1=b2 else return 1
 	 */
 	public static int compareNumberByte(byte[] b1, byte[] b2) {
+		if(b1 == null || b1.length == 0)
+			return -1;
+		else if(b2 == null || b2.length == 0)
+			return 1;
 		boolean isNegetive = b1[0] == 45 || b2[0] == 45;
 		if (isNegetive == false && b1.length != b2.length) {
 			return b1.length - b2.length;

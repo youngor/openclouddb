@@ -73,8 +73,11 @@ public class CompareUtil {
 	  
 	  public static int compareString(String l,String r){
 //		  return compareStringForChinese(l,r);
-		  return l.compareTo(r);
-		  
+		  if(l == null)
+			  return -1;
+		   else if(r == null)
+			  return 1;
+		  return l.compareTo(r); 
 	  }
 	  
 	  public static int compareChar(char l,char r){
