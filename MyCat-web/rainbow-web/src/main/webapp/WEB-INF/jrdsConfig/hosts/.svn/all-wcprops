@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/jrdsConfig/hosts
+END
+mycat.xml
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/jrdsConfig/hosts/mycat.xml
+END
+mysql1.xml
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/jrdsConfig/hosts/mysql1.xml
+END
+mysql2.xml
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/jrdsConfig/hosts/mysql2.xml
+END
+mysql3.xml
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/jrdsConfig/hosts/mysql3.xml
+END

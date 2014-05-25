@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/openclouddb/!svn/ver/301/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib
+END
+rrd4j.jar
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/rrd4j.jar
+END
+httpcore.jar
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/httpcore.jar
+END
+snmpprobes.jar
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/snmpprobes.jar
+END
+xml-apis.jar
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/xml-apis.jar
+END
+xmlrpc-common.jar
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/xmlrpc-common.jar
+END
+mysql-connector-java-5.1.12.jar
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/openclouddb/!svn/ver/198/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/mysql-connector-java-5.1.12.jar
+END
+commons-net.jar
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/commons-net.jar
+END
+jrds.jar
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/openclouddb/!svn/ver/301/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/jrds.jar
+END
+postgresql.jar
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/postgresql.jar
+END
+boot.jar
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/boot.jar
+END
+joda-time.jar
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/joda-time.jar
+END
+json.jar
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/json.jar
+END
+xmlrpc-server.jar
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/xmlrpc-server.jar
+END
+snmp4j.jar
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/snmp4j.jar
+END
+ws-commons-util.jar
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/ws-commons-util.jar
+END
+httpclient.jar
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/openclouddb/!svn/ver/299/trunk/MyCat-web/rainbow-web/src/main/webapp/WEB-INF/lib/httpclient.jar
+END
