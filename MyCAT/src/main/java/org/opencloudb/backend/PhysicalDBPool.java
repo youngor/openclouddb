@@ -381,19 +381,6 @@ public class PhysicalDBPool {
 		return this.allDs;
 	}
 
-	private ArrayList<PhysicalDatasource> getAllActiveSlaveSources() {
-		ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>(
-				this.allDs.size());
-		for (PhysicalDatasource[] readsources : this.readSources.values()) {
-			for (PhysicalDatasource read : readsources) {
-				if (isAlive(read)) {
-					okSources.add(read);
-				}
-			}
-		}
-		return okSources;
-	}
-
 	/**
 	 * return connection for read balance
 	 * 
@@ -409,11 +396,7 @@ public class PhysicalDBPool {
 		ArrayList<PhysicalDatasource> okSources = null;
 		switch (banlance) {
 		case BALANCE_ALL_BACK: {// all read nodes and the standard by masters
-			if (writeSources[this.activedIndex].getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {// cur
-				okSources = getAllActiveSlaveSources();
-			} else {// at least one master alive
-				okSources = getAllActiveRWSources(false);
-			}
+			okSources = getAllActiveRWSources(false);
 			theNode = randomSelect(okSources);
 			break;
 		}
@@ -460,12 +443,13 @@ public class PhysicalDBPool {
 		ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>(
 				this.readSources.size() - 1);
 		for (int i = 0; i < this.writeSources.length; i++) {
-			if (i == curActive && includeCurWriteNode == false) {
-				// not include cur active source
-			} else {
-				okSources.add(writeSources[i]);
-			}
 			if (isAlive(writeSources[i])) {// write node is active
+				if (i == curActive && includeCurWriteNode == false) {
+					// not include cur active source
+				} else {
+					okSources.add(writeSources[i]);
+				}
+				
 				// check all slave nodes
 				PhysicalDatasource[] allSlaves = this.readSources.get(i);
 				if (allSlaves != null) {

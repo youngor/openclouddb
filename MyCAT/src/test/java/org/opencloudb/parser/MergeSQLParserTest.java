@@ -54,7 +54,7 @@ public class MergeSQLParserTest {
 
 		SelectSQLAnalyser.analyse(parsInf, ast);
 		RouteResultset rrs = new RouteResultset(sql,0);
-		String sql2 = SelectSQLAnalyser.analyseMergeInf(rrs, ast, true);
+		String sql2 = SelectSQLAnalyser.analyseMergeInf(rrs, ast, true,-1);
 		Assert.assertEquals(
 				"SELECT o.* FROM orders AS o GROUP BY o.name ORDER BY o.id, o.age DESC LIMIT 15 OFFSET 0",
 				sql2);
@@ -67,10 +67,10 @@ public class MergeSQLParserTest {
 		sql = "select o.name,count(o.id) as total, max(o.mx) as maxOders,sum(MOD2(29,9)),min(o.price) from Orders o   group by name";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		rrs = new RouteResultset(sql,0);
-		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		Assert.assertEquals(true, rrs.isHasAggrColumn());
 		Assert.assertEquals(2, rrs.getMergeCols().size());
-		sql2 = SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		sql2 = SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		
 		// aggregate column should has alias in order to used in oder by clause
 		sql = "select  count(*)   from orders order by count(*) desc";
@@ -79,7 +79,7 @@ public class MergeSQLParserTest {
 		SQLSyntaxErrorException e=null;
 		try
 		{
-		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		}catch(SQLSyntaxErrorException e1)
 		{
 			e=e1;
@@ -93,7 +93,7 @@ public class MergeSQLParserTest {
 				sql = "select  count(*)  as total from orders order by total desc";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		rrs = new RouteResultset(sql,0);
-		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		Assert.assertEquals(true, rrs.isHasAggrColumn());
 		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_DESC), rrs.getOrderByCols().get("total"));
 		
@@ -102,7 +102,7 @@ public class MergeSQLParserTest {
 		sql = "select id as myid from person order by id";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		rrs = new RouteResultset(sql,0);
-		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		Assert.assertEquals(Integer.valueOf(OrderCol.COL_ORDER_TYPE_ASC), rrs.getOrderByCols().get("myid"));
 		
 		
@@ -110,7 +110,7 @@ public class MergeSQLParserTest {
 		sql = "select counT(*)  as TOTaL from person order by toTal";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		rrs = new RouteResultset(sql,0);
-		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false);
+		SelectSQLAnalyser.analyseMergeInf(rrs, ast, false,-1);
 		Map<String,Integer> mergeCols=rrs.getMergeCols();
 		Assert.assertEquals(1,mergeCols.size());
 		Assert.assertEquals(Integer.valueOf(MergeCol.MERGE_COUNT),mergeCols.get("total"));

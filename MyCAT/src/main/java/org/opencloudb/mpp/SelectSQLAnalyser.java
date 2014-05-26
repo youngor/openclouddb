@@ -34,6 +34,7 @@ import org.opencloudb.route.RouteResultset;
 
 import com.foundationdb.sql.StandardException;
 import com.foundationdb.sql.parser.AggregateNode;
+import com.foundationdb.sql.parser.AndNode;
 import com.foundationdb.sql.parser.BetweenOperatorNode;
 import com.foundationdb.sql.parser.BinaryOperatorNode;
 import com.foundationdb.sql.parser.BinaryRelationalOperatorNode;
@@ -49,6 +50,7 @@ import com.foundationdb.sql.parser.InListOperatorNode;
 import com.foundationdb.sql.parser.JoinNode;
 import com.foundationdb.sql.parser.NodeTypes;
 import com.foundationdb.sql.parser.NumericConstantNode;
+import com.foundationdb.sql.parser.OrNode;
 import com.foundationdb.sql.parser.OrderByColumn;
 import com.foundationdb.sql.parser.OrderByList;
 import com.foundationdb.sql.parser.QueryTreeNode;
@@ -96,7 +98,8 @@ public class SelectSQLAnalyser {
 	 * @throws SQLSyntaxErrorException
 	 */
 	public static String analyseMergeInf(RouteResultset rrs, QueryTreeNode ast,
-			boolean modifySQLLimit) throws SQLSyntaxErrorException {
+			boolean modifySQLLimit, int defaultMaxLimit)
+			throws SQLSyntaxErrorException {
 		CursorNode rsNode = (CursorNode) ast;
 		NumericConstantNode offsetNode = null;
 		NumericConstantNode offCountNode = null;
@@ -137,6 +140,7 @@ public class SelectSQLAnalyser {
 				rrs.setGroupByCols(groupCols);
 			}
 		}
+
 		OrderByList orderBy = rsNode.getOrderByList();
 		if (orderBy != null && !orderBy.isEmpty()) {
 
@@ -171,6 +175,7 @@ public class SelectSQLAnalyser {
 			}
 			rrs.setOrderByCols(orderCols);
 		}
+
 		if (rsNode.getOffsetClause() != null) {
 			offsetNode = (NumericConstantNode) rsNode.getOffsetClause();
 			rrs.setLimitStart(Integer
@@ -259,8 +264,7 @@ public class SelectSQLAnalyser {
 			selNode = (SelectNode) subq.getSubquery();
 			break;
 		}
-		case NodeTypes.UNION_NODE:
-		{
+		case NodeTypes.UNION_NODE: {
 			UnionNode unionNode = (UnionNode) ast;
 			analyseSQL(parsInf, unionNode.getLeftResultSet(), notOpt);
 			analyseSQL(parsInf, unionNode.getRightResultSet(), notOpt);
@@ -348,11 +352,25 @@ public class SelectSQLAnalyser {
 			andTableName(parsInf, (FromBaseTable) rightNode);
 		}
 
-		BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinNd
+		BinaryOperatorNode joinClause = (BinaryOperatorNode) joinNd
 				.getJoinClause();
-		addTableJoinInf(parsInf.ctx,
-				(ColumnReference) joinOpt.getLeftOperand(),
-				(ColumnReference) joinOpt.getRightOperand());
+		if (joinClause instanceof BinaryRelationalOperatorNode) {
+			BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinClause;
+			addTableJoinInf(parsInf.ctx,
+					(ColumnReference) joinOpt.getLeftOperand(),
+					(ColumnReference) joinOpt.getRightOperand());
+		} else if (joinClause instanceof AndNode
+				|| joinClause instanceof OrNode) {
+			BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinClause.getLeftOperand();
+			joinClause.getLeftOperand();
+			addTableJoinInf(parsInf.ctx,
+					(ColumnReference) joinOpt.getLeftOperand(),
+					(ColumnReference) joinOpt.getRightOperand());
+		}else
+		{
+			throw new StandardException("can't get join info "+joinNd.toString());
+		}
+
 	}
 
 	public static void analyseWhereCondition(SelectParseInf parsInf,
@@ -382,10 +400,11 @@ public class SelectSQLAnalyser {
 			// addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
 			// theOpNode.getRightOperandList(), "IN", ctx,
 			// defaultTableName, notOpt);
-		} else if(valueNode instanceof BetweenOperatorNode ){
-			//where条件仅有一个between
-			analyseBetween((BetweenOperatorNode)valueNode,defaultTableName,parsInf.ctx);
-		}else {
+		} else if (valueNode instanceof BetweenOperatorNode) {
+			// where条件仅有一个between
+			analyseBetween((BetweenOperatorNode) valueNode, defaultTableName,
+					parsInf.ctx);
+		} else {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("todo  parse where cond\r\n "
 						+ valueNode.getClass().getCanonicalName());
@@ -394,23 +413,25 @@ public class SelectSQLAnalyser {
 			// valueNode.treePrint();
 		}
 	}
-	//分析between操作符
-		private static void analyseBetween(BetweenOperatorNode valueNode,
-				String defaultTableName, ShardingParseInfo ctx) {
-			String columnName = valueNode.getLeftOperand().getColumnName();
-			if(columnName!=null){ 
-			String beginValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(0)).getValue());
-			String endValue =String.valueOf(((ConstantNode)valueNode.getRightOperandList().get(1)).getValue());
+
+	// 分析between操作符
+	private static void analyseBetween(BetweenOperatorNode valueNode,
+			String defaultTableName, ShardingParseInfo ctx) {
+		String columnName = valueNode.getLeftOperand().getColumnName();
+		if (columnName != null) {
+			String beginValue = String.valueOf(((ConstantNode) valueNode
+					.getRightOperandList().get(0)).getValue());
+			String endValue = String.valueOf(((ConstantNode) valueNode
+					.getRightOperandList().get(1)).getValue());
 			RangeValue rv = new RangeValue(beginValue, endValue, RangeValue.EE);
 			ctx.addShardingExpr(defaultTableName.toUpperCase(), columnName, rv);
-			}
 		}
- 
+	}
 
 	private static void tryColumnCondition(SelectParseInf parsInf,
 			String defaultTableName, String methodName, ValueNode leftOp,
 			ValueNode wrightOp, boolean notOpt) throws StandardException {
-		
+
 		// 简单的 column=aaa的情况
 		if (leftOp instanceof ColumnReference) {
 			addConstCondition(leftOp, wrightOp, methodName, parsInf,
@@ -421,7 +442,7 @@ public class SelectSQLAnalyser {
 					defaultTableName, notOpt);
 			return;
 		}
-		
+
 		// 左边 为(a=b) ,(a>b)
 		if (leftOp instanceof BinaryOperatorNode) {
 			BinaryOperatorNode theOptNode = (BinaryOperatorNode) leftOp;
@@ -433,12 +454,11 @@ public class SelectSQLAnalyser {
 			addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
 					theOpNode.getRightOperandList(), "IN", parsInf,
 					defaultTableName, notOpt);
-		}else if(leftOp instanceof BetweenOperatorNode){
-			BetweenOperatorNode op = (BetweenOperatorNode)leftOp;
+		} else if (leftOp instanceof BetweenOperatorNode) {
+			BetweenOperatorNode op = (BetweenOperatorNode) leftOp;
 			analyseBetween(op, defaultTableName, parsInf.ctx);
 		}
-		
-		
+
 		// 右边 为(a=b) ,(a>b)
 		if (wrightOp instanceof BinaryOperatorNode) {
 			BinaryOperatorNode theOptNode = (BinaryOperatorNode) wrightOp;
@@ -450,8 +470,8 @@ public class SelectSQLAnalyser {
 			addConstCondition(theOpNode.getLeftOperand().getNodeList().get(0),
 					theOpNode.getRightOperandList(), "IN", parsInf,
 					defaultTableName, notOpt);
-		}else if(wrightOp instanceof BetweenOperatorNode){
-			BetweenOperatorNode op = (BetweenOperatorNode)wrightOp;
+		} else if (wrightOp instanceof BetweenOperatorNode) {
+			BetweenOperatorNode op = (BetweenOperatorNode) wrightOp;
 			analyseBetween(op, defaultTableName, parsInf.ctx);
 		}
 	}
@@ -522,11 +542,11 @@ public class SelectSQLAnalyser {
 		if (notOpt) {
 			return;
 		}
-//		System.out.println("before method name :"+method);
-		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN")  )) {
+		// System.out.println("before method name :"+method);
+		if (!(upMethod.equals("EQUALS") || upMethod.equals("IN"))) {
 			return;
 		}
-//		System.out.println("after method name :"+method);
+		// System.out.println("after method name :"+method);
 		if (wrightOp instanceof ConstantNode) {
 			ColumnReference leftColumRef = (ColumnReference) leftOp;
 			String tableName = getTableNameForColumn(defaultTableName,

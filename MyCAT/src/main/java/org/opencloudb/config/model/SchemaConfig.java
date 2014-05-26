@@ -40,16 +40,21 @@ public class SchemaConfig {
 	private final Set<String> metaDataNodes;
 	private final Set<String> allDataNodes;
 	/**
+	 * when a select sql has no limit condition ,and default max limit to prevent memory problem when return a large result set
+	 */
+	private final int defaultMaxLimit;
+	/**
 	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
 	 * ,then A is root table
 	 */
 	private final Map<String, TableConfig> joinRel2TableMap = new HashMap<String, TableConfig>();
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables) {
+			Map<String, TableConfig> tables,int defaultMaxLimit) {
 		this.name = name;
 		this.dataNode = dataNode;
 		this.tables = tables;
+		this.defaultMaxLimit=defaultMaxLimit;
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty()) ? true : false;
 		if (!noSharding && dataNode != null) {
@@ -58,6 +63,10 @@ public class SchemaConfig {
 		}
 		this.metaDataNodes = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();
+	}
+
+	public int getDefaultMaxLimit() {
+		return defaultMaxLimit;
 	}
 
 	private void buildJoinMap(Map<String, TableConfig> tables2) {

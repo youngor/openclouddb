@@ -31,6 +31,7 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 import org.opencloudb.mpp.ColumnRoutePair;
+import org.opencloudb.mpp.JoinRel;
 import org.opencloudb.mpp.SelectParseInf;
 import org.opencloudb.mpp.SelectSQLAnalyser;
 import org.opencloudb.mpp.ShardingParseInfo;
@@ -336,5 +337,29 @@ public class TestSelectSQLAnalyser {
 		SelectSQLAnalyser.analyse(parsInf, ast);
 		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
 		Assert.assertEquals(2, tablesAndCondtions.size());
+		
+		
+		
+		sql="select * from T1 inner join T2 on T1.id = T2.id and T2.type=T1.type";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		Assert.assertEquals(1, parsInf.ctx.joinList.size());
+		Assert.assertEquals(new JoinRel("T1","id","T2","id"), parsInf.ctx.joinList.get(0));
+		Assert.assertEquals(2, tablesAndCondtions.size());
+		
+		
+		
+		sql="select * from T1 inner join T2 on T1.id = T2.id or T2.type=T1.type";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		Assert.assertEquals(1, parsInf.ctx.joinList.size());
+		Assert.assertEquals(new JoinRel("T1","id","T2","id"), parsInf.ctx.joinList.get(0));
+		Assert.assertEquals(2, tablesAndCondtions.size());
+		
+
 	}
 }

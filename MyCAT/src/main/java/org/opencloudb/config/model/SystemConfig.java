@@ -51,6 +51,7 @@ public final class SystemConfig {
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_PERIOD = 5 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_TIMEOUT = 10 * 1000L;
 	private static final int DEFAULT_CLUSTER_HEARTBEAT_RETRY = 10;
+	private static final int DEFAULT_MAX_LIMIT = 1000;
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
@@ -81,6 +82,7 @@ public final class SystemConfig {
 	private int openWRFluxControl;
 	private int processorBufferPool;
 	private int processorBufferChunk;
+	private int defaultMaxLimit;
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
@@ -106,6 +108,7 @@ public final class SystemConfig {
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
 		this.waitTimeout = DEFAULT_WAIT_TIMEOUT;
 		this.openWRFluxControl = DEFAULT_USE_WR_FLUX_CONTRL;
+		this.defaultMaxLimit=DEFAULT_MAX_LIMIT;
 	}
 
 	public String getBindIp() {
@@ -122,6 +125,14 @@ public final class SystemConfig {
 
 	public void setOpenWRFluxControl(int openWRFluxControl) {
 		this.openWRFluxControl = openWRFluxControl;
+	}
+
+	public int getDefaultMaxLimit() {
+		return defaultMaxLimit;
+	}
+
+	public void setDefaultMaxLimit(int defaultMaxLimit) {
+		this.defaultMaxLimit = defaultMaxLimit;
 	}
 
 	public static String getHomePath() {

@@ -135,6 +135,12 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element schemaElement = (Element) list.item(i);
 			String name = schemaElement.getAttribute("name");
 			String dataNode = schemaElement.getAttribute("dataNode");
+			String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
+			int sqlMaxLimit = -1;
+			if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
+				sqlMaxLimit = Integer.valueOf(sqlMaxLimitStr);
+
+			}
 			// check dataNode already exists or not
 			if (dataNode != null && !dataNode.isEmpty()) {
 				List<String> dataNodeLst = new ArrayList<String>(1);
@@ -147,7 +153,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (schemas.containsKey(name)) {
 				throw new ConfigException("schema " + name + " duplicated!");
 			}
-			schemas.put(name, new SchemaConfig(name, dataNode, tables));
+			schemas.put(name, new SchemaConfig(name, dataNode, tables,sqlMaxLimit));
 		}
 	}
 
@@ -156,9 +162,10 @@ public class XMLSchemaLoader implements SchemaLoader {
 		NodeList nodeList = node.getElementsByTagName("table");
 		for (int i = 0; i < nodeList.getLength(); i++) {
 			Element tableElement = (Element) nodeList.item(i);
-			String tableNameElement = tableElement.getAttribute("name").toUpperCase();
+			String tableNameElement = tableElement.getAttribute("name")
+					.toUpperCase();
 			String[] tableNames = tableNameElement.split(",");
-			
+
 			String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement
 					.getAttribute("primaryKey").toUpperCase() : null;
 			String tableTypeStr = tableElement.hasAttribute("type") ? tableElement
@@ -183,11 +190,10 @@ public class XMLSchemaLoader implements SchemaLoader {
 						.getAttribute("ruleRequired"));
 			}
 
-			
-			if(tableNames == null){
+			if (tableNames == null) {
 				throw new ConfigException("table name is not found!");
 			}
-			for(int j= 0; j < tableNames.length; j++){
+			for (int j = 0; j < tableNames.length; j++) {
 				String tableName = tableNames[j];
 				TableConfig table = new TableConfig(tableName, primaryKey,
 						tableType, dataNode,
@@ -195,18 +201,19 @@ public class XMLSchemaLoader implements SchemaLoader {
 						ruleRequired, null, false, null, null);
 				checkDataNodeExists(table.getDataNodes());
 				if (tables.containsKey(table.getName())) {
-					throw new ConfigException("table " + tableName + " duplicated!");
+					throw new ConfigException("table " + tableName
+							+ " duplicated!");
 				}
-				tables.put(table.getName(), table);				
+				tables.put(table.getName(), table);
 			}
-			
-			if(tableNames.length == 1){
+
+			if (tableNames.length == 1) {
 				TableConfig table = new TableConfig(tableNames[0], primaryKey,
 						tableType, dataNode,
 						(tableRule != null) ? tableRule.getRule() : null,
 						ruleRequired, null, false, null, null);
 				// process child tables
-				processChildTables(tables,  table, dataNode, tableElement);
+				processChildTables(tables, table, dataNode, tableElement);
 			}
 		}
 		return tables;
@@ -352,8 +359,9 @@ public class XMLSchemaLoader implements SchemaLoader {
 			int maxCon = Integer.valueOf(element.getAttribute("maxCon"));
 			int minCon = Integer.valueOf(element.getAttribute("minCon"));
 			int balance = Integer.valueOf(element.getAttribute("balance"));
-			String writeTypStr=element.getAttribute("writeType");
-			int writeType ="".equals(writeTypStr)?PhysicalDBPool.WRITE_ONLYONE_NODE: Integer.valueOf(writeTypStr);
+			String writeTypStr = element.getAttribute("writeType");
+			int writeType = "".equals(writeTypStr) ? PhysicalDBPool.WRITE_ONLYONE_NODE
+					: Integer.valueOf(writeTypStr);
 			String dbDriver = element.getAttribute("dbDriver");
 			String dbType = element.getAttribute("dbType");
 			String heartbeatSQL = element.getElementsByTagName("heartbeat")
