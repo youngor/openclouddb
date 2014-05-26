@@ -441,7 +441,7 @@ public class PhysicalDBPool {
 			boolean includeCurWriteNode) {
 		int curActive = activedIndex;
 		ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>(
-				this.readSources.size() - 1);
+				this.allDs.size());
 		for (int i = 0; i < this.writeSources.length; i++) {
 			if (isAlive(writeSources[i])) {// write node is active
 				if (i == curActive && includeCurWriteNode == false) {
@@ -449,13 +449,14 @@ public class PhysicalDBPool {
 				} else {
 					okSources.add(writeSources[i]);
 				}
-				
-				// check all slave nodes
-				PhysicalDatasource[] allSlaves = this.readSources.get(i);
-				if (allSlaves != null) {
-					for (PhysicalDatasource slave : allSlaves) {
-						if (isAlive(slave)) {
-							okSources.add(slave);
+				if (!readSources.isEmpty()) {
+					// check all slave nodes
+					PhysicalDatasource[] allSlaves = this.readSources.get(i);
+					if (allSlaves != null) {
+						for (PhysicalDatasource slave : allSlaves) {
+							if (isAlive(slave)) {
+								okSources.add(slave);
+							}
 						}
 					}
 				}
