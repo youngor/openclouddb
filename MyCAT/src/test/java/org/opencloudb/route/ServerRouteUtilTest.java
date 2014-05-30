@@ -39,6 +39,9 @@ import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
+import org.opencloudb.mpp.JoinRel;
+import org.opencloudb.mpp.SelectSQLAnalyser;
+import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.server.parser.ServerParse;
 
 /**
@@ -160,13 +163,13 @@ public class ServerRouteUtilTest extends TestCase {
 
 	public void testRouteMultiTables() throws Exception {
 		// company is global table ,route to 3 datanode and ignored in route
-		String sql = "select * from company,customer ,orders where customer.company_id=company.id and orders.customer_id=customer.id and company.name like 'aaa'";
+		String sql = "select * from company,customer ,orders where customer.company_id=company.id and orders.customer_id=customer.id and company.name like 'aaa' limit 10";
 		SchemaConfig schema = schemaMap.get("TESTDB");
 		RouteResultset rrs = ServerRouterUtil.route(schema, -1, sql, null,
 				null, cachePool);
 		Assert.assertEquals(2, rrs.getNodes().length);
 		Assert.assertEquals(true, rrs.isCacheAble());
-		Assert.assertEquals(-1l, rrs.getLimitSize());
+		Assert.assertEquals(10, rrs.getLimitSize());
 		Assert.assertEquals("dn1", rrs.getNodes()[0].getName());
 		Assert.assertEquals("dn2", rrs.getNodes()[1].getName());
 
@@ -183,7 +186,7 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals(null, rrs.getPrimaryKey());
-		Assert.assertEquals(-1l, rrs.getLimitSize());
+		Assert.assertEquals(100, rrs.getLimitSize());
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 		// select cache ID not found ,return all node and rrst not cached
@@ -192,7 +195,7 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(2, rrs.getNodes().length);
 		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("TESTDB_EMPLOYEE.ID", rrs.getPrimaryKey());
-		Assert.assertEquals(-1l, rrs.getLimitSize());
+		Assert.assertEquals(100, rrs.getLimitSize());
 
 		// update cache ID found
 		sql = "update employee  set name='aaa' where id=88";
@@ -419,6 +422,12 @@ public class ServerRouteUtilTest extends TestCase {
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
+		//test alias in column
+		sql="select name as order_name from  orders order by order_name limit 10,5";
+		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
+		Assert.assertEquals("SELECT name AS order_name FROM orders ORDER BY order_name LIMIT 15 OFFSET 0", rrs.getNodes()[0].getStatement());
+
+		
 	}
 
 	public void testDuplicatePartitionKey() throws Exception {
@@ -456,6 +465,32 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals(-1l, rrs.getLimitSize());
 
+	}
+	
+	public void testAddLimitToSQL() throws Exception
+	{
+		final SchemaConfig schema = schemaMap.get("TESTDB");
+
+		String sql = null;
+		RouteResultset rrs = null;
+
+		sql = "select * from orders";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
+		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
+		NodeNameAsserter nameAsserter = new NodeNameAsserter("dn2",
+				"dn1");
+		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
+		Assert.assertEquals(schema.getDefaultMaxLimit(), rrs.getLimitSize());
+		Assert.assertEquals("SELECT * FROM orders LIMIT 100", rrs.getNodes()[0].getStatement());
+		
+		
+		sql = "select * from goods";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(schema.getDefaultMaxLimit(), rrs.getLimitSize());
+		Assert.assertEquals("SELECT * FROM goods LIMIT 100", rrs.getNodes()[0].getStatement());
 	}
 
 	public void testGroupLimit() throws Exception {

@@ -20,6 +20,7 @@
 <!ATTLIST schema name NMTOKEN #REQUIRED>
 <!ATTLIST schema checkSQLschema NMTOKEN #IMPLIED>
 <!ATTLIST schema dataNode CDATA #IMPLIED>
+<!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
 <!ELEMENT table (property*,(childTable*))>
 <!ATTLIST table name CDATA #REQUIRED>
 <!ATTLIST table dataNode CDATA #REQUIRED>
@@ -62,7 +63,7 @@
 <!ELEMENT readHost (property*) >
 <!ATTLIST readHost
   host NMTOKEN #REQUIRED
-  url NMTOKEN #REQUIRED
+  url CDATA #REQUIRED
   password CDATA #REQUIRED
   user NMTOKEN #REQUIRED>
 

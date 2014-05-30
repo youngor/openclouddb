@@ -31,7 +31,7 @@
 	</schema>
 	<schema name="solo1" dataNode="solo1" />
 
-	<schema name="TESTDB">
+	<schema name="TESTDB"  sqlMaxLimit="100">
 		<!-- global table is auto cloned to all defined data nodes ,so can join 
 			with any table whose sharding node is in the same data node -->
 		<table name="company" type="global" dataNode="dn1,dn2,dn3" />

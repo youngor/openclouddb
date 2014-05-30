@@ -278,8 +278,8 @@ public final class ServerRouterUtil {
 		} else if (ast instanceof DDLStatementNode) {
 			DDLParsInf parsInf = DDLSQLAnalyser.analyse(ast);
 			TableConfig tc = getTableConfig(schema, parsInf.tableName);
-			return routeToMultiNode(schema,false, false, ast, rrs, tc.getDataNodes(),
-					stmt);
+			return routeToMultiNode(schema, false, false, ast, rrs,
+					tc.getDataNodes(), stmt);
 
 		} else {
 			LOGGER.info("TODO ,support sql type "
@@ -426,7 +426,7 @@ public final class ServerRouterUtil {
 
 		int atSginInd = upStmt.indexOf(" @@");
 		if (atSginInd > 0) {
-			return routeToMultiNode(schema,false, false, null, rrs,
+			return routeToMultiNode(schema, false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
 		}
 
@@ -460,7 +460,7 @@ public final class ServerRouterUtil {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
-			return routeToMultiNode(schema,false, false, null, rrs,
+			return routeToMultiNode(schema, false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
 		}
 		// show index or column
@@ -532,6 +532,18 @@ public final class ServerRouterUtil {
 		return rrs;
 	}
 
+	private static String addSQLLmit(SchemaConfig schema,RouteResultset rrs, QueryTreeNode ast,
+			String sql) throws SQLSyntaxErrorException {
+		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode) {
+			String newstmt = SelectSQLAnalyser.addLimitCondtionForSelectSQL(
+					rrs, (CursorNode) ast, schema.getDefaultMaxLimit());
+			if (newstmt != null) {
+				return newstmt;
+			}
+		}
+		return sql;
+	}
+
 	/**
 	 * 简单描述该方法的实现功能
 	 * 
@@ -563,6 +575,7 @@ public final class ServerRouterUtil {
 			LayerCachePool cachePool) throws SQLNonTransientException {
 
 		if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE && isSelect) {
+			sql=addSQLLmit(schema,rrs,ast,sql);
 			return routeToSingleNode(rrs, tc.getRandomDataNode(), sql);
 		}
 
@@ -593,8 +606,8 @@ public final class ServerRouterUtil {
 									+ Arrays.toString(dataNodeSet.toArray())
 									+ " sql :" + sql);
 						}
-						return routeToMultiNode(schema,isSelect, isSelect, ast, rrs,
-								dataNodeSet, sql);
+						return routeToMultiNode(schema, isSelect, isSelect,
+								ast, rrs, dataNodeSet, sql);
 					}
 
 				}
@@ -619,8 +632,8 @@ public final class ServerRouterUtil {
 						}
 					}
 					if (allFound) {
-						return routeToMultiNode(schema,isSelect, isSelect, ast, rrs,
-								dataNodes, sql);
+						return routeToMultiNode(schema, isSelect, isSelect,
+								ast, rrs, dataNodes, sql);
 					}
 					// need cache primary key ->datanode relation
 					if (isSelect && tc.getPrimaryKey() != null) {
@@ -629,7 +642,7 @@ public final class ServerRouterUtil {
 				}
 
 			}
-			return routeToMultiNode(schema,isSelect, cache, ast, rrs,
+			return routeToMultiNode(schema, isSelect, cache, ast, rrs,
 					tc.getDataNodes(), sql);
 		}
 		// match table with where condtion of partion colum values
@@ -637,8 +650,8 @@ public final class ServerRouterUtil {
 		if (dataNodeSet.size() == 1) {
 			return routeToSingleNode(rrs, dataNodeSet.iterator().next(), sql);
 		} else {
-			return routeToMultiNode(schema,isSelect, isSelect, ast, rrs, dataNodeSet,
-					sql);
+			return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
+					dataNodeSet, sql);
 		}
 
 	}
@@ -825,6 +838,7 @@ public final class ServerRouterUtil {
 				}
 				if (resultList.size() == 1) {
 					rrs.setCacheAble(true);
+					sql=addSQLLmit(schema,rrs,ast,sql);
 					rrs = routeToSingleNode(rrs, resultList.get(0), sql);
 				} else {
 					// mulit routes ,not cache route result
@@ -854,8 +868,8 @@ public final class ServerRouterUtil {
 			LOGGER.warn("multi route tables found in this sql ,tables:"
 					+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
 					+ sql);
-			return routeToMultiNode(schema,isSelect, isSelect, ast, rrs, curRNodeSet,
-					sql);
+			return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
+					curRNodeSet, sql);
 		} else {// only one table
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();
@@ -915,12 +929,13 @@ public final class ServerRouterUtil {
 		return rrs;
 	}
 
-	private static RouteResultset routeToMultiNode(SchemaConfig schema,boolean isSelect,
-			boolean cache, QueryTreeNode ast, RouteResultset rrs,
-			Collection<String> dataNodes, String stmt)
+	private static RouteResultset routeToMultiNode(SchemaConfig schema,
+			boolean isSelect, boolean cache, QueryTreeNode ast,
+			RouteResultset rrs, Collection<String> dataNodes, String stmt)
 			throws SQLSyntaxErrorException {
 		if (isSelect) {
-			String sql = SelectSQLAnalyser.analyseMergeInf(rrs, ast, true,schema.getDefaultMaxLimit());
+			String sql = SelectSQLAnalyser.analyseMergeInf(rrs, ast, true,
+					schema.getDefaultMaxLimit());
 			if (sql != null) {
 				stmt = sql;
 			}

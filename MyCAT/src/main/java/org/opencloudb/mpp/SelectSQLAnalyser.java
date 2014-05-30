@@ -90,11 +90,30 @@ public class SelectSQLAnalyser {
 		return tableName;
 	}
 
+	public static String addLimitCondtionForSelectSQL(RouteResultset rrs,
+			CursorNode cursNode, int defaultMaxLimit) throws SQLSyntaxErrorException {
+		NumericConstantNode offCountNode = new NumericConstantNode();
+		offCountNode.setNodeType(NodeTypes.INT_CONSTANT_NODE);
+		offCountNode.setValue(defaultMaxLimit);
+		cursNode.init(cursNode.statementToString(),
+				cursNode.getResultSetNode(), cursNode.getName(),
+				cursNode.getOrderByList(), cursNode.getOffsetClause(),
+				offCountNode, cursNode.getUpdateMode(),
+				cursNode.getUpdatableColumns());
+		rrs.setLimitSize(defaultMaxLimit);
+		try {
+			return new NodeToString().toString(cursNode);
+		} catch (StandardException e) {
+			throw new SQLSyntaxErrorException(e);
+		}
+	}
+
 	/**
 	 * anlayse group ,order ,limit condtions
 	 * 
 	 * @param rrs
 	 * @param ast
+	 * @throws StandardException
 	 * @throws SQLSyntaxErrorException
 	 */
 	public static String analyseMergeInf(RouteResultset rrs, QueryTreeNode ast,
@@ -187,7 +206,12 @@ public class SelectSQLAnalyser {
 			rrs.setLimitSize(Integer.parseInt(offCountNode.getValue()
 					.toString()));
 		}
-		if (modifySQLLimit && offsetNode != null) {
+		// if no limit in sql and defaultMaxLimit not equals -1 ,then and limit
+		if ((modifySQLLimit) && (offCountNode == null)
+				&& (defaultMaxLimit != -1)) {
+			return addLimitCondtionForSelectSQL(rrs, rsNode, defaultMaxLimit);
+
+		} else if (modifySQLLimit && offsetNode != null) {
 			offsetNode.setValue(0);
 			offCountNode.setValue(rrs.getLimitStart() + rrs.getLimitSize());
 			try {
@@ -361,14 +385,15 @@ public class SelectSQLAnalyser {
 					(ColumnReference) joinOpt.getRightOperand());
 		} else if (joinClause instanceof AndNode
 				|| joinClause instanceof OrNode) {
-			BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinClause.getLeftOperand();
+			BinaryRelationalOperatorNode joinOpt = (BinaryRelationalOperatorNode) joinClause
+					.getLeftOperand();
 			joinClause.getLeftOperand();
 			addTableJoinInf(parsInf.ctx,
 					(ColumnReference) joinOpt.getLeftOperand(),
 					(ColumnReference) joinOpt.getRightOperand());
-		}else
-		{
-			throw new StandardException("can't get join info "+joinNd.toString());
+		} else {
+			throw new StandardException("can't get join info "
+					+ joinNd.toString());
 		}
 
 	}
