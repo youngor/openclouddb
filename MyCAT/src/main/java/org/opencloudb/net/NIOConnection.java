@@ -46,20 +46,7 @@ public interface NIOConnection extends ClosableConnection{
      */
     void write(ByteBuffer buffer);
     
-    /**
-     * 通知Queue缓存为空，可以继续写数据了
-     * 
-     */
-    void writeQueueAvailable();
-    
-    /**
-     * 通知write Queue已经满了
-     * 
-     */
-    void writeQueueBlocked();
-    
-
-   
+     
 
     /**
      * 发生错误

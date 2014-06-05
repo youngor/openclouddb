@@ -167,7 +167,8 @@ public class JDBCConnection implements BackendConnection {
 
 	@Override
 	public void quit() {
-
+    this.close("client quit");
+    
 	}
 
 	@Override
@@ -383,16 +384,9 @@ public class JDBCConnection implements BackendConnection {
 		}
 	}
 
-	@Override
-	public boolean isSuppressReadTemporay() {
-		return false;
-	}
+	
 
-	@Override
-	public void setSuppressReadTemporay(boolean b) {
-
-	}
-
+	
 	@Override
 	public boolean isRunning() {
 		return this.running;

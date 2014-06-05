@@ -68,8 +68,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	private final ReentrantLock lock;
 	private long affectedRows;
 	private long insertId;
-
 	private boolean fieldsReturned;
+
 	public MultiNodeQueryHandler(RouteResultset rrs, boolean autocommit,
 			NonBlockingSession session, DataMergeService dataMergeSvr) {
 		super(session);
@@ -82,6 +82,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		this.lock = new ReentrantLock();
 		// this.icHandler = new CommitNodeHandler(session);
 		this.dataMergeSvr = dataMergeSvr;
+		if (dataMergeSvr != null) {
+			LOGGER.debug("has data merge logic ");
+		}
 	}
 
 	public void execute() throws Exception {
@@ -165,8 +168,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		String errmsg = new String(err.message);
 		LOGGER.warn("error response from backend, code:" + err.errno
 				+ " errmsg: " + errmsg + ",from " + conn);
-		if(this.errorRepsponsed)
-		{
+		if (this.errorRepsponsed) {
 			return;
 		}
 		this.setFail(errmsg);
@@ -177,6 +179,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 	@Override
 	public void okResponse(byte[] data, BackendConnection conn) {
 		boolean executeResponse = conn.syncAndExcute();
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("received ok response ,executeResponse:"
+					+ executeResponse + " from " + conn);
+		}
 		if (executeResponse) {
 			if (clearIfSessionClosed(session)) {
 				return;
@@ -215,7 +221,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					}
 					ok.write(source);
 				} catch (Exception e) {
-					handleDataProcessException(e,conn);
+					handleDataProcessException(e, conn);
 				} finally {
 					lock.unlock();
 				}
@@ -229,7 +235,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		boolean allFinished = false;
 		if (tryErrorFinish) {
-			allFinished=this.decrementCountBy(1);
+			allFinished = this.decrementCountBy(1);
 			this.tryErrorFinished(conn, allFinished);
 		}
 
@@ -238,6 +244,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 
 	@Override
 	public void rowEofResponse(byte[] eof, BackendConnection conn) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("on row end reseponse " + conn);
+		}
 		if (errorRepsponsed) {
 			return;
 		}
@@ -256,6 +265,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				tryErrorFinished(conn, true);
 				return;
 			}
+
 			try {
 				lock.lock();
 				// lazy allocate buffer
@@ -266,6 +276,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					int end = start + dataMergeSvr.getRrs().getLimitSize();
 					Iterator<RowDataPacket> itor = dataMergeSvr.getResults()
 							.iterator();
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("output merge result ,total data "
+								+ dataMergeSvr.getResults().size() + " start :"
+								+ start + " end :" + end + " package id start:"
+								+ packetId);
+					}
 					while (itor.hasNext()) {
 						RowDataPacket row = itor.next();
 						itor.remove();
@@ -281,9 +297,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					}
 				}
 				eof[3] = ++packetId;
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug("last packet id:" + packetId);
+				}
 				source.write(source.writeToBuffer(eof, buffer));
+				buffer = null;
 			} catch (Exception e) {
-				handleDataProcessException(e,conn);
+				handleDataProcessException(e, conn);
 			} finally {
 				lock.unlock();
 				if (dataMergeSvr != null) {
@@ -354,7 +374,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			eof[3] = ++packetId;
 			buffer = source.writeToBuffer(eof, buffer);
 		} catch (Exception e) {
-			handleDataProcessException(e,conn);
+			handleDataProcessException(e, conn);
 		} finally {
 			lock.unlock();
 		}
@@ -397,11 +417,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 				buffer = session.getSource().writeToBuffer(row, buffer);
 			}
 
-		} catch(Exception e)
-		{
-			handleDataProcessException(e,conn);
-		}
-		finally {
+		} catch (Exception e) {
+			handleDataProcessException(e, conn);
+		} finally {
 			lock.unlock();
 		}
 	}

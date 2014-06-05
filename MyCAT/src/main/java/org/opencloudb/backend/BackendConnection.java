@@ -52,10 +52,6 @@ public interface BackendConnection extends ClosableConnection {
 
 	public void rollback();
 
-	public boolean isSuppressReadTemporay();
-
-	public void setSuppressReadTemporay(boolean b);
-
 	public boolean isRunning();
 
 	public boolean isBorrowed();

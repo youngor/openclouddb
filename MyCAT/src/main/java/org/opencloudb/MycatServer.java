@@ -203,6 +203,7 @@ public class MycatServer {
 
 		// startup server
 		ServerConnectionFactory sf = new ServerConnectionFactory();
+		sf.setWriteQueueCapcity(system.getFrontWriteQueueSize());
 		sf.setCharset(system.getCharset());
 		sf.setIdleTimeout(system.getIdleTimeout());
 		server = new NIOAcceptor(NAME + "Server",  system.getBindIp(),system.getServerPort(), sf,

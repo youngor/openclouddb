@@ -460,8 +460,11 @@ public final class ServerRouterUtil {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
+			if(schema.getMetaDataNodes().size()>1)
+			{
 			return routeToMultiNode(schema, false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
+			}
 		}
 		// show index or column
 		int[] indx = getSpecPos(upStmt, 0);
@@ -534,7 +537,7 @@ public final class ServerRouterUtil {
 
 	private static String addSQLLmit(SchemaConfig schema,RouteResultset rrs, QueryTreeNode ast,
 			String sql) throws SQLSyntaxErrorException {
-		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode) {
+		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode && ((CursorNode)ast).getFetchFirstClause() == null) {
 			String newstmt = SelectSQLAnalyser.addLimitCondtionForSelectSQL(
 					rrs, (CursorNode) ast, schema.getDefaultMaxLimit());
 			if (newstmt != null) {
@@ -606,8 +609,15 @@ public final class ServerRouterUtil {
 									+ Arrays.toString(dataNodeSet.toArray())
 									+ " sql :" + sql);
 						}
+						if(dataNodeSet.size()>1)
+						{
 						return routeToMultiNode(schema, isSelect, isSelect,
 								ast, rrs, dataNodeSet, sql);
+						}else
+						{
+							rrs.setCacheAble(true);
+							return routeToSingleNode(rrs,dataNodeSet.iterator().next(),sql);
+						}
 					}
 
 				}
@@ -648,6 +658,7 @@ public final class ServerRouterUtil {
 		// match table with where condtion of partion colum values
 		Set<String> dataNodeSet = ruleCalculate(tc, ruleCol2Val);
 		if (dataNodeSet.size() == 1) {
+			rrs.setCacheAble(isSelect);
 			return routeToSingleNode(rrs, dataNodeSet.iterator().next(), sql);
 		} else {
 			return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
@@ -687,6 +698,11 @@ public final class ServerRouterUtil {
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();
 			TableConfig tc = getTableConfig(schema, entry.getKey());
+			if(tc.getRule()==null&&tc.getDataNodes().size()==1)
+			{
+				rrs.setCacheAble(isSelect);
+				return routeToSingleNode(rrs,tc.getDataNodes().get(0),sql);
+			}
 			Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();
 
 			return tryRouteForTable(ast, schema, rrs, isSelect, sql, tc,
@@ -865,11 +881,19 @@ public final class ServerRouterUtil {
 				}
 
 			}
-			LOGGER.warn("multi route tables found in this sql ,tables:"
-					+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
-					+ sql);
+			
+			if(curRNodeSet.size()>1)
+			{
+				LOGGER.warn("multi route tables found in this sql ,tables:"
+						+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
+						+ sql);
 			return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
 					curRNodeSet, sql);
+			}else
+			{
+				return routeToSingleNode(rrs,curRNodeSet.iterator().next(),sql);
+				
+			}
 		} else {// only one table
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();

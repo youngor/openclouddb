@@ -33,7 +33,8 @@ import org.opencloudb.util.TimeUtil;
 /**
  * @author mycat
  */
-public abstract class BackendAIOConnection extends AbstractConnection implements BackendConnection{
+public abstract class BackendAIOConnection extends AbstractConnection implements
+		BackendConnection {
 
 	protected long id;
 	protected String host;
@@ -58,6 +59,7 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 
 	public void setSuppressReadTemporay(boolean suppressReadTemporay) {
 		this.suppressReadTemporay = suppressReadTemporay;
+		asynRead();
 	}
 
 	public long getId() {

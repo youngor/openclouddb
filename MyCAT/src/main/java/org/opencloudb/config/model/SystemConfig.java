@@ -57,7 +57,7 @@ public final class SystemConfig {
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
 	private static final int DEFAULT_USE_WR_FLUX_CONTRL = 0;
-
+    private int frontWriteQueueSize=64;
 	private String bindIp="0.0.0.0";
 	private int serverPort;
 	private int managerPort;
@@ -109,6 +109,14 @@ public final class SystemConfig {
 		this.waitTimeout = DEFAULT_WAIT_TIMEOUT;
 		this.openWRFluxControl = DEFAULT_USE_WR_FLUX_CONTRL;
 		this.defaultMaxLimit=DEFAULT_MAX_LIMIT;
+	}
+
+	public int getFrontWriteQueueSize() {
+		return frontWriteQueueSize;
+	}
+
+	public void setFrontWriteQueueSize(int frontWriteQueueSize) {
+		this.frontWriteQueueSize = frontWriteQueueSize;
 	}
 
 	public String getBindIp() {

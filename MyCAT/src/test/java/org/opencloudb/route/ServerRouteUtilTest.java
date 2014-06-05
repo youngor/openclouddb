@@ -398,7 +398,7 @@ public class ServerRouteUtilTest extends TestCase {
 		// route by parent rule ,update sql
 		sql = "update orders set id=1 ,name='aaa' where customer_id=2000001";
 		rrs = ServerRouterUtil.route(schema, 1, sql, null, null, cachePool);
-		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(true, rrs.isCacheAble());
 		Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
 		// route by parent rule but can't find datanode
@@ -491,6 +491,54 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(1, rrs.getNodes().length);
 		Assert.assertEquals(schema.getDefaultMaxLimit(), rrs.getLimitSize());
 		Assert.assertEquals("SELECT * FROM goods LIMIT 100", rrs.getNodes()[0].getStatement());
+		
+		sql = "select * from goods limit 2 ,3";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(-1, rrs.getLimitSize());
+		Assert.assertEquals("select * from goods limit 2 ,3", rrs.getNodes()[0].getStatement());
+		
+		
+		sql = "select * from notpartionTable limit 2 ,3";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
+		Assert.assertEquals(1, rrs.getNodes().length);
+		Assert.assertEquals(-1, rrs.getLimitSize());
+		Assert.assertEquals("select * from notpartionTable limit 2 ,3", rrs.getNodes()[0].getStatement());
+		
+	}
+
+	
+	public void testModifySQLLimit() throws Exception
+	{
+		final SchemaConfig schema = schemaMap.get("TESTDB");
+
+		String sql = null;
+		RouteResultset rrs = null;
+        //SQL span multi datanode 
+		sql = "select * from orders limit 2,3";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
+		Map<String, RouteResultsetNode> nodeMap = getNodeMap(rrs, 2);
+		NodeNameAsserter nameAsserter = new NodeNameAsserter("dn2",
+				"dn1");
+		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
+		Assert.assertEquals(3, rrs.getLimitSize());
+		Assert.assertEquals("SELECT * FROM orders LIMIT 5 OFFSET 0", rrs.getNodes()[0].getStatement());
+		
+		 //SQL  not span multi datanode 
+		sql = "select * from customer where id=10000 limit 2,3";
+		rrs = ServerRouterUtil.route(schema, ServerParse.SELECT , sql, null, null, cachePool);
+		Assert.assertEquals(true, rrs.isCacheAble());
+		nodeMap = getNodeMap(rrs, 1);
+		 nameAsserter = new NodeNameAsserter("dn1");
+		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
+		Assert.assertEquals(-1, rrs.getLimitSize());
+		Assert.assertEquals("select * from customer where id=10000 limit 2,3", rrs.getNodes()[0].getStatement());
+		
+		
+		
 	}
 
 	public void testGroupLimit() throws Exception {

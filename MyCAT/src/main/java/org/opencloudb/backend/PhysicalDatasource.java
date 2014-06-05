@@ -549,15 +549,9 @@ class FakeConnection implements BackendConnection {
 
 	}
 
-	@Override
-	public boolean isSuppressReadTemporay() {
-		return false;
-	}
+	
 
-	@Override
-	public void setSuppressReadTemporay(boolean b) {
-	}
-
+	
 	@Override
 	public boolean isRunning() {
 		return false;

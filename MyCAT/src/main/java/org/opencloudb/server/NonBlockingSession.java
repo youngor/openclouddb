@@ -72,57 +72,12 @@ public class NonBlockingSession implements Session {
 	private volatile MultiNodeQueryHandler multiNodeHandler;
 	private volatile CommitNodeHandler commitHandler;
 	private volatile RollbackNodeHandler rollbackHandler;
-	private boolean openWRFluxContrl = false;
 
-	public NonBlockingSession(ServerConnection source, int openWRFluxContrl) {
+	public NonBlockingSession(ServerConnection source) {
 		this.source = source;
 		this.target = new ConcurrentHashMap<RouteResultsetNode, BackendConnection>(
 				2, 1);
 		this.terminating = new AtomicBoolean(false);
-		this.openWRFluxContrl = (openWRFluxContrl == 1);
-	}
-
-	/**
-	 * temporary supress channel read event ,because front connection is blocked
-	 */
-	public void supressTargetChannelReadEvent() {
-		if (!openWRFluxContrl) {
-			return;
-		}
-		final boolean isDebug = LOGGER.isDebugEnabled();
-		for (BackendConnection con : target.values()) {
-			if (!con.isSuppressReadTemporay()) {
-				if (isDebug) {
-					LOGGER.debug("supress backend connection read event ,for front con blocked write "
-							+ source + " backcon:" + con);
-				}
-				con.setSuppressReadTemporay(true);
-				((org.opencloudb.net.AbstractConnection) con).disableRead();
-			}
-		}
-	}
-
-	/**
-	 * temporary upsupress channel read event ,because front connection is
-	 * blocked
-	 */
-	public void unSupressTargetChannelReadEvent() {
-		if (!openWRFluxContrl) {
-			return;
-		}
-		final boolean isDebug = LOGGER.isDebugEnabled();
-
-		for (BackendConnection con : target.values()) {
-			if (con.isSuppressReadTemporay()) {
-				if (isDebug) {
-					LOGGER.debug("upsupress backend connection read event ,for front con can write more "
-							+ source + " backcon:" + con);
-				}
-				con.setSuppressReadTemporay(false);
-				((org.opencloudb.net.AbstractConnection) con).enableRead();
-			}
-
-		}
 	}
 
 	@Override
@@ -149,7 +104,7 @@ public class NonBlockingSession implements Session {
 
 	@Override
 	public void execute(RouteResultset rrs, int type) {
-		//clear prev execute resources
+		// clear prev execute resources
 		clearHandlesResources();
 		if (LOGGER.isDebugEnabled()) {
 			StringBuilder s = new StringBuilder();

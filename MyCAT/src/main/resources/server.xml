@@ -10,6 +10,8 @@
 <!DOCTYPE mycat:server SYSTEM "server.dtd">
 <mycat:server xmlns:mycat="http://org.opencloudb/">
 	<system>
+	
+		
 		<!-- 
 		<property name="processors">32</property> 
 		<property name="processorExecutor">32</property> 
@@ -17,6 +19,7 @@
 		<property name="managerPort">9066</property> 
 		<property name="idleTimeout">300000</property>
         <property name="bindIp">0.0.0.0</property>
+        <property name="frontWriteQueueSize">1024</property> 
 		-->
 	</system>
 	<user name="test">

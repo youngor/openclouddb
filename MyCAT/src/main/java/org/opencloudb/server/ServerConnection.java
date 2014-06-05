@@ -52,7 +52,8 @@ public class ServerConnection extends FrontendConnection {
 	private NonBlockingSession session;
 	protected volatile boolean backReadSupressed = false;
 
-	public ServerConnection(AsynchronousSocketChannel channel) throws IOException {
+	public ServerConnection(AsynchronousSocketChannel channel)
+			throws IOException {
 		super(channel);
 		this.txInterrupted = false;
 		this.autocommit = true;
@@ -206,8 +207,6 @@ public class ServerConnection extends FrontendConnection {
 		});
 	}
 
-	
-
 	@Override
 	public void close(String reason) {
 
@@ -221,24 +220,6 @@ public class ServerConnection extends FrontendConnection {
 				}
 			});
 			return;
-		}
-	}
-
-	/**
-	 * when front connection write available ,back connections can read more
-	 * data to process and send
-	 */
-	public void writeQueueAvailable() {
-		if (backReadSupressed) {
-			session.unSupressTargetChannelReadEvent();
-			backReadSupressed = false;
-		}
-	}
-
-	public void writeQueueBlocked() {
-		if (!backReadSupressed) {
-			session.supressTargetChannelReadEvent();
-			backReadSupressed = true;
 		}
 	}
 

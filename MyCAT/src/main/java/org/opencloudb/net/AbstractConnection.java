@@ -63,7 +63,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected long netOutBytes;
 	protected int writeAttempts;
 
-	protected final ReentrantLock keyLock = new ReentrantLock();
+	private final ReentrantLock writeLock = new ReentrantLock();
 	private long idleTimeout;
 	private static AIOReadHandler aioReadHandler = new AIOReadHandler();
 	private static AIOWriteHandler aioWriteHandler = new AIOWriteHandler();
@@ -168,12 +168,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		this.processor.getBufferPool().safeRecycle(buffer);
 	}
 
-	public void writeQueueBlocked() {
-
-	}
-
-	public void writeQueueAvailable() {
-	}
 
 	public void setHandler(NIOHandler handler) {
 		this.handler = handler;
@@ -199,6 +193,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	}
 
 	public void asynRead() {
+
 		ByteBuffer theBuffer = readBuffer;
 		if (theBuffer == null) {
 			theBuffer = ByteBuffer.allocate(1024);
@@ -279,33 +274,20 @@ public abstract class AbstractConnection implements NIOConnection {
 			recycle(buffer);
 			return;
 		}
-		if (writing) {
-			try {
-				int writeQueueStatus = writeQueue.put(buffer);
-				if (!writing) {
-					writing = true;
-					ByteBuffer buf = writeQueue.poll();
-					if (buf != null) {
-						this.asynWrite(buffer);
-					}
-				}
-				switch (writeQueueStatus) {
-				case BufferQueue.NEARLY_EMPTY: {
-					this.writeQueueAvailable();
-					break;
-				}
-				case BufferQueue.NEARLY_FULL: {
-					this.writeQueueBlocked();
-					break;
-				}
-				}
-			} catch (InterruptedException e) {
-				error(ErrorCode.ERR_PUT_WRITE_QUEUE, e);
-				return;
+		try {
+			writeLock.lock();
+			if (writing) {
+				writeQueue.put(buffer);
+				
+			} else {// not write now
+				writing = true;
+				asynWrite(buffer);
 			}
-		} else {// not write now
-			writing = true;
-			asynWrite(buffer);
+		} catch (InterruptedException e) {
+			error(ErrorCode.ERR_PUT_WRITE_QUEUE, e);
+			return;
+		} finally {
+			writeLock.unlock();
 		}
 
 	}
@@ -469,14 +451,6 @@ public abstract class AbstractConnection implements NIOConnection {
 		}
 	}
 
-	public void disableRead() {
-
-	}
-
-	public void enableRead() {
-
-	}
-
 }
 
 class AIOWriteHandler implements CompletionHandler<Integer, AbstractConnection> {
@@ -509,8 +483,10 @@ class AIOReadHandler implements CompletionHandler<Integer, AbstractConnection> {
 				con.close("handle err:" + e);
 			}
 		} else if (i == -1) {
-			con.close("client close");
+			//System.out.println("read -1 xxxxxxxxx "+con);
+			con.close("client closed");
 		}
+		
 
 	}
 
