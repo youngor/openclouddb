@@ -32,6 +32,7 @@ import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.opencloudb.config.model.SystemConfig;
 
 import com.foundationdb.sql.parser.QueryTreeNode;
 import com.foundationdb.sql.unparser.NodeToString;
@@ -59,7 +60,7 @@ public class SequenceParserTest {
 	@Test
 	public void testParseSequence() throws Exception {
 
-		ExtNodeToString4SEQ strHandler = new ExtNodeToString4SEQ();
+		ExtNodeToString4SEQ strHandler = new ExtNodeToString4SEQ(SystemConfig.SEQUENCEHANDLER_LOCALFILE);
 		QueryTreeNode ast = null;
 		String sqlText = "SELECT NEXT VALUE FOR MYCATSEQ_TEST from sys.tb1";
 		ast = SQLParserDelegate.parse(sqlText,

@@ -65,7 +65,7 @@ public final class BufferQueue {
 	 * @throws InterruptedException
 	 */
 	public void put(ByteBuffer buffer) throws InterruptedException {
-		this.items.add(buffer);
+		this.items.offer(buffer);
 		curSize++;
 		if (curSize > total) {
 			LOGGER.warn("bufferQueue size exceeded ,maybe sql returned too many records ,cursize:"

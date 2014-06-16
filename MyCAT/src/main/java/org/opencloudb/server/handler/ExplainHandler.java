@@ -125,7 +125,7 @@ public class ExplainHandler {
 		try {
 			int sqlType = ServerParse.parse(stmt) & 0xff;
 			return MycatServer.getInstance().getRouterservice()
-					.route(schema, sqlType, stmt, c.getCharset(), c);
+					.route(MycatServer.getInstance().getConfig().getSystem(),schema, sqlType, stmt, c.getCharset(), c);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
 			logger.warn(s.append(c).append(stmt).toString()+" error:"+ e);

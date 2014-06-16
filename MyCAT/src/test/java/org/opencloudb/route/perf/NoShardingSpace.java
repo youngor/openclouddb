@@ -30,6 +30,7 @@ import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.loader.SchemaLoader;
 import org.opencloudb.config.loader.xml.XMLSchemaLoader;
 import org.opencloudb.config.model.SchemaConfig;
+import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.route.ServerRouterUtil;
 
 /**
@@ -50,7 +51,7 @@ public class NoShardingSpace {
         SchemaConfig schema = this.schema;
         String stmt = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {
-            ServerRouterUtil.route(schema, -1,stmt, null, null,cachePool);
+            ServerRouterUtil.route(new SystemConfig(),schema, -1,stmt, null, null,cachePool);
         }
     }
 

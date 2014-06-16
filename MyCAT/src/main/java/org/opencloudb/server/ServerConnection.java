@@ -152,7 +152,7 @@ public class ServerConnection extends FrontendConnection {
 		try {
 
 			rrs = MycatServer.getInstance().getRouterservice()
-					.route(schema, type, sql, this.charset, this);
+					.route(MycatServer.getInstance().getConfig().getSystem(),schema, type, sql, this.charset, this);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
 			LOGGER.warn(s.append(this).append(sql).toString() + " err:"

@@ -1,5 +1,7 @@
 package org.opencloudb.parser;
 
+import org.opencloudb.config.model.SystemConfig;
+import org.opencloudb.sequence.handler.IncrSequenceMySQLHandler;
 import org.opencloudb.sequence.handler.IncrSequencePropHandler;
 import org.opencloudb.sequence.handler.SequenceHandler;
 
@@ -32,11 +34,21 @@ import com.foundationdb.sql.unparser.NodeToString;
  *       </table>
  */
 public class ExtNodeToString4SEQ extends NodeToString {
-	public SequenceHandler sequenceHandler;
+	private final SequenceHandler sequenceHandler;
 
-	public ExtNodeToString4SEQ() {
+	public ExtNodeToString4SEQ(int seqHandlerType) {
 		super();
-		sequenceHandler = IncrSequencePropHandler.getInstance();
+		switch(seqHandlerType)
+		{
+		case SystemConfig.SEQUENCEHANDLER_MYSQLDB:
+			sequenceHandler = IncrSequenceMySQLHandler.getInstance();
+			break;
+		case SystemConfig.SEQUENCEHANDLER_LOCALFILE:
+			sequenceHandler = IncrSequencePropHandler.getInstance();
+			break;
+			default:
+				throw new java.lang.IllegalArgumentException("Invalid sequnce handler type "+seqHandlerType);
+		}
 	}
 
 	protected String nextSequenceNode(NextSequenceNode node)

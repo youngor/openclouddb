@@ -39,6 +39,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
+import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.config.model.TableConfig;
 import org.opencloudb.config.model.rule.RuleConfig;
 import org.opencloudb.mpp.ColumnRoutePair;
@@ -99,7 +100,7 @@ public final class ServerRouterUtil {
 	 * @throws SQLNonTransientException
 	 * @author mycat
 	 */
-	public static RouteResultset route(SchemaConfig schema, int sqlType,
+	public static RouteResultset route(SystemConfig sysConfig,SchemaConfig schema, int sqlType,
 			String stmt, String charset, Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		stmt = stmt.trim();
@@ -134,10 +135,11 @@ public final class ServerRouterUtil {
 		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
 			try {
 				// @micmiu 扩展NodeToString实现自定义全局序列号
-				NodeToString strHandler = new ExtNodeToString4SEQ();
+				NodeToString strHandler = new ExtNodeToString4SEQ(sysConfig.getSequnceHandlerType());
 				// 如果存在sequence 转化sequence为实际数值
 				stmt = strHandler.toString(ast);
 				rrs = new RouteResultset(stmt, sqlType);
+				rrs.setCacheAble(false);
 				QueryTreeNode ast2 = SQLParserDelegate.parse(stmt,
 						charset == null ? "utf-8" : charset);
 				ast = ast2;

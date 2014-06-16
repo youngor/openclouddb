@@ -56,7 +56,6 @@ public final class SystemConfig {
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
-	private static final int DEFAULT_USE_WR_FLUX_CONTRL = 0;
     private int frontWriteQueueSize=64;
 	private String bindIp="0.0.0.0";
 	private int serverPort;
@@ -79,11 +78,12 @@ public final class SystemConfig {
 	private int parserCommentVersion;
 	private int sqlRecordCount;
 	private long waitTimeout;
-	private int openWRFluxControl;
 	private int processorBufferPool;
 	private int processorBufferChunk;
 	private int defaultMaxLimit;
-
+	public static final int SEQUENCEHANDLER_LOCALFILE=0;
+	public static final int SEQUENCEHANDLER_MYSQLDB=1;
+    private int sequnceHandlerType=SEQUENCEHANDLER_LOCALFILE;
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
@@ -107,9 +107,19 @@ public final class SystemConfig {
 		this.parserCommentVersion = DEFAULT_PARSER_COMMENT_VERSION;
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
 		this.waitTimeout = DEFAULT_WAIT_TIMEOUT;
-		this.openWRFluxControl = DEFAULT_USE_WR_FLUX_CONTRL;
-		this.defaultMaxLimit=DEFAULT_MAX_LIMIT;
+				this.defaultMaxLimit=DEFAULT_MAX_LIMIT;
 	}
+
+	
+	public int getSequnceHandlerType() {
+		return sequnceHandlerType;
+	}
+
+
+	public void setSequnceHandlerType(int sequnceHandlerType) {
+		this.sequnceHandlerType = sequnceHandlerType;
+	}
+
 
 	public int getFrontWriteQueueSize() {
 		return frontWriteQueueSize;
@@ -127,14 +137,7 @@ public final class SystemConfig {
 		this.bindIp = bindIp;
 	}
 
-	public int getOpenWRFluxControl() {
-		return openWRFluxControl;
-	}
-
-	public void setOpenWRFluxControl(int openWRFluxControl) {
-		this.openWRFluxControl = openWRFluxControl;
-	}
-
+	
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
 	}
@@ -347,8 +350,8 @@ public final class SystemConfig {
 				+ ", clusterHeartbeatRetry=" + clusterHeartbeatRetry
 				+ ", txIsolation=" + txIsolation + ", parserCommentVersion="
 				+ parserCommentVersion + ", sqlRecordCount=" + sqlRecordCount
-				+ ", waitTimeout=" + waitTimeout + ", openWRFluxControl="
-				+ openWRFluxControl + ", processorBufferPool="
+				+ ", waitTimeout=" + waitTimeout + ", sequnceHandlerType="
+				+ sequnceHandlerType + ", processorBufferPool="
 				+ processorBufferPool + ", processorBufferChunk="
 				+ processorBufferChunk + "]";
 	}

@@ -55,7 +55,7 @@ public class BaseSQLExeTest {
 				"select sum(fee) total_fee, days,count(id),max(fee),min(fee) from  travelrecord  group by days  order by days desc limit 99 ",
 				"update travelrecord set user_id=user_id where id =1",
 				"delete from travelrecord where id =1 ",
-				"insert into travelrecord (id,user_id,traveldate,fee,days) values(1,'wang','2014-01-05',510.5,3)"};
+				"insert into travelrecord (id,user_id,traveldate,fee,days) values(1,'wang','2014-01-05',510.5,3)" };
 		Statement stmt = theCon.createStatement();
 		for (String sql : sqls) {
 			stmt.execute(sql);
@@ -66,6 +66,27 @@ public class BaseSQLExeTest {
 		}
 		theCon.commit();
 		System.out.println("testMultiNodeNormalSQL end");
+	}
+
+	private static void testMultiNodeLargeResultset(Connection theCon)
+			throws SQLException {
+		theCon.setAutoCommit(true);
+		System.out.println("testMultiNodeLargeResultset begin");
+		String sql = "select * from travelrecord  limit 100000";
+
+		for (int i = 0; i < 100; i++) {
+			Statement stmt = theCon.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			int count = 0;
+			while (rs.next()) {
+				count++;
+			}
+			rs.close();
+			stmt.close();
+			System.out.println("total result " + count);
+		}
+
+		System.out.println("testMultiNodeLargeResultset end");
 	}
 
 	private static void testSingleNodeNormalSQL(Connection theCon)
@@ -81,7 +102,7 @@ public class BaseSQLExeTest {
 				"insert into company(id,name) values(1,'hp')" };
 		Statement stmt = theCon.createStatement();
 		for (String sql : sqls) {
-			System.out.println("execute "+sql);
+			System.out.println("execute " + sql);
 			stmt.execute(sql);
 		}
 		theCon.setAutoCommit(false);
@@ -163,7 +184,7 @@ public class BaseSQLExeTest {
 		String user = args[1];
 		String password = args[2];
 		Connection theCon = null;
-		
+
 		theCon = null;
 		try {
 			theCon = getCon(url, user, password);
@@ -173,7 +194,15 @@ public class BaseSQLExeTest {
 		} finally {
 			closeCon(theCon);
 		}
-		theCon = null;
+
+		try {
+			theCon = getCon(url, user, password);
+			testMultiNodeLargeResultset(theCon);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			closeCon(theCon);
+		}
 		try {
 			theCon = getCon(url, user, password);
 			testSingleNodeNormalSQL(theCon);

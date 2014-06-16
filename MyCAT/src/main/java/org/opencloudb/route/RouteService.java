@@ -29,6 +29,7 @@ import org.opencloudb.cache.CachePool;
 import org.opencloudb.cache.CacheService;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
+import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.server.parser.ServerParse;
 
 public class RouteService {
@@ -45,7 +46,7 @@ public class RouteService {
 		return tableId2DataNodeCache;
 	}
 
-	public RouteResultset route(SchemaConfig schema, int sqlType, String stmt,
+	public RouteResultset route(SystemConfig sysconf,SchemaConfig schema, int sqlType, String stmt,
 			String charset, Object info) throws SQLNonTransientException {
 		RouteResultset rrs = null;
 		String cacheKey = null;
@@ -57,7 +58,7 @@ public class RouteService {
 			}
 		}
 
-		rrs = ServerRouterUtil.route(schema, sqlType, stmt, charset, info,
+		rrs = ServerRouterUtil.route(sysconf,schema, sqlType, stmt, charset, info,
 				tableId2DataNodeCache);
 		if (sqlType == ServerParse.SELECT && rrs.isCacheAble()) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
