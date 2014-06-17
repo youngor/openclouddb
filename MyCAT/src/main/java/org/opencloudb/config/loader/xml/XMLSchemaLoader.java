@@ -135,6 +135,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			Element schemaElement = (Element) list.item(i);
 			String name = schemaElement.getAttribute("name");
 			String dataNode = schemaElement.getAttribute("dataNode");
+			String checkSQLSchemaStr=schemaElement.getAttribute("checkSQLschema");
 			String sqlMaxLimitStr = schemaElement.getAttribute("sqlMaxLimit");
 			int sqlMaxLimit = -1;
 			if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
@@ -153,7 +154,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 			if (schemas.containsKey(name)) {
 				throw new ConfigException("schema " + name + " duplicated!");
 			}
-			schemas.put(name, new SchemaConfig(name, dataNode, tables,sqlMaxLimit));
+			schemas.put(name, new SchemaConfig(name, dataNode, tables,sqlMaxLimit,"true".equalsIgnoreCase(checkSQLSchemaStr)));
 		}
 	}
 

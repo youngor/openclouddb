@@ -100,11 +100,14 @@ public final class ServerRouterUtil {
 	 * @throws SQLNonTransientException
 	 * @author mycat
 	 */
-	public static RouteResultset route(SystemConfig sysConfig,SchemaConfig schema, int sqlType,
-			String stmt, String charset, Object info, LayerCachePool cachePool)
+	public static RouteResultset route(SystemConfig sysConfig,
+			SchemaConfig schema, int sqlType, String stmt, String charset,
+			Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		stmt = stmt.trim();
-		stmt = removeSchema(stmt, schema.getName());
+		if (schema.isCheckSQLSchema()) {
+			stmt = removeSchema(stmt, schema.getName());
+		}
 		RouteResultset rrs = new RouteResultset(stmt, sqlType);
 
 		// 检查schema是否含有拆分库
@@ -135,7 +138,8 @@ public final class ServerRouterUtil {
 		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
 			try {
 				// @micmiu 扩展NodeToString实现自定义全局序列号
-				NodeToString strHandler = new ExtNodeToString4SEQ(sysConfig.getSequnceHandlerType());
+				NodeToString strHandler = new ExtNodeToString4SEQ(
+						sysConfig.getSequnceHandlerType());
 				// 如果存在sequence 转化sequence为实际数值
 				stmt = strHandler.toString(ast);
 				rrs = new RouteResultset(stmt, sqlType);
@@ -462,11 +466,8 @@ public final class ServerRouterUtil {
 					stmt = "SHOW TABLES" + stmt.substring(end);
 				}
 			}
-			if(schema.getMetaDataNodes().size()>1)
-			{
 			return routeToMultiNode(schema, false, false, null, rrs,
 					schema.getMetaDataNodes(), stmt);
-			}
 		}
 		// show index or column
 		int[] indx = getSpecPos(upStmt, 0);
@@ -537,9 +538,10 @@ public final class ServerRouterUtil {
 		return rrs;
 	}
 
-	private static String addSQLLmit(SchemaConfig schema,RouteResultset rrs, QueryTreeNode ast,
-			String sql) throws SQLSyntaxErrorException {
-		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode && ((CursorNode)ast).getFetchFirstClause() == null) {
+	private static String addSQLLmit(SchemaConfig schema, RouteResultset rrs,
+			QueryTreeNode ast, String sql) throws SQLSyntaxErrorException {
+		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode
+				&& ((CursorNode) ast).getFetchFirstClause() == null) {
 			String newstmt = SelectSQLAnalyser.addLimitCondtionForSelectSQL(
 					rrs, (CursorNode) ast, schema.getDefaultMaxLimit());
 			if (newstmt != null) {
@@ -580,7 +582,7 @@ public final class ServerRouterUtil {
 			LayerCachePool cachePool) throws SQLNonTransientException {
 
 		if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE && isSelect) {
-			sql=addSQLLmit(schema,rrs,ast,sql);
+			sql = addSQLLmit(schema, rrs, ast, sql);
 			return routeToSingleNode(rrs, tc.getRandomDataNode(), sql);
 		}
 
@@ -611,14 +613,13 @@ public final class ServerRouterUtil {
 									+ Arrays.toString(dataNodeSet.toArray())
 									+ " sql :" + sql);
 						}
-						if(dataNodeSet.size()>1)
-						{
-						return routeToMultiNode(schema, isSelect, isSelect,
-								ast, rrs, dataNodeSet, sql);
-						}else
-						{
+						if (dataNodeSet.size() > 1) {
+							return routeToMultiNode(schema, isSelect, isSelect,
+									ast, rrs, dataNodeSet, sql);
+						} else {
 							rrs.setCacheAble(true);
-							return routeToSingleNode(rrs,dataNodeSet.iterator().next(),sql);
+							return routeToSingleNode(rrs, dataNodeSet
+									.iterator().next(), sql);
 						}
 					}
 
@@ -700,10 +701,9 @@ public final class ServerRouterUtil {
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap
 					.entrySet().iterator().next();
 			TableConfig tc = getTableConfig(schema, entry.getKey());
-			if(tc.getRule()==null&&tc.getDataNodes().size()==1)
-			{
+			if (tc.getRule() == null && tc.getDataNodes().size() == 1) {
 				rrs.setCacheAble(isSelect);
-				return routeToSingleNode(rrs,tc.getDataNodes().get(0),sql);
+				return routeToSingleNode(rrs, tc.getDataNodes().get(0), sql);
 			}
 			Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();
 
@@ -856,7 +856,7 @@ public final class ServerRouterUtil {
 				}
 				if (resultList.size() == 1) {
 					rrs.setCacheAble(true);
-					sql=addSQLLmit(schema,rrs,ast,sql);
+					sql = addSQLLmit(schema, rrs, ast, sql);
 					rrs = routeToSingleNode(rrs, resultList.get(0), sql);
 				} else {
 					// mulit routes ,not cache route result
@@ -883,18 +883,17 @@ public final class ServerRouterUtil {
 				}
 
 			}
-			
-			if(curRNodeSet.size()>1)
-			{
+
+			if (curRNodeSet.size() > 1) {
 				LOGGER.warn("multi route tables found in this sql ,tables:"
-						+ Arrays.toString(tbCondMap.keySet().toArray()) + " sql:"
-						+ sql);
-			return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
-					curRNodeSet, sql);
-			}else
-			{
-				return routeToSingleNode(rrs,curRNodeSet.iterator().next(),sql);
-				
+						+ Arrays.toString(tbCondMap.keySet().toArray())
+						+ " sql:" + sql);
+				return routeToMultiNode(schema, isSelect, isSelect, ast, rrs,
+						curRNodeSet, sql);
+			} else {
+				return routeToSingleNode(rrs, curRNodeSet.iterator().next(),
+						sql);
+
 			}
 		} else {// only one table
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap

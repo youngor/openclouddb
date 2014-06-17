@@ -640,6 +640,14 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals("SHOW FULL COLUMNS FROM offer WHERE true",
 				rrs.getNodes()[0].getStatement());
 
+		
+		sql="SHOW FULL TABLES FROM `TESTDB` WHERE Table_type != 'VIEW'";
+		rrs = ServerRouterUtil.route(new SystemConfig(),schema, ServerParse.SHOW, sql, null, null,
+				cachePool);
+		Assert.assertEquals(-1L, rrs.getLimitSize());
+		Assert.assertEquals(false, rrs.isCacheAble());
+		Assert.assertEquals("SHOW FULL TABLES WHERE Table_type != 'VIEW'", rrs.getNodes()[0].getStatement());
+		
 		sql = "SHOW INDEX  IN offer FROM  db_name";
 		rrs = ServerRouterUtil.route(new SystemConfig(),schema, ServerParse.SHOW, sql, null, null,
 				cachePool);

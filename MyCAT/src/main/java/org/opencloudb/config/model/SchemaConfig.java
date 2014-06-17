@@ -43,6 +43,7 @@ public class SchemaConfig {
 	 * when a select sql has no limit condition ,and default max limit to prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
+	private final boolean checkSQLSchema;
 	/**
 	 * key is join relation ,A.ID=B.PARENT_ID value is Root Table ,if a->b*->c*
 	 * ,then A is root table
@@ -50,9 +51,10 @@ public class SchemaConfig {
 	private final Map<String, TableConfig> joinRel2TableMap = new HashMap<String, TableConfig>();
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables,int defaultMaxLimit) {
+			Map<String, TableConfig> tables,int defaultMaxLimit,boolean checkSQLschema) {
 		this.name = name;
 		this.dataNode = dataNode;
+		this.checkSQLSchema=checkSQLschema;
 		this.tables = tables;
 		this.defaultMaxLimit=defaultMaxLimit;
 		buildJoinMap(tables);
@@ -63,6 +65,10 @@ public class SchemaConfig {
 		}
 		this.metaDataNodes = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();
+	}
+
+	public boolean isCheckSQLSchema() {
+		return checkSQLSchema;
 	}
 
 	public int getDefaultMaxLimit() {

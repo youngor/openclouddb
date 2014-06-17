@@ -10,7 +10,7 @@
 <!DOCTYPE mycat:schema SYSTEM "schema.dtd">
 <mycat:schema xmlns:mycat="http://org.opencloudb/">
 
-	<schema name="cndb">
+	<schema name="cndb" checkSQLschema="true" >
 		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule" />
 		<table name="offer_detail" dataNode="detail_dn[0],detail_dn$1-127"
 			rule="offerDetailRule" ruleRequired="false" />
@@ -20,7 +20,7 @@
 		<table name="independent" dataNode="independent_dn$0-126,independent_dn[127]" />
 	</schema>
 	<schema name="dubbo" dataNode="dubbo_dn" />
-	<schema name="ignoreSchemaTest" dataNode="cndb_dn" />
+	<schema name="ignoreSchemaTest" dataNode="cndb_dn" checkSQLschema="true"/>
 	<schema name="config">
 		<table name="offer" dataNode="offer_dn$0-127" rule="offerRule"
 			ruleRequired="true" />
