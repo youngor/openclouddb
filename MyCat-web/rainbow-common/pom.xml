@@ -19,46 +19,27 @@
 
 
 	<dependencies>
-		<dependency> 
-            <groupId>javax.servlet</groupId> 
-            <artifactId>servlet-api</artifactId> 
-        </dependency> 
 		<dependency>
-		  <groupId>org.xerial</groupId>
-		  <artifactId>sqlite-jdbc</artifactId>
-		</dependency>
-		<!-- <dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>javax.wsdl</artifactId>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>jaxrpc</artifactId>
+			<groupId>org.xerial</groupId>
+			<artifactId>sqlite-jdbc</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>saaj</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.axis</groupId>
-			<artifactId>axis</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>javax.wsdl</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>jaxrpc</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>saaj</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.axis</groupId> <artifactId>axis</artifactId> 
+			</dependency> -->
 		<dependency>
 			<groupId>commons-discovery</groupId>
 			<artifactId>commons-discovery</artifactId>
 		</dependency>
-		<!-- <dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>orai18n</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-mongodb</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-mongodb-log4j</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>orai18n</artifactId> 
+			</dependency> <dependency> <groupId>org.springframework.data</groupId> <artifactId>spring-data-mongodb</artifactId> 
+			</dependency> <dependency> <groupId>org.springframework.data</groupId> <artifactId>spring-data-mongodb-log4j</artifactId> 
+			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
@@ -194,15 +175,9 @@
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
 		</dependency>
-<!-- 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-digester3</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-digester3</artifactId>
-			<classifier>with-deps</classifier>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.apache.commons</groupId> <artifactId>commons-digester3</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.commons</groupId> <artifactId>commons-digester3</artifactId> 
+			<classifier>with-deps</classifier> </dependency> -->
 
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
@@ -302,147 +277,54 @@
 		<!-- freemarker end -->
 
 		<!-- spring rabbitMQ start -->
-<!-- 		<dependency>
-			<groupId>org.springframework.amqp</groupId>
-			<artifactId>spring-amqp</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.amqp</groupId>
-			<artifactId>spring-rabbit</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.springframework.amqp</groupId> <artifactId>spring-amqp</artifactId> 
+			</dependency> <dependency> <groupId>org.springframework.amqp</groupId> <artifactId>spring-rabbit</artifactId> 
+			</dependency> -->
 		<!-- spring rabbitMQ end -->
 
 
 		<!-- rainbow out lib -->
-		<!-- <dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>kaptcha</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.whalin</groupId>
-			<artifactId>Memcached-Java-Client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>druid</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.neethi</groupId>
-			<artifactId>neethi</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>wsdl4j</groupId>
-			<artifactId>wsdl4j</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>kaptcha</artifactId> 
+			</dependency> <dependency> <groupId>com.whalin</groupId> <artifactId>Memcached-Java-Client</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>druid</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>mysql-connector-java</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.neethi</groupId> <artifactId>neethi</artifactId> 
+			</dependency> <dependency> <groupId>wsdl4j</groupId> <artifactId>wsdl4j</artifactId> 
+			</dependency> -->
 		<!-- cxf lib -->
-<!-- 		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>httpasyncclient</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.neethi</groupId>
-			<artifactId>neethi</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>wsdl4j</groupId>
-			<artifactId>wsdl4j</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.codehaus.woodstox</groupId>
-			<artifactId>stax2-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>xmlschema-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>cxf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>httpclient</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>httpcore</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>httpcore-nio</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>woodstox-core-asl</artifactId>
-		</dependency> -->
+		<!-- <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>httpasyncclient</artifactId> 
+			</dependency> <dependency> <groupId>org.apache.neethi</groupId> <artifactId>neethi</artifactId> 
+			</dependency> <dependency> <groupId>wsdl4j</groupId> <artifactId>wsdl4j</artifactId> 
+			</dependency> <dependency> <groupId>org.codehaus.woodstox</groupId> <artifactId>stax2-api</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>xmlschema-core</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>cxf</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>httpclient</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>httpcore</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>httpcore-nio</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>woodstox-core-asl</artifactId> 
+			</dependency> -->
 
-		<!-- axis 
+		<!-- axis <dependency> <groupId>org.apache.axis2</groupId> <artifactId>axis2-adb</artifactId> 
+			<type>jar</type> <scope>compile</scope> <exclusions> <exclusion> <groupId>org.apache.ws.commons.schema</groupId> 
+			<artifactId>XmlSchema</artifactId> </exclusion> </exclusions> </dependency> 
+			<dependency> <groupId>org.apache.axis2</groupId> <artifactId>axis2-kernel</artifactId> 
+			<type>jar</type> <scope>compile</scope> <exclusions> <exclusion> <groupId>org.apache.ws.commons.schema</groupId> 
+			<artifactId>XmlSchema</artifactId> </exclusion> </exclusions> </dependency> 
+			<dependency> <groupId>org.apache.axis2</groupId> <artifactId>org.apache.axis2.osgi</artifactId> 
+			<exclusions> <exclusion> <groupId>org.apache.ws.commons.schema</groupId> 
+			<artifactId>XmlSchema</artifactId> </exclusion> </exclusions> </dependency> 
+			<dependency> <groupId>javax.jms</groupId> <artifactId>jms-api</artifactId> 
+			</dependency> <dependency> <groupId>javax.jms</groupId> <artifactId>jms-api</artifactId> 
+			</dependency> -->
+		<!-- <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>aqapi</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>ojdbc6</artifactId> 
+			</dependency> <dependency> <groupId>org.rainbow.lib</groupId> <artifactId>log4j</artifactId> 
+			</dependency> <dependency> <groupId>dom4j</groupId> <artifactId>dom4j</artifactId> 
+			</dependency> -->
 		<dependency>
-			<groupId>org.apache.axis2</groupId>
-			<artifactId>axis2-adb</artifactId>
-			<type>jar</type>
-			<scope>compile</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.ws.commons.schema</groupId>
-					<artifactId>XmlSchema</artifactId>
-				</exclusion>
-			</exclusions>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.27</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.axis2</groupId>
-			<artifactId>axis2-kernel</artifactId>
-			<type>jar</type>
-			<scope>compile</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.ws.commons.schema</groupId>
-					<artifactId>XmlSchema</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.axis2</groupId>
-			<artifactId>org.apache.axis2.osgi</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.ws.commons.schema</groupId>
-					<artifactId>XmlSchema</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>javax.jms</groupId>
-			<artifactId>jms-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>javax.jms</groupId>
-			<artifactId>jms-api</artifactId>
-		</dependency>-->
-		<!-- <dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>aqapi</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>ojdbc6</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.rainbow.lib</groupId>
-			<artifactId>log4j</artifactId>
-		</dependency> 
-		<dependency>
-			<groupId>dom4j</groupId>
-			<artifactId>dom4j</artifactId>
-		</dependency>-->
-		<dependency>
-		        <groupId>mysql</groupId>
-		        <artifactId>mysql-connector-java</artifactId>
-		</dependency>
-		
 	</dependencies>
 </project>
