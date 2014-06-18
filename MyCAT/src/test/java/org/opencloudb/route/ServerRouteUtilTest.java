@@ -196,7 +196,7 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(2, rrs.getNodes().length);
 		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals("TESTDB_EMPLOYEE.ID", rrs.getPrimaryKey());
-		Assert.assertEquals(100, rrs.getLimitSize());
+		Assert.assertEquals(-1, rrs.getLimitSize());
 
 		// update cache ID found
 		sql = "update employee  set name='aaa' where id=88";
