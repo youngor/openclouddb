@@ -52,6 +52,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected volatile int readBufferOffset;
 	private volatile ByteBuffer readBuffer;
 	private volatile ByteBuffer writeBuffer;
+	private volatile boolean writing;
 	// private volatile boolean writing = false;
 	protected BufferQueue writeQueue;
 	protected boolean isRegistered;
@@ -274,30 +275,24 @@ public abstract class AbstractConnection implements NIOConnection {
 			return;
 		}
 		try {
-			writeQueue.put(buffer);
-			if (writeBuffer == null) {
-				try {
-					writeLock.lock();
-					if (writeBuffer == null) {
-						buffer = writeQueue.poll();
-						if (buffer != null) {
-							writeBuffer = buffer;
-							asynWrite(buffer);
-						}
-					}
-				} finally {
-					writeLock.unlock();
-				}
+			writeLock.lock();
+			if (writing == false && writeQueue.isEmpty()) {
+				writeBuffer = buffer;
+				asynWrite(buffer);
+			} else {
+				writeQueue.put(buffer);
 			}
-
 		} catch (InterruptedException e) {
 			error(ErrorCode.ERR_PUT_WRITE_QUEUE, e);
 			return;
+		} finally {
+			writeLock.unlock();
 		}
 
 	}
 
 	private void asynWrite(ByteBuffer buffer) {
+		writing = true;
 		buffer.flip();
 		this.channel.write(buffer, this, aioWriteHandler);
 	}
@@ -429,8 +424,13 @@ public abstract class AbstractConnection implements NIOConnection {
 			asynWrite(theBuffer);
 		} else {// write finished
 			this.recycle(theBuffer);
+			writeBuffer = null;
+			writing = false;
 			try {
 				writeLock.lock();
+				if (writing) {
+					return;
+				}
 				theBuffer = writeQueue.poll();
 				if (theBuffer != null) {
 					this.writeBuffer = theBuffer;

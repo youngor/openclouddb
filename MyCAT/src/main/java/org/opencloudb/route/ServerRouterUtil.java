@@ -540,7 +540,7 @@ public final class ServerRouterUtil {
 
 	private static String addSQLLmit(SchemaConfig schema, RouteResultset rrs,
 			QueryTreeNode ast, String sql) throws SQLSyntaxErrorException {
-		if (schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode
+		if (!rrs.hasPrimaryKeyToCache()&&schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode
 				&& ((CursorNode) ast).getFetchFirstClause() == null) {
 			String newstmt = SelectSQLAnalyser.addLimitCondtionForSelectSQL(
 					rrs, (CursorNode) ast, schema.getDefaultMaxLimit());

@@ -208,7 +208,7 @@ public class SelectSQLAnalyser {
 		}
 		// if no limit in sql and defaultMaxLimit not equals -1 ,then and limit
 		if ((modifySQLLimit) && (offCountNode == null)
-				&& (defaultMaxLimit != -1)) {
+			&& (defaultMaxLimit != -1)&& !rrs.hasPrimaryKeyToCache()) {
 			return addLimitCondtionForSelectSQL(rrs, rsNode, defaultMaxLimit);
 
 		} else if (modifySQLLimit && offsetNode != null) {

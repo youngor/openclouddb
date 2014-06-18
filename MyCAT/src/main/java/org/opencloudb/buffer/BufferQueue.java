@@ -24,6 +24,7 @@
 package org.opencloudb.buffer;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
@@ -32,16 +33,17 @@ import org.apache.log4j.Logger;
  * @author mycat
  */
 public final class BufferQueue {
-	private static final Logger LOGGER = Logger.getLogger(BufferQueue.class);
+	//private static final Logger LOGGER = Logger.getLogger(BufferQueue.class);
 	private ByteBuffer attachment;
 	private final int total;
 	private volatile int curSize = 0;
-	private final ConcurrentLinkedQueue<ByteBuffer> items = new ConcurrentLinkedQueue<ByteBuffer>();
+	private final LinkedList<ByteBuffer> items = new LinkedList<ByteBuffer>();
 
 	public BufferQueue(int capacity) {
 		this.total = capacity;
 	}
 
+	
 	public ByteBuffer attachment() {
 		return attachment;
 	}
@@ -59,6 +61,10 @@ public final class BufferQueue {
 		return this.items.size();
 	}
 
+	public boolean isEmpty()
+	{
+		return items.isEmpty();
+	}
 	/**
 	 * 
 	 * @param buffer
@@ -68,8 +74,9 @@ public final class BufferQueue {
 		this.items.offer(buffer);
 		curSize++;
 		if (curSize > total) {
-			LOGGER.warn("bufferQueue size exceeded ,maybe sql returned too many records ,cursize:"
+			throw new java.lang.RuntimeException("bufferQueue size exceeded ,maybe sql returned too many records ,cursize:"
 					+ curSize);
+		
 		}
 	}
 

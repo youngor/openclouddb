@@ -102,6 +102,7 @@ public class MycatServer {
 
 			// startup connector
 			connector = new NIOConnector();
+			connector.setWriteQueueCapcity(system.getFrontWriteQueueSize());
 			connector.setProcessors(processors);
 
 		} catch (IOException e) {
