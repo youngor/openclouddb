@@ -128,8 +128,9 @@ class FetchMySQLSequnceHandler implements ResponseHandler {
 				LOGGER.debug("execute in datanode " + seqVal.dataNode
 						+ " for fetch sequnce sql " + seqVal.sql);
 			}
+			//修正获取seq的逻辑，在读写分离的情况下只能走写节点。修改Select模式为Update模式。
 			mysqlDN.getConnection(conMeta, new RouteResultsetNode(
-					seqVal.dataNode, ServerParse.SELECT, seqVal.sql), this,
+					seqVal.dataNode, ServerParse.UPDATE, seqVal.sql), this,
 					seqVal);
 		} catch (Exception e) {
 			LOGGER.warn("get connection err " + e);
