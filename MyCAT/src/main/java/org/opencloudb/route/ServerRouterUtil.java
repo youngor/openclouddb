@@ -703,6 +703,8 @@ public final class ServerRouterUtil {
 			TableConfig tc = getTableConfig(schema, entry.getKey());
 			if (tc.getRule() == null && tc.getDataNodes().size() == 1) {
 				rrs.setCacheAble(isSelect);
+				//20140625 修复 配置为全局表单节点的语句不会自动加上limit
+				sql = addSQLLmit(schema, rrs, ast, sql);
 				return routeToSingleNode(rrs, tc.getDataNodes().get(0), sql);
 			}
 			Map<String, Set<ColumnRoutePair>> colConds = entry.getValue();

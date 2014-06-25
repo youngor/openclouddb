@@ -808,5 +808,14 @@ public class ServerRouteUtilTest extends TestCase {
 			asserter.assertNode(node);
 		}
 	}
+	
+	public void testGlobalTableSingleNodeLimit() throws Exception {
+		SchemaConfig schema = schemaMap.get("TESTDB");
+		String sql = "select * from globalsn";
+		RouteResultset rrs = null;
+		rrs = ServerRouterUtil.route(new SystemConfig(), schema,
+				ServerParse.SELECT, sql, null, null, cachePool);
+		Assert.assertEquals(100L, rrs.getLimitSize());
+	}
 
 }
