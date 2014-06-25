@@ -84,6 +84,20 @@ public class TestUpdateSQLAnalyser {
 				parsInf.ctx.tablesAndCondtions.get("HouseInfo".toUpperCase())
 						.get("I_ID").size());
 		
-
+		// test update table with alias name
+		sql = "update employee a set a.name = 'system233' where a.id=3";
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		parsInf = UpdateSQLAnalyser.analyse(ast);
+		Assert.assertEquals("employee".toUpperCase(), parsInf.tableName);
+		Assert.assertEquals(1, parsInf.columnPairMap.size());
+		Assert.assertEquals("A", parsInf.tableNameAlias);
+		
+		sql = "update employee a set a.name = 'sys' where a.id in " +
+				"(select id from (select b.id from employee b where b.id=3) as tmp)";
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		parsInf = UpdateSQLAnalyser.analyse(ast);
+		Assert.assertEquals("employee".toUpperCase(), parsInf.tableName);
+		Assert.assertEquals(1, parsInf.columnPairMap.size());
+		Assert.assertEquals("A", parsInf.tableNameAlias);
 	}
 }

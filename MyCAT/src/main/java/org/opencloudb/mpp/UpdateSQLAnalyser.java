@@ -31,6 +31,8 @@ import java.util.Set;
 
 import com.foundationdb.sql.StandardException;
 import com.foundationdb.sql.parser.ColumnReference;
+import com.foundationdb.sql.parser.FromList;
+import com.foundationdb.sql.parser.FromTable;
 import com.foundationdb.sql.parser.QueryTreeNode;
 import com.foundationdb.sql.parser.ResultColumn;
 import com.foundationdb.sql.parser.ResultColumnList;
@@ -58,11 +60,25 @@ public class UpdateSQLAnalyser {
 	public static UpdateParsInf analyse(QueryTreeNode ast)
 			throws SQLSyntaxErrorException {
 		UpdateNode updateNode = (UpdateNode) ast;
+		
+		/* update table alias */
+		Map<String, String> updatedTableAlias = new HashMap<>();
+		FromList fromList = ((SelectNode) updateNode.getResultSetNode()).getFromList();
+		for (FromTable t : fromList)
+		{
+			String tableOrigName = t.getOrigTableName().getTableName();
+			String tableAlias = t.getCorrelationName();
+			if ( null==tableAlias || ""==tableAlias )
+				tableAlias = tableOrigName;
+				
+			updatedTableAlias.put(t.getOrigTableName().getTableName().toUpperCase(), tableAlias.toUpperCase());
+		}
 		String targetTable = updateNode.getTargetTableName().getTableName()
 				.toUpperCase();
 		UpdateParsInf parsInf = new UpdateParsInf();
 		ShardingParseInfo ctx = null;
 		parsInf.tableName = targetTable;
+		parsInf.tableNameAlias = updatedTableAlias.isEmpty() ? null : updatedTableAlias.get(parsInf.tableName);
 		SelectNode selNode = (SelectNode) updateNode.getResultSetNode();
 		ResultColumnList updateColumsLst = selNode.getResultColumns();
 		int updateColumnSize = updateColumsLst.size();
@@ -73,7 +89,7 @@ public class UpdateSQLAnalyser {
 			ColumnReference colRef = column.getReference();
 			String colTableName = colRef.getTableName();
 			if (colTableName != null
-					&& !colTableName.toUpperCase().equals(targetTable)) {
+					&& !colTableName.toUpperCase().equals(parsInf.tableNameAlias) ) {
 				throw new SQLSyntaxErrorException(
 						"update multi table not supported");
 			}

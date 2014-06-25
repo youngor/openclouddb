@@ -30,6 +30,12 @@ public class UpdateParsInf extends SelectParseInf {
 	 * update table's name
 	 */
 	public String tableName;
+	
+	/**
+	 * update tablen name alias 
+	 */
+	public String tableNameAlias;
+	
 	/**
 	 * colum's and values
 	 */
