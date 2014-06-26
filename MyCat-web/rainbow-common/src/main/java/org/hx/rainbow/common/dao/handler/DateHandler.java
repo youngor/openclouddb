@@ -30,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.regex.Pattern;
 
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
@@ -43,10 +44,18 @@ public class DateHandler implements TypeHandler {
 			if(parameter instanceof String){
 				String date = (String)parameter;
 				int length = date.length();
-				if(length <= 10 && length >= 8){
+				if(length == 8){
+					if(isNumeric(date)){
+						date = date.substring(0, 4)+"-"+date.substring(4, 6) + "-" + date.substring(6, 8);
+					}
 					ps.setDate(i, Date.valueOf(date));
 				}else{
-					ps.setTimestamp(i, Timestamp.valueOf(date));
+					date = date.replaceAll("(\\d{4}).{0,1}(\\d{2}).{0,1}(\\d{2})(.*)", "$1-$2-$3 $4");
+					if(length == 10){
+						ps.setDate(i, Date.valueOf(date));
+					}else{
+						ps.setTimestamp(i, Timestamp.valueOf(date));
+					}
 				}
 			}else if(parameter instanceof java.util.Date){
 				java.util.Date date = (java.util.Date)parameter;
@@ -79,6 +88,11 @@ public class DateHandler implements TypeHandler {
 			return o;
 		}
 	}
+	
+	private static boolean isNumeric(String str){ 
+	    Pattern pattern = Pattern.compile("[0-9]*"); 
+	    return pattern.matcher(str).matches();    
+	 } 
 
 	@Override
 	public Object getResult(ResultSet rs, int columnIndex) throws SQLException {
@@ -103,5 +117,10 @@ public class DateHandler implements TypeHandler {
 		}else{
 			return o;
 		}
+	}
+	public static void main(String[] args) {
+		String date = "20140203";
+				date = date.substring(0, 4)+"-"+date.substring(4, 6) + "-" + date.substring(6, 8);
+		System.out.println(date);
 	}
 }
