@@ -333,27 +333,32 @@ public final class SystemConfig {
 		this.processorBufferChunk = processorBufferChunk;
 	}
 
+
 	@Override
 	public String toString() {
-		return "SystemConfig [serverPort=" + serverPort + ", managerPort="
-				+ managerPort + ", charset=" + charset + ", processors="
-				+ processors + ", processorExecutor=" + processorExecutor
-				+ ", timerExecutor=" + timerExecutor + ", managerExecutor="
-				+ managerExecutor + ", idleTimeout=" + idleTimeout
-				+ ", processorCheckPeriod=" + processorCheckPeriod
-				+ ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod
-				+ ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod
-				+ ", clusterHeartbeatUser=" + clusterHeartbeatUser
-				+ ", clusterHeartbeatPass=" + clusterHeartbeatPass
-				+ ", clusterHeartbeatPeriod=" + clusterHeartbeatPeriod
-				+ ", clusterHeartbeatTimeout=" + clusterHeartbeatTimeout
-				+ ", clusterHeartbeatRetry=" + clusterHeartbeatRetry
-				+ ", txIsolation=" + txIsolation + ", parserCommentVersion="
-				+ parserCommentVersion + ", sqlRecordCount=" + sqlRecordCount
-				+ ", waitTimeout=" + waitTimeout + ", sequnceHandlerType="
-				+ sequnceHandlerType + ", processorBufferPool="
-				+ processorBufferPool + ", processorBufferChunk="
-				+ processorBufferChunk + "]";
+		return "SystemConfig [frontWriteQueueSize=" + frontWriteQueueSize
+				+ ", bindIp=" + bindIp + ", serverPort=" + serverPort
+				+ ", managerPort=" + managerPort + ", charset=" + charset
+				+ ", processors=" + processors + ", processorExecutor="
+				+ processorExecutor + ", timerExecutor=" + timerExecutor
+				+ ", managerExecutor=" + managerExecutor + ", idleTimeout="
+				+ idleTimeout + ", processorCheckPeriod="
+				+ processorCheckPeriod + ", dataNodeIdleCheckPeriod="
+				+ dataNodeIdleCheckPeriod + ", dataNodeHeartbeatPeriod="
+				+ dataNodeHeartbeatPeriod + ", clusterHeartbeatUser="
+				+ clusterHeartbeatUser + ", clusterHeartbeatPass="
+				+ clusterHeartbeatPass + ", clusterHeartbeatPeriod="
+				+ clusterHeartbeatPeriod + ", clusterHeartbeatTimeout="
+				+ clusterHeartbeatTimeout + ", clusterHeartbeatRetry="
+				+ clusterHeartbeatRetry + ", txIsolation=" + txIsolation
+				+ ", parserCommentVersion=" + parserCommentVersion
+				+ ", sqlRecordCount=" + sqlRecordCount + ", waitTimeout="
+				+ waitTimeout + ", processorBufferPool=" + processorBufferPool
+				+ ", processorBufferChunk=" + processorBufferChunk
+				+ ", defaultMaxLimit=" + defaultMaxLimit
+				+ ", sequnceHandlerType=" + sequnceHandlerType + "]";
 	}
+
+	
 
 }
