@@ -366,6 +366,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		if (readBuffer != null) {
 			recycle(readBuffer);
 			this.readBuffer = null;
+			this.readBufferOffset = 0;
 		}
 
 		// 鍥炴敹鍙戦�缂撳瓨
@@ -419,18 +420,16 @@ public abstract class AbstractConnection implements NIOConnection {
 		netOutBytes += result;
 		processor.addNetOutBytes(result);
 		lastWriteTime = TimeUtil.currentTimeMillis();
-		ByteBuffer theBuffer = writeBuffer;
-		if (theBuffer.hasRemaining()) {
-			asynWrite(theBuffer);
-		} else {// write finished
-			this.recycle(theBuffer);
-			writeBuffer = null;
-			writing = false;
-			try {
-				writeLock.lock();
-				if (writing) {
-					return;
-				}
+		try {
+			writeLock.lock();
+			ByteBuffer theBuffer = writeBuffer;
+			if (theBuffer.hasRemaining()) {
+				theBuffer.compact();
+				asynWrite(theBuffer);
+			} else {// write finished
+				this.recycle(theBuffer);
+				writeBuffer = null;
+				writing = false;
 				theBuffer = writeQueue.poll();
 				if (theBuffer != null) {
 					this.writeBuffer = theBuffer;
@@ -438,10 +437,10 @@ public abstract class AbstractConnection implements NIOConnection {
 				} else {
 					writeBuffer = null;
 				}
-			} finally {
-				writeLock.unlock();
-			}
 
+			}
+		} finally {
+			writeLock.unlock();
 		}
 	}
 
