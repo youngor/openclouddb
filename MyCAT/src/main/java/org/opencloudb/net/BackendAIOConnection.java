@@ -42,8 +42,6 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 	protected int localPort;
 	protected long idleTimeout;
 	protected boolean isFinishConnect;
-	// supress socket read event temporary ,because client
-	protected volatile boolean suppressReadTemporay;
 
 	public BackendAIOConnection(AsynchronousSocketChannel channel) {
 		super(channel);
@@ -51,15 +49,6 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 
 	public void register() {
 		this.asynRead();
-	}
-
-	public boolean isSuppressReadTemporay() {
-		return suppressReadTemporay;
-	}
-
-	public void setSuppressReadTemporay(boolean suppressReadTemporay) {
-		this.suppressReadTemporay = suppressReadTemporay;
-		asynRead();
 	}
 
 	public long getId() {
@@ -123,8 +112,7 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 	@Override
 	public String toString() {
 		return "BackendConnection [id=" + id + ", host=" + host + ", port="
-				+ port + ", localPort=" + localPort + ", suppressReadTemporay="
-				+ suppressReadTemporay + "]";
+				+ port + ", localPort=" + localPort + "]";
 	}
 
 }
