@@ -725,8 +725,7 @@ public class MySQLConnection extends BackendAIOConnection {
 				+ statusSync
 				+ ", writeQueue="
 				+ ((this.getWriteQueue() == null) ? 0 : getWriteQueue()
-						.snapshotSize()) + ", suppressReadTemporay="
-				+ suppressReadTemporay + ", modifiedSQLExecuted="
+						.snapshotSize()) + ", modifiedSQLExecuted="
 				+ modifiedSQLExecuted + "]";
 	}
 

@@ -62,7 +62,7 @@ public class UpdateSQLAnalyser {
 		UpdateNode updateNode = (UpdateNode) ast;
 		
 		/* update table alias */
-		Map<String, String> updatedTableAlias = new HashMap<>();
+		Map<String, String> updatedTableAlias = new HashMap<String, String>();
 		FromList fromList = ((SelectNode) updateNode.getResultSetNode()).getFromList();
 		for (FromTable t : fromList)
 		{
