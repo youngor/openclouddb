@@ -50,7 +50,7 @@ public class DateHandler implements TypeHandler {
 					}
 					ps.setDate(i, Date.valueOf(date));
 				}else{
-					date = date.replaceAll("(\\d{4}).{0,1}(\\d{2}).{0,1}(\\d{2})(.*)", "$1-$2-$3 $4");
+					date = date.replaceAll("(\\d{4}).{0,1}(\\d{2}).{0,1}(\\d{2})(.*)", "$1-$2-$3$4");
 					if(length == 10){
 						ps.setDate(i, Date.valueOf(date));
 					}else{
@@ -117,10 +117,5 @@ public class DateHandler implements TypeHandler {
 		}else{
 			return o;
 		}
-	}
-	public static void main(String[] args) {
-		String date = "20140203";
-				date = date.substring(0, 4)+"-"+date.substring(4, 6) + "-" + date.substring(6, 8);
-		System.out.println(date);
 	}
 }
