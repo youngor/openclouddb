@@ -47,6 +47,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	protected byte packetId;
 	protected volatile boolean errorRepsponsed = false;
 	protected ByteBuffer buffer;
+
 	public MultiNodeHandler(NonBlockingSession session) {
 		if (session == null) {
 			throw new IllegalArgumentException("session is null!");
@@ -161,7 +162,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		ErrorPacket err = new ErrorPacket();
 		lock.lock();
 		try {
-			err.packetId = ++packetId;
+			err.packetId = 1;
 		} finally {
 			lock.unlock();
 		}
@@ -174,9 +175,12 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	protected void tryErrorFinished(BackendConnection conn, boolean allEnd) {
 		if (!errorRepsponsed && allEnd && !session.closed()) {
 			errorRepsponsed = true;
-			if(buffer!=null)
-			{
-				session.getSource().write(buffer);
+			// if(buffer!=null)
+			// {
+			// session.getSource().write(buffer);
+			// }
+			if (buffer != null) {
+				buffer.clear();
 			}
 			createErrPkg(this.error).write(session.getSource());
 			// clear session resources,release all
@@ -190,7 +194,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 				// clear resouces
 				clearResources();
 			}
-			
+
 		}
 
 	}
@@ -209,6 +213,9 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		}
 		if (finished == false) {
 			finished = this.decrementCountBy(1);
+		}
+		if (error == null) {
+			error = "back connection closed ";
 		}
 		tryErrorFinished(conn, finished);
 	}
