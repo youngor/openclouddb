@@ -272,6 +272,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	public final void write(ByteBuffer buffer) {
 		if (isClosed.get()) {
 			recycle(buffer);
+			aioWriteHandler.failed(new RuntimeException("socket already closed "), this);
 			return;
 		}
 		try {

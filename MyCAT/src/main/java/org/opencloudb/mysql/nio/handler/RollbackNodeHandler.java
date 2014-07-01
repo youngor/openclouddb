@@ -73,6 +73,10 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 				executor.execute(new Runnable() {
 					@Override
 					public void run() {
+						if(LOGGER.isDebugEnabled())
+						{
+							LOGGER.debug("rollback job run for "+conn);
+						}
 						if (clearIfSessionClosed(session)) {
 							return;
 						}
@@ -109,12 +113,9 @@ public class RollbackNodeHandler extends MultiNodeHandler {
 
 	@Override
 	public void rowEofResponse(byte[] eof, BackendConnection conn) {
-
-	}
-
-	@Override
-	public void connectionError(Throwable e, BackendConnection conn) {
-
+		LOGGER.error(new StringBuilder().append("unexpected packet for ")
+				.append(conn).append(" bound by ").append(session.getSource())
+				.append(": field's eof").toString());
 	}
 
 	@Override
