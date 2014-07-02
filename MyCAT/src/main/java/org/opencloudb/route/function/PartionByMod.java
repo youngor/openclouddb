@@ -23,6 +23,8 @@
  */
 package org.opencloudb.route.function;
 
+import java.math.BigInteger;
+
 import org.opencloudb.config.model.rule.RuleAlgorithm;
 
 /**
@@ -48,7 +50,8 @@ public class PartionByMod extends AbstractPartionAlgorithm implements RuleAlgori
 
 	@Override
 	public Integer calculate(String columnValue) {
-	 return (int) (Long.parseLong(columnValue) % count);
+	BigInteger bigNum = new BigInteger(columnValue).abs();
+	 return (bigNum.mod(BigInteger.valueOf(count))).intValue();
 	}
 
 }
