@@ -51,12 +51,12 @@ import com.foundationdb.sql.parser.ValueNode;
 
 public class InsertSQLAnalyser {
 
-	public static InsertParsInf analyse(QueryTreeNode ast)
+	public static InsertParseInf analyse(QueryTreeNode ast)
 			throws SQLSyntaxErrorException {
 		InsertNode insrtNode = (InsertNode) ast;
 		String targetTable = insrtNode.getTargetTableName().getTableName()
 				.toUpperCase();
-		InsertParsInf parsInf = new InsertParsInf();
+		InsertParseInf parsInf = new InsertParseInf();
 		// must linked hash map to keep sequnce
 		Map<String, String> colMap = new LinkedHashMap<String, String>();
 		parsInf.columnPairMap = colMap;

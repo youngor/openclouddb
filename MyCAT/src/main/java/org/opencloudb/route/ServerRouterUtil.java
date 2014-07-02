@@ -47,7 +47,7 @@ import org.opencloudb.mpp.DDLParsInf;
 import org.opencloudb.mpp.DDLSQLAnalyser;
 import org.opencloudb.mpp.DeleteParsInf;
 import org.opencloudb.mpp.DeleteSQLAnalyser;
-import org.opencloudb.mpp.InsertParsInf;
+import org.opencloudb.mpp.InsertParseInf;
 import org.opencloudb.mpp.InsertSQLAnalyser;
 import org.opencloudb.mpp.JoinRel;
 import org.opencloudb.mpp.SelectParseInf;
@@ -170,7 +170,7 @@ public final class ServerRouterUtil {
 					cachePool);
 
 		} else if (ast.getNodeType() == NodeTypes.INSERT_NODE) {
-			InsertParsInf parsInf = InsertSQLAnalyser.analyse(ast);
+			InsertParseInf parsInf = InsertSQLAnalyser.analyse(ast);
 			if (parsInf.columnPairMap.isEmpty()) {
 				String inf = "not supported inserq sql (columns not provided),"
 						+ stmt;
