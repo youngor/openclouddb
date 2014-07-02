@@ -36,7 +36,7 @@ public class ShardingParseInfo {
 
 	public void addShardingExpr(String tableName, String columnName,
 			Object value) {
-		Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndCondtions
+		Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions
 				.get(tableName);
 		if (tableColumnsMap == null) {
 //			System.out
@@ -49,7 +49,7 @@ public class ShardingParseInfo {
 
 		if (columValues == null) {
 			columValues = new LinkedHashSet<ColumnRoutePair>();
-			tablesAndCondtions.get(tableName).put(uperColName, columValues);
+			tablesAndConditions.get(tableName).put(uperColName, columValues);
 		}
 		if (value instanceof Object[]) {
 			for (Object item : (Object[]) value) {
@@ -70,7 +70,7 @@ public class ShardingParseInfo {
 	 */
 	public String getTableName(String theName) {
 		String upperName = theName.toUpperCase();
-		if (tablesAndCondtions.containsKey(upperName)) {
+		if (tablesAndConditions.containsKey(upperName)) {
 			return upperName;
 		} else {
 			upperName = tableAliasMap.get(theName);
@@ -80,12 +80,12 @@ public class ShardingParseInfo {
 
 	public void clear() {
 		shardingKeySet.clear();
-		tablesAndCondtions.clear();
+		tablesAndConditions.clear();
 		tableAliasMap.clear();
 		joinList.clear();
 	}
 
-	public Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndCondtions = new LinkedHashMap<String, Map<String, Set<ColumnRoutePair>>>();
+	public Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<String, Map<String, Set<ColumnRoutePair>>>();
 	public Set<String> shardingKeySet = new HashSet<String>();
 	public List<JoinRel> joinList = new ArrayList<JoinRel>(1);
 

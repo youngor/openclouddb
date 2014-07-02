@@ -81,11 +81,11 @@ public class SelectSQLAnalyser {
 			parsInf.ctx.tableAliasMap.put(aliasName, tableName.toUpperCase());
 		}
 		tableName = tableName.toUpperCase();
-		Map<String, Set<ColumnRoutePair>> columVarMap = parsInf.ctx.tablesAndCondtions
+		Map<String, Set<ColumnRoutePair>> columVarMap = parsInf.ctx.tablesAndConditions
 				.get(tableName);
 		if (columVarMap == null) {
 			columVarMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
-			parsInf.ctx.tablesAndCondtions.put(tableName, columVarMap);
+			parsInf.ctx.tablesAndConditions.put(tableName, columVarMap);
 		}
 		return tableName;
 	}

@@ -28,7 +28,7 @@ import java.sql.SQLSyntaxErrorException;
 import junit.framework.Assert;
 
 import org.junit.Test;
-import org.opencloudb.mpp.InsertParsInf;
+import org.opencloudb.mpp.InsertParseInf;
 import org.opencloudb.mpp.InsertSQLAnalyser;
 
 import com.foundationdb.sql.parser.QueryTreeNode;
@@ -39,7 +39,7 @@ public class TestInsertSQLAnalyser {
 	public void testInsertSQL() throws SQLSyntaxErrorException {
 		String sql = null;
 		QueryTreeNode ast = null;
-		InsertParsInf parsInf = null;
+		InsertParseInf parsInf = null;
 		sql = "insert into table1  select * FROM table2 WHERE id not in ( select id from  table1) ";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		parsInf = InsertSQLAnalyser.analyse(ast);

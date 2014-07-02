@@ -259,7 +259,7 @@ public final class ServerRouterUtil {
 				return tryRouteForTable(ast, schema, rrs, false, stmt, tc,
 						null, null, cachePool);
 			} else if (tc.getTableType() == TableConfig.TYPE_GLOBAL_TABLE) {
-				if (parsInf.ctx.tablesAndCondtions.size() > 1) {
+				if (parsInf.ctx.tablesAndConditions.size() > 1) {
 					throw new SQLNonTransientException(
 							"global table not supported multi table related update "
 									+ parsInf.tableName);
@@ -695,7 +695,7 @@ public final class ServerRouterUtil {
 			ShardingParseInfo ctx, String sql, LayerCachePool cachePool)
 			throws SQLNonTransientException {
 		Map<String, TableConfig> tables = schema.getTables();
-		Map<String, Map<String, Set<ColumnRoutePair>>> tbCondMap = ctx.tablesAndCondtions;
+		Map<String, Map<String, Set<ColumnRoutePair>>> tbCondMap = ctx.tablesAndConditions;
 		if (tbCondMap.size() == 1) {
 			// only one table in this sql
 			Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry = tbCondMap

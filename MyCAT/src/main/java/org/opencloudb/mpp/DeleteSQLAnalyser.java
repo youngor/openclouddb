@@ -58,7 +58,7 @@ public class DeleteSQLAnalyser {
 				parsInf.ctx = ctx;
 			}
 			Map<String, Set<ColumnRoutePair>> tableCondMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
-			ctx.tablesAndCondtions.put(targetTable, tableCondMap);
+			ctx.tablesAndConditions.put(targetTable, tableCondMap);
 			try {
 				SelectSQLAnalyser.analyseWhereCondition(parsInf, false,
 						targetTable, selNode.getWhereClause());

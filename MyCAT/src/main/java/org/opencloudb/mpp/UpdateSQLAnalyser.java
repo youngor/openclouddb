@@ -107,7 +107,7 @@ public class UpdateSQLAnalyser {
 					}
 					// and B table info
 					Map<String, Set<ColumnRoutePair>> tableCondMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
-					ctx.tablesAndCondtions.put(bColTableName.toUpperCase(),
+					ctx.tablesAndConditions.put(bColTableName.toUpperCase(),
 							tableCondMap);
 				}
 			}
@@ -123,7 +123,7 @@ public class UpdateSQLAnalyser {
 				parsInf.ctx = ctx;
 			}
 			Map<String, Set<ColumnRoutePair>> tableCondMap = new LinkedHashMap<String, Set<ColumnRoutePair>>();
-			ctx.tablesAndCondtions.put(targetTable, tableCondMap);
+			ctx.tablesAndConditions.put(targetTable, tableCondMap);
 			try {
 				SelectSQLAnalyser.analyseWhereCondition(parsInf, false,
 						targetTable, selNode.getWhereClause());

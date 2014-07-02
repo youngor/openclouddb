@@ -50,7 +50,7 @@ public class TestDeleteSQLAnalyser {
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		parsInf = DeleteSQLAnalyser.analyse(ast);
 		Assert.assertEquals("A".toUpperCase(), parsInf.tableName);
-		Assert.assertEquals(1, parsInf.ctx.tablesAndCondtions.size());
+		Assert.assertEquals(1, parsInf.ctx.tablesAndConditions.size());
 
 	}
 

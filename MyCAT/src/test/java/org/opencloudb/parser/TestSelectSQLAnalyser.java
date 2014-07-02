@@ -55,7 +55,7 @@ public class TestSelectSQLAnalyser {
 		sql = "select a.id,a.name,b.type from db1.a a join b on a.id=b.id where a.sharding_id=4 or a.sharding_id=5  limit 2,10";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// Assert.assertEquals(true, parsInf.isContainsSchema());
 		// System.out.println("sql:" + new NodeToString().toString(ast));
 		// two tables
@@ -72,15 +72,15 @@ public class TestSelectSQLAnalyser {
 		sql = "select user";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// NO tables
 		Assert.assertEquals(0, tablesAndCondtions.size());
 
-		parsInf.ctx.tablesAndCondtions.clear();
+		parsInf.ctx.tablesAndConditions.clear();
 		sql = "SELECT last_name, job_id FROM demo.employees WHERE job_id = (SELECT job_id FROM employeesBack WHERE employee_id = 141) and (sharding_id='5' or sharding_id in (22,33,44))";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// 2 tables
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		// a condtion is
@@ -96,7 +96,7 @@ public class TestSelectSQLAnalyser {
 		sql = "SELECT ID,NAME FROM Aa WHERE EXISTS (SELECT * FROM demo2.B B WHERE B.AID=3) ";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		// condtion
@@ -107,7 +107,7 @@ public class TestSelectSQLAnalyser {
 		sql = "SELECT * FROM B baLias WHERE baLias.AID=1 ";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -118,7 +118,7 @@ public class TestSelectSQLAnalyser {
 		sql = "SELECT ID ,count(*) as count FROM B baLias WHERE baLias.AID=1 and count=5 ";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -131,7 +131,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		// condtion
@@ -146,7 +146,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -157,7 +157,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		columnsMap = tablesAndCondtions.get("A");
@@ -171,7 +171,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		columnsMap = tablesAndCondtions.get("A");
@@ -185,7 +185,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -196,7 +196,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		// condtion
@@ -207,7 +207,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -220,7 +220,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		// condtion
@@ -233,7 +233,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 
@@ -249,7 +249,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		offerCondMap = tablesAndCondtions.get("OFFER");
@@ -260,7 +260,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		offerCondMap = tablesAndCondtions.get("offer_detail".toUpperCase());
@@ -272,7 +272,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		offerCondMap = tablesAndCondtions.get("offer_detail".toUpperCase());
@@ -283,7 +283,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		// tables
 		Assert.assertEquals(1, tablesAndCondtions.size());
 		offerCondMap = tablesAndCondtions.get("wp_image".toUpperCase());
@@ -293,13 +293,13 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 
 		sql = "select o.*,d.* from (select * from ordera) o left join(select * from download) d on d.currentdate = o.currentdate";
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		Assert.assertEquals(0, tablesAndCondtions.get("ordera".toUpperCase())
 				.size());
@@ -315,19 +315,19 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(4, tablesAndCondtions.size());
 		Assert.assertEquals(3, parsInf.ctx.joinList.size());
 		Assert.assertEquals(4, parsInf.ctx.tableAliasMap.size());
-		Assert.assertEquals(1, parsInf.ctx.tablesAndCondtions.get("BJD_CONSULT_INQUIRY").size());
-		Assert.assertEquals(2, parsInf.ctx.tablesAndCondtions.get("BJD_CONSULT_QUESTION").size());
+		Assert.assertEquals(1, parsInf.ctx.tablesAndConditions.get("BJD_CONSULT_INQUIRY").size());
+		Assert.assertEquals(2, parsInf.ctx.tablesAndConditions.get("BJD_CONSULT_QUESTION").size());
 		
 		
 		sql = "select distinct c.*,l.Name LocalName from  tablea c left join bjd_local l on c.LocalID=l.LocalID where ContentID='xxxxxb838'";
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		Assert.assertEquals(true, tablesAndCondtions.get("TABLEA").containsKey("CONTENTID"));
 
@@ -335,7 +335,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		
 		
@@ -344,7 +344,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(1, parsInf.ctx.joinList.size());
 		Assert.assertEquals(new JoinRel("T1","id","T2","id"), parsInf.ctx.joinList.get(0));
 		Assert.assertEquals(2, tablesAndCondtions.size());
@@ -355,7 +355,7 @@ public class TestSelectSQLAnalyser {
 		parsInf.clear();
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		SelectSQLAnalyser.analyse(parsInf, ast);
-		tablesAndCondtions = parsInf.ctx.tablesAndCondtions;
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
 		Assert.assertEquals(1, parsInf.ctx.joinList.size());
 		Assert.assertEquals(new JoinRel("T1","id","T2","id"), parsInf.ctx.joinList.get(0));
 		Assert.assertEquals(2, tablesAndCondtions.size());

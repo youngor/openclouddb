@@ -53,9 +53,9 @@ public class TestUpdateSQLAnalyser {
 		parsInf = UpdateSQLAnalyser.analyse(ast);
 		Assert.assertEquals("A".toUpperCase(), parsInf.tableName);
 		Assert.assertEquals(3, parsInf.columnPairMap.size());
-		Assert.assertEquals(2, parsInf.ctx.tablesAndCondtions.size());
-		Assert.assertEquals(1, parsInf.ctx.tablesAndCondtions.get("A").size());
-		Assert.assertEquals(0, parsInf.ctx.tablesAndCondtions.get("B").size());
+		Assert.assertEquals(2, parsInf.ctx.tablesAndConditions.size());
+		Assert.assertEquals(1, parsInf.ctx.tablesAndConditions.get("A").size());
+		Assert.assertEquals(0, parsInf.ctx.tablesAndConditions.get("B").size());
 		Assert.assertEquals(2, parsInf.ctx.joinList.size());
 		Assert.assertEquals(new JoinRel("A", "kmdm", "B", "kmdm"),
 				parsInf.ctx.joinList.get(0));
@@ -68,7 +68,7 @@ public class TestUpdateSQLAnalyser {
 		Assert.assertEquals("A", parsInf.tableName);
 		Assert.assertEquals(1, parsInf.columnPairMap.size());
 		Assert.assertEquals("?", parsInf.columnPairMap.get("HIGH"));
-		Assert.assertEquals(2, parsInf.ctx.tablesAndCondtions.size());
+		Assert.assertEquals(2, parsInf.ctx.tablesAndConditions.size());
 		Assert.assertEquals(1, parsInf.ctx.joinList.size());
 		Assert.assertEquals(new JoinRel("A", "HIGH", "B", "OLD"),
 				parsInf.ctx.joinList.get(0));
@@ -81,7 +81,7 @@ public class TestUpdateSQLAnalyser {
 		Assert.assertEquals("?",
 				parsInf.columnPairMap.get("I_Valid".toUpperCase()));
 		Assert.assertEquals(3,
-				parsInf.ctx.tablesAndCondtions.get("HouseInfo".toUpperCase())
+				parsInf.ctx.tablesAndConditions.get("HouseInfo".toUpperCase())
 						.get("I_ID").size());
 		
 		// test update table with alias name
