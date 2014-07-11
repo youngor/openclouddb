@@ -179,7 +179,7 @@ public abstract class AbstractMultiTreadBatchTester {
 				+ failedCount.get());
 		long sucess = finshiedCount.get() - failedCount.get();
 		System.out.println("used time total:" + usedTime + "seconds");
-		System.out.println("tps:" + sucess / usedTime);
+		System.out.println("tps:" + sucess / (usedTime+0.1));
 	}
 
 	/**

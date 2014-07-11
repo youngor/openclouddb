@@ -48,6 +48,7 @@ public class ServerConnection extends FrontendConnection {
 	private volatile int txIsolation;
 	private volatile boolean autocommit;
 	private volatile boolean txInterrupted;
+	private volatile String txInterrputMsg="";
 	private long lastInsertId;
 	private NonBlockingSession session;
 	protected volatile boolean backReadSupressed = false;
@@ -96,9 +97,10 @@ public class ServerConnection extends FrontendConnection {
 	/**
 	 * 设置是否需要中断当前事务
 	 */
-	public void setTxInterrupt() {
+	public void setTxInterrupt(String txInterrputMsg) {
 		if (!autocommit && !txInterrupted) {
 			txInterrupted = true;
+			this.txInterrputMsg=txInterrputMsg;
 		}
 	}
 
@@ -128,7 +130,7 @@ public class ServerConnection extends FrontendConnection {
 		// 状态检查
 		if (txInterrupted) {
 			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback.");
+					"Transaction error, need to rollback."+txInterrputMsg);
 			return;
 		}
 

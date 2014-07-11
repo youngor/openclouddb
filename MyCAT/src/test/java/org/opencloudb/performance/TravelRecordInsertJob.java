@@ -132,8 +132,14 @@ public class TravelRecordInsertJob implements Runnable {
 					insert(con, batch);
 					finshiedCount.addAndGet(batch.size());
 				} catch (Exception e) {
-					failedCount.addAndGet(batch.size());
 					e.printStackTrace();
+					try {
+						con.rollback();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+						e1.printStackTrace();
+					}
+					failedCount.addAndGet(batch.size());
 				}
 				batch = getNextBatch();
 			}

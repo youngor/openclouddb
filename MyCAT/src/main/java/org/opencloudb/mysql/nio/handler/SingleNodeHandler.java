@@ -196,11 +196,13 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
 		conn.setRunning(false);
 		endRunning();
+		String errmgs=  " errno:" + errPkg.errno +" "+new String(errPkg.message) ;
+		LOGGER.warn("execute  sql err :"+errmgs+ " con:" + conn);
 		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
 		ServerConnection source = session.getSource();
-		source.setTxInterrupt();
-		recycleResources();
+		source.setTxInterrupt(errmgs);
 		errPkg.write(source);
+		recycleResources();
 	}
 
 	@Override
@@ -213,7 +215,7 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 			ServerConnection source = session.getSource();
 			OkPacket ok = new OkPacket();
 			ok.read(data);
-			ok.packetId=++packetId;
+			ok.packetId = ++packetId;
 			recycleResources();
 			source.setLastInsertId(ok.insertId);
 			ok.write(source);

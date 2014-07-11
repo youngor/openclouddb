@@ -41,6 +41,7 @@ public class TestInsertSQLAnalyser {
 		QueryTreeNode ast = null;
 		InsertParseInf parsInf = null;
 		sql = "insert into table1  select * FROM table2 WHERE id not in ( select id from  table1) ";
+		//sql = "insert into table1  select * FROM table2 WHERE id not in ( select id aT\'b  table1) ";
 		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
 		parsInf = InsertSQLAnalyser.analyse(ast);
 		Assert.assertEquals("table1".toUpperCase(), parsInf.tableName);
