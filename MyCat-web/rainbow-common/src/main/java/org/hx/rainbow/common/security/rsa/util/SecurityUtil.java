@@ -168,16 +168,16 @@ public class SecurityUtil {
     }
     
 	public static void main(String[] args) {
-//		try{
-//			KeyPair keyPair =  SecurityUtil.getInstance().getKeyPair();
-//			String modulus = SecurityUtil.getInstance().getModulus(keyPair);
-//			String publicexponent = SecurityUtil.getInstance().getPublicExponent(keyPair);
-//			String privateexponent = SecurityUtil.getInstance().getPrivateExponent(keyPair);
-//			
-//			
-//			System.out.println("modulus="+modulus);
-//			System.out.println("publicexponent="+publicexponent);
-//			System.out.println("privateexponent="+privateexponent);
+		try{
+			KeyPair keyPair =  SecurityUtil.getInstance().getKeyPair();
+			String modulus = SecurityUtil.getInstance().getModulus(keyPair);
+			String publicexponent = SecurityUtil.getInstance().getPublicExponent(keyPair);
+			String privateexponent = SecurityUtil.getInstance().getPrivateExponent(keyPair);
+			
+			
+			System.out.println("modulus="+modulus);
+			System.out.println("publicexponent="+publicexponent);
+			System.out.println("privateexponent="+privateexponent);
 			
 			// 公钥   
 	      //  PublicKey publicKey = (RSAPublicKey) keyPair.getPublic();   
@@ -188,16 +188,16 @@ public class SecurityUtil {
 //		   PrivateKey  privateKey = SecurityUtil.getInstance().getPrivateKey("6605150571392906852127292664834649778480000715460249750756591708596101250877128405030946855426808188489739277485876062023576918391397169689952556464697817","6487433619634557901102914407780972146893802982337623269396692733732432693252656384164243771821639928310855430867301314614312771972740353624274714407120885");  
 //	
 //		    byte[] enBytes =SecurityUtil.getInstance().encrypt(privateKey,"2096765;fwm78".getBytes()); 
-//		    BASE64Encoder enc=new BASE64Encoder();
-//		    BASE64Decoder dec=new BASE64Decoder(); 
-//	
-//		    System.out.println("加密==" + enc.encode(enBytes));   
-//		    
-//		    byte[] deStr =SecurityUtil.getInstance().decrypt(publicKey,dec.decodeBuffer("dIaXNAg5z4ZBqnJs0jt+nSZO4PFoPf5ny/VEOKr52F1oIwrSCGyGpdkDXx8RPWv3l59JqmwdAB1fW7Ik5LJa1Q==")); 
-//	        System.out.println("解密==" +new String(deStr));   
-//		}catch(Exception ex){
-//			ex.printStackTrace();
-//		}
+//		    Base64Encoder enc=new Base64Encoder();
+		   //BASE64Decoder dec=new BASE64Decoder(); 
+	
+//		    System.out.println("加密==" + enBytes);   
+		    
+/*		    byte[] deStr =SecurityUtil.getInstance().decrypt(publicKey,dec.decodeBuffer("dIaXNAg5z4ZBqnJs0jt+nSZO4PFoPf5ny/VEOKr52F1oIwrSCGyGpdkDXx8RPWv3l59JqmwdAB1fW7Ik5LJa1Q==")); 
+	        System.out.println("解密==" +new String(deStr));  */ 
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
 	
 	}
 }
