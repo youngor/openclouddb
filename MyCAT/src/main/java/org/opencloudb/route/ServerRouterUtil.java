@@ -134,24 +134,7 @@ public final class ServerRouterUtil {
 		// 生成和展开AST
 		QueryTreeNode ast = SQLParserDelegate.parse(stmt,
 				charset == null ? "utf-8" : charset);
-		// @micmiu 简单模糊判断SQL是否包含sequence
-		if (stmt.toUpperCase().indexOf(" MYCATSEQ_") != -1) {
-			try {
-				// @micmiu 扩展NodeToString实现自定义全局序列号
-				NodeToString strHandler = new ExtNodeToString4SEQ(
-						sysConfig.getSequnceHandlerType());
-				// 如果存在sequence 转化sequence为实际数值
-				stmt = strHandler.toString(ast);
-				rrs = new RouteResultset(stmt, sqlType);
-				rrs.setCacheAble(false);
-				QueryTreeNode ast2 = SQLParserDelegate.parse(stmt,
-						charset == null ? "utf-8" : charset);
-				ast = ast2;
-			} catch (StandardException e) {
-				LOGGER.error(e);
-			}
-		}
-
+		
 		// Select SQL
 		if (ast.getNodeType() == NodeTypes.CURSOR_NODE) {
 			ResultSetNode rsNode = ((CursorNode) ast).getResultSetNode();

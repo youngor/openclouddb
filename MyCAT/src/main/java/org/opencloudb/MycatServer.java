@@ -42,6 +42,7 @@ import org.opencloudb.manager.ManagerConnectionFactory;
 import org.opencloudb.net.NIOAcceptor;
 import org.opencloudb.net.NIOConnector;
 import org.opencloudb.net.NIOProcessor;
+import org.opencloudb.route.MyCATSequnceProcessor;
 import org.opencloudb.route.RouteService;
 import org.opencloudb.server.ServerConnectionFactory;
 import org.opencloudb.statistic.SQLRecorder;
@@ -63,6 +64,7 @@ public class MycatServer {
 	private Properties dnIndexProperties;
 	private final AsynchronousChannelGroup[] asyncChannelGroups;
 	private int channelIndex = 0;
+	private final MyCATSequnceProcessor sequnceProcessor=new MyCATSequnceProcessor();
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -119,6 +121,10 @@ public class MycatServer {
 		dnIndexProperties = loadDnIndexProps();
 
 		this.startupTime = TimeUtil.currentTimeMillis();
+	}
+
+	public MyCATSequnceProcessor getSequnceProcessor() {
+		return sequnceProcessor;
 	}
 
 	/**

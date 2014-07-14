@@ -32,10 +32,17 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.net.FrontendConnection;
+import org.opencloudb.parser.ExtNodeToString4SEQ;
+import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.route.RouteResultset;
+import org.opencloudb.route.SessionSQLPair;
 import org.opencloudb.server.response.Heartbeat;
 import org.opencloudb.server.response.Ping;
 import org.opencloudb.util.TimeUtil;
+
+import com.foundationdb.sql.StandardException;
+import com.foundationdb.sql.parser.QueryTreeNode;
+import com.foundationdb.sql.unparser.NodeToString;
 
 /**
  * @author mycat
@@ -48,7 +55,7 @@ public class ServerConnection extends FrontendConnection {
 	private volatile int txIsolation;
 	private volatile boolean autocommit;
 	private volatile boolean txInterrupted;
-	private volatile String txInterrputMsg="";
+	private volatile String txInterrputMsg = "";
 	private long lastInsertId;
 	private NonBlockingSession session;
 	protected volatile boolean backReadSupressed = false;
@@ -100,7 +107,7 @@ public class ServerConnection extends FrontendConnection {
 	public void setTxInterrupt(String txInterrputMsg) {
 		if (!autocommit && !txInterrupted) {
 			txInterrupted = true;
-			this.txInterrputMsg=txInterrputMsg;
+			this.txInterrputMsg = txInterrputMsg;
 		}
 	}
 
@@ -130,7 +137,7 @@ public class ServerConnection extends FrontendConnection {
 		// 状态检查
 		if (txInterrupted) {
 			writeErrMessage(ErrorCode.ER_YES,
-					"Transaction error, need to rollback."+txInterrputMsg);
+					"Transaction error, need to rollback." + txInterrputMsg);
 			return;
 		}
 
@@ -148,13 +155,26 @@ public class ServerConnection extends FrontendConnection {
 					"Unknown MyCAT Database '" + db + "'");
 			return;
 		}
+		// 检查是否有全局序列号的，需要异步处理
+		// @micmiu 简单模糊判断SQL是否包含sequence
+		if (sql.indexOf(" MYCATSEQ_") != -1) {
+			SessionSQLPair pair = new SessionSQLPair(session, schema, sql,type);
+			MycatServer.getInstance().getSequnceProcessor().addNewSql(pair);
+		} else {
+			routeEndExecuteSQL(sql, type, schema);
+		}
 
+	}
+
+	public void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
 		// 路由计算
 		RouteResultset rrs = null;
 		try {
-
-			rrs = MycatServer.getInstance().getRouterservice()
-					.route(MycatServer.getInstance().getConfig().getSystem(),schema, type, sql, this.charset, this);
+			rrs = MycatServer
+					.getInstance()
+					.getRouterservice()
+					.route(MycatServer.getInstance().getConfig().getSystem(),
+							schema, type, sql, this.charset, this);
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
 			LOGGER.warn(s.append(this).append(sql).toString() + " err:"

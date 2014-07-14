@@ -89,10 +89,9 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 			LOGGER.debug("get next segement of sequence from db for sequnce:"
 					+ seqVal.seqName + " curVal " + seqVal.curVal);
 		}
-		Long curFetchNum = seqVal.dbFetchNum.get();
-		if (seqVal.dbFetchNum.compareAndSet(curFetchNum, curFetchNum+1)) {
-			seqVal.dbretVal=null;
-			seqVal.dbfinished=false;
+		if (seqVal.fetching.compareAndSet(false, true)) {
+			seqVal.dbretVal = null;
+			seqVal.dbfinished = false;
 			seqVal.newValueSetted.set(false);
 			mysqlSeqFetcher.execute(seqVal);
 		}
@@ -128,7 +127,7 @@ class FetchMySQLSequnceHandler implements ResponseHandler {
 				LOGGER.debug("execute in datanode " + seqVal.dataNode
 						+ " for fetch sequnce sql " + seqVal.sql);
 			}
-			//修正获取seq的逻辑，在读写分离的情况下只能走写节点。修改Select模式为Update模式。
+			// 修正获取seq的逻辑，在读写分离的情况下只能走写节点。修改Select模式为Update模式。
 			mysqlDN.getConnection(conMeta, new RouteResultsetNode(
 					seqVal.dataNode, ServerParse.UPDATE, seqVal.sql), this,
 					seqVal);
@@ -234,7 +233,7 @@ class SequnceVal {
 	public AtomicLong curVal = new AtomicLong(0);
 	public volatile String dbretVal = null;
 	public volatile boolean dbfinished;
-	public AtomicLong dbFetchNum = new AtomicLong(0);
+	public AtomicBoolean fetching = new AtomicBoolean(false);
 	public volatile long maxSegValue;
 	public volatile boolean successFetched;
 	public final String dataNode;
@@ -264,7 +263,7 @@ class SequnceVal {
 
 	public Long[] waitFinish() {
 		long start = System.currentTimeMillis();
-		long end = start + 30 * 1000;
+		long end = start + 10 * 1000;
 		while (System.currentTimeMillis() < end) {
 			if (dbretVal == IncrSequenceMySQLHandler.errSeqResult) {
 				throw new java.lang.RuntimeException(
