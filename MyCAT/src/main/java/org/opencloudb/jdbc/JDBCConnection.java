@@ -274,7 +274,7 @@ public class JDBCConnection implements BackendConnection {
 			headerPkg.fieldCount = fieldPks.size();
 			headerPkg.packetId = ++packetId;
 
-			byteBuf = headerPkg.write(byteBuf, sc, false);
+			byteBuf = headerPkg.write(byteBuf, sc, true);
 			byteBuf.flip();
 			byte[] header = new byte[byteBuf.limit()];
 			byteBuf.get(header);
