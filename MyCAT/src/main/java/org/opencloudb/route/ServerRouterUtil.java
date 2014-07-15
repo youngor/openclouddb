@@ -104,7 +104,7 @@ public final class ServerRouterUtil {
 			SchemaConfig schema, int sqlType, String stmt, String charset,
 			Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
-		stmt = stmt.trim();
+		
 		if (schema.isCheckSQLSchema()) {
 			stmt = removeSchema(stmt, schema.getName());
 		}

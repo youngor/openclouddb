@@ -32,7 +32,7 @@ import org.opencloudb.util.FormatUtil;
  * @author mycat
  */
 public final class RouteResultset {
-	private final String statement; // 原始语句
+	private String statement; // 原始语句
 	private final int sqlType;
 	private RouteResultsetNode[] nodes; // 路由结果节点
 
@@ -174,6 +174,10 @@ public final class RouteResultset {
 
 	public void setLimitSize(int limitSize) {
 		this.limitSize = limitSize;
+	}
+
+	public void setStatement(String statement) {
+		this.statement = statement;
 	}
 
 	@Override

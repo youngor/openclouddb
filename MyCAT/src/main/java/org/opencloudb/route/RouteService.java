@@ -46,8 +46,9 @@ public class RouteService {
 		return tableId2DataNodeCache;
 	}
 
-	public RouteResultset route(SystemConfig sysconf,SchemaConfig schema, int sqlType, String stmt,
-			String charset, Object info) throws SQLNonTransientException {
+	public RouteResultset route(SystemConfig sysconf, SchemaConfig schema,
+			int sqlType, String stmt, String charset, Object info)
+			throws SQLNonTransientException {
 		RouteResultset rrs = null;
 		String cacheKey = null;
 		if (sqlType == ServerParse.SELECT) {
@@ -57,9 +58,34 @@ public class RouteService {
 				return rrs;
 			}
 		}
+		// 处理自定义分片注释
+		String mycatHint = "/*!mycat";
+		/* !mycat: select name from aa */
+		if (stmt.startsWith(mycatHint)) {
+			int endPos = stmt.indexOf("*/");
+			if (endPos > 0) {
+				// 用!mycat内部的SQL来做路由分析
+				String hintSQl = stmt.substring(mycatHint.length(), endPos)
+						.trim();
+				rrs = ServerRouterUtil.route(sysconf, schema, sqlType, hintSQl,
+						charset, info, tableId2DataNodeCache);
+				// 替换RRS中的SQL执行
+				String realSQL = stmt.substring(endPos + "*/".length()).trim();
+				RouteResultsetNode[] oldRsNodes = rrs.getNodes();
+				RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];
+				for (int i = 0; i < newRrsNodes.length; i++) {
+					newRrsNodes[i] = new RouteResultsetNode(
+							oldRsNodes[i].getName(),
+							oldRsNodes[i].getSqlType(), realSQL);
+				}
+				rrs.setNodes(newRrsNodes);
+			}
+		} else {
+			stmt = stmt.trim();
+			rrs = ServerRouterUtil.route(sysconf, schema, sqlType, stmt,
+					charset, info, tableId2DataNodeCache);
+		}
 
-		rrs = ServerRouterUtil.route(sysconf,schema, sqlType, stmt, charset, info,
-				tableId2DataNodeCache);
 		if (sqlType == ServerParse.SELECT && rrs.isCacheAble()) {
 			sqlRouteCache.putIfAbsent(cacheKey, rrs);
 		}

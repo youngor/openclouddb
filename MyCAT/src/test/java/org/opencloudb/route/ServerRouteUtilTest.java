@@ -703,13 +703,12 @@ public class ServerRouteUtilTest extends TestCase {
 		Assert.assertEquals(false, rrs.isCacheAble());
 		Assert.assertEquals(-1L, rrs.getLimitSize());
 		nodeMap = getNodeMap(rrs, 3);
-		nameAsserter = new NodeNameAsserter("detail_dn[0]", "offer_dn[0]",
+		nameAsserter = new NodeNameAsserter("offer_dn[0]","detail_dn[0]", 
 				"independent_dn[0]");
 		nameAsserter.assertRouteNodeNames(nodeMap.keySet());
 		sqlAsserter = new SimpleSQLAsserter();
-		sqlAsserter.addExpectSQL(0, "SHOW TABLeS")
-				.addExpectSQL(1, "SHOW TABLeS").addExpectSQL(2, "SHOW TABLeS")
-				.addExpectSQL(3, "SHOW TABLeS");
+		sqlAsserter.addExpectSQL(0, "SHOW TABLeS ")
+				.addExpectSQL(1, "SHOW TABLeS ").addExpectSQL(2, "SHOW TABLeS ");
 		asserter = new RouteNodeAsserter(nameAsserter, sqlAsserter);
 		for (RouteResultsetNode node : nodeMap.values()) {
 			asserter.assertNode(node);
