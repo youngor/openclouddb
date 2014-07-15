@@ -26,13 +26,14 @@ package org.opencloudb.config.model;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
  * @author mycat
  */
 public class SchemaConfig {
-
+	private final Random random = new Random();
 	private final String name;
 	private final Map<String, TableConfig> tables;
 	private final boolean noSharding;
@@ -40,7 +41,8 @@ public class SchemaConfig {
 	private final Set<String> metaDataNodes;
 	private final Set<String> allDataNodes;
 	/**
-	 * when a select sql has no limit condition ,and default max limit to prevent memory problem when return a large result set
+	 * when a select sql has no limit condition ,and default max limit to
+	 * prevent memory problem when return a large result set
 	 */
 	private final int defaultMaxLimit;
 	private final boolean checkSQLSchema;
@@ -49,22 +51,31 @@ public class SchemaConfig {
 	 * ,then A is root table
 	 */
 	private final Map<String, TableConfig> joinRel2TableMap = new HashMap<String, TableConfig>();
+	private final String[] allDataNodeStrArr;
 
 	public SchemaConfig(String name, String dataNode,
-			Map<String, TableConfig> tables,int defaultMaxLimit,boolean checkSQLschema) {
+			Map<String, TableConfig> tables, int defaultMaxLimit,
+			boolean checkSQLschema) {
 		this.name = name;
 		this.dataNode = dataNode;
-		this.checkSQLSchema=checkSQLschema;
+		this.checkSQLSchema = checkSQLschema;
 		this.tables = tables;
-		this.defaultMaxLimit=defaultMaxLimit;
+		this.defaultMaxLimit = defaultMaxLimit;
 		buildJoinMap(tables);
 		this.noSharding = (tables == null || tables.isEmpty()) ? true : false;
 		if (!noSharding && dataNode != null) {
-			throw new RuntimeException(
-					name+" in sharidng mode schema can't have dataNode ");
+			throw new RuntimeException(name
+					+ " in sharidng mode schema can't have dataNode ");
 		}
 		this.metaDataNodes = buildMetaDataNodes();
 		this.allDataNodes = buildAllDataNodes();
+		if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
+			String[] dnArr = new String[this.allDataNodes.size()];
+			dnArr = this.allDataNodes.toArray(dnArr);
+			this.allDataNodeStrArr = dnArr;
+		} else {
+			this.allDataNodeStrArr = null;
+		}
 	}
 
 	public boolean isCheckSQLSchema() {
@@ -125,10 +136,11 @@ public class SchemaConfig {
 	}
 
 	public String getRandomDataNode() {
-		if (allDataNodes == null || allDataNodes.isEmpty()) {
+		if (this.allDataNodeStrArr == null) {
 			return null;
 		}
-		return allDataNodes.iterator().next();
+		int index = Math.abs(random.nextInt()) % allDataNodeStrArr.length;
+		return this.allDataNodeStrArr[index];
 	}
 
 	/**
