@@ -24,8 +24,10 @@
 package org.hx.rainbow.common.core;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
 
 public class SpringApplicationContext implements ApplicationContextAware {
 
@@ -58,6 +60,27 @@ public class SpringApplicationContext implements ApplicationContextAware {
 		return context.<T>getBean(clazz);
 	}
 	
+	public static void removeBean(String beanId){
+		if (beanId == null || beanId.isEmpty()) {
+			return ;
+		}
+		ConfigurableApplicationContext applicationContexts = (ConfigurableApplicationContext)context;
+		DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContexts.getBeanFactory();
+		beanFactory.removeBeanDefinition(beanId);
+	}
+	
+	public static void removeBean(String... beanIds){
+		if(beanIds == null || beanIds.length == 0){
+			return;
+		}
+		ConfigurableApplicationContext applicationContexts = (ConfigurableApplicationContext)context;
+		DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContexts.getBeanFactory();
+		for(String beanId : beanIds){
+			if(beanId != null && !beanId.isEmpty()){
+				beanFactory.removeBeanDefinition(beanId);
+			}
+		}
+	}
 	
 	
 }
