@@ -360,6 +360,15 @@ public class TestSelectSQLAnalyser {
 		Assert.assertEquals(new JoinRel("T1","id","T2","id"), parsInf.ctx.joinList.get(0));
 		Assert.assertEquals(2, tablesAndCondtions.size());
 		
+		
+		sql="SELECT * from ismp_ocs_record_sn_ocs_in where cycle_id=null";
+		parsInf.clear();
+		ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
+		SelectSQLAnalyser.analyse(parsInf, ast);
+		tablesAndCondtions = parsInf.ctx.tablesAndConditions;
+		Assert.assertEquals(0, parsInf.ctx.tablesAndConditions.get("ismp_ocs_record_sn_ocs_in".toUpperCase()).size());
+
+		
 
 	}
 }

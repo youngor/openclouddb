@@ -24,7 +24,6 @@
 package org.opencloudb.mpp;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -39,9 +38,13 @@ public class ShardingParseInfo {
 		Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions
 				.get(tableName);
 		if (tableColumnsMap == null) {
-//			System.out
-//					.println("not found table name ,may be child select result "
-//							+ tableName);
+			// System.out
+			// .println("not found table name ,may be child select result "
+			// + tableName);
+			return;
+		}
+		if (value == null) {
+			// where a=null
 			return;
 		}
 		String uperColName = columnName.toUpperCase();
@@ -51,13 +54,14 @@ public class ShardingParseInfo {
 			columValues = new LinkedHashSet<ColumnRoutePair>();
 			tablesAndConditions.get(tableName).put(uperColName, columValues);
 		}
+
 		if (value instanceof Object[]) {
 			for (Object item : (Object[]) value) {
 				columValues.add(new ColumnRoutePair(item.toString()));
 			}
-		}else if( value instanceof RangeValue ){
-			columValues.add(new ColumnRoutePair((RangeValue)value));
-		}else {
+		} else if (value instanceof RangeValue) {
+			columValues.add(new ColumnRoutePair((RangeValue) value));
+		} else {
 			columValues.add(new ColumnRoutePair(value.toString()));
 		}
 	}
