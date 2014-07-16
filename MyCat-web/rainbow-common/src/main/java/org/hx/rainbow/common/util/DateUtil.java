@@ -237,7 +237,7 @@ public class DateUtil {
 	public static Date addMonth(Date date , int month){
 		Calendar calender = Calendar.getInstance();
 		calender.setTime(date);
-		calender.add(Calendar.YEAR, month);
+		calender.add(Calendar.MONTH, month);
 		return calender.getTime();
 	}
 	
