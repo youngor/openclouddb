@@ -120,7 +120,9 @@ public final class ShowHelp {
         helps.put("show @@processor", "Report processor status");
         helps.put("show @@command", "Report commands status");
         helps.put("show @@connection", "Report connection status");
+        helps.put("show @@cache", "Report system cache usage");
         helps.put("show @@backend", "Report backend connection status");
+        helps.put("show @@session", "Report front session details");
         helps.put("show @@connection.sql", "Report connection sql");
         helps.put("show @@sql.execute", "Report execute status");
         helps.put("show @@sql.detail where id = ?", "Report execute detail status");

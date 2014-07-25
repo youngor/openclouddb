@@ -45,6 +45,7 @@ import org.opencloudb.response.ShowSQLDetail;
 import org.opencloudb.response.ShowSQLExecute;
 import org.opencloudb.response.ShowSQLSlow;
 import org.opencloudb.response.ShowServer;
+import org.opencloudb.response.ShowSession;
 import org.opencloudb.response.ShowThreadPool;
 import org.opencloudb.response.ShowTime;
 import org.opencloudb.response.ShowVariables;
@@ -156,6 +157,9 @@ public final class ShowHandler {
 			break;
 		case ManagerParseShow.CACHE:
 			ShowCache.execute(c);
+			break;
+		case ManagerParseShow.SESSION:
+			ShowSession.execute(c);
 			break;
 		case ManagerParseShow.TIME_CURRENT:
 			ShowTime.execute(c, ManagerParseShow.TIME_CURRENT);

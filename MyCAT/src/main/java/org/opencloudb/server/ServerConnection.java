@@ -32,17 +32,11 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.net.FrontendConnection;
-import org.opencloudb.parser.ExtNodeToString4SEQ;
-import org.opencloudb.parser.SQLParserDelegate;
 import org.opencloudb.route.RouteResultset;
 import org.opencloudb.route.SessionSQLPair;
 import org.opencloudb.server.response.Heartbeat;
 import org.opencloudb.server.response.Ping;
 import org.opencloudb.util.TimeUtil;
-
-import com.foundationdb.sql.StandardException;
-import com.foundationdb.sql.parser.QueryTreeNode;
-import com.foundationdb.sql.unparser.NodeToString;
 
 /**
  * @author mycat
@@ -58,8 +52,6 @@ public class ServerConnection extends FrontendConnection {
 	private volatile String txInterrputMsg = "";
 	private long lastInsertId;
 	private NonBlockingSession session;
-	protected volatile boolean backReadSupressed = false;
-
 	public ServerConnection(AsynchronousSocketChannel channel)
 			throws IOException {
 		super(channel);
@@ -243,6 +235,12 @@ public class ServerConnection extends FrontendConnection {
 			});
 			return;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "ServerConnection [id=" +id +  ", schema=" +schema +", host="+ host +", user="+ user +",txIsolation=" + txIsolation + ", autocommit="
+				+ autocommit + ", schema=" +schema + "]";
 	}
 
 }

@@ -98,6 +98,10 @@ public class NonBlockingSession implements Session {
 		return target.get(key);
 	}
 
+	public Map<RouteResultsetNode, BackendConnection> getTargetMap()
+	{
+		return this.target;
+	}
 	public BackendConnection removeTarget(RouteResultsetNode key) {
 		return target.remove(key);
 	}

@@ -30,6 +30,7 @@ import org.opencloudb.buffer.BufferQueue;
 import org.opencloudb.config.Fields;
 import org.opencloudb.manager.ManagerConnection;
 import org.opencloudb.mysql.PacketUtil;
+import org.opencloudb.mysql.nio.MySQLConnection;
 import org.opencloudb.net.FrontendConnection;
 import org.opencloudb.net.NIOProcessor;
 import org.opencloudb.net.mysql.EOFPacket;
@@ -50,7 +51,7 @@ import org.opencloudb.util.TimeUtil;
  */
 public final class ShowConnection {
 
-	private static final int FIELD_COUNT = 12;
+	private static final int FIELD_COUNT = 14;
 	private static final ResultSetHeaderPacket header = PacketUtil
 			.getHeader(FIELD_COUNT);
 	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -99,6 +100,14 @@ public final class ShowConnection {
 		fields[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
+		fields[i] = PacketUtil
+				.getField("txlevel", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("autocommit",
+				Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
 		eof.packetId = ++packetId;
 	}
 
@@ -106,15 +115,15 @@ public final class ShowConnection {
 		ByteBuffer buffer = c.allocate();
 
 		// write header
-		buffer = header.write(buffer, c,true);
+		buffer = header.write(buffer, c, true);
 
 		// write fields
 		for (FieldPacket field : fields) {
-			buffer = field.write(buffer, c,true);
+			buffer = field.write(buffer, c, true);
 		}
 
 		// write eof
-		buffer = eof.write(buffer, c,true);
+		buffer = eof.write(buffer, c, true);
 
 		// write rows
 		byte packetId = eof.packetId;
@@ -125,7 +134,7 @@ public final class ShowConnection {
 				if (fc != null) {
 					RowDataPacket row = getRow(fc, charset);
 					row.packetId = ++packetId;
-					buffer = row.write(buffer, c,true);
+					buffer = row.write(buffer, c, true);
 				}
 			}
 		}
@@ -133,7 +142,7 @@ public final class ShowConnection {
 		// write last eof
 		EOFPacket lastEof = new EOFPacket();
 		lastEof.packetId = ++packetId;
-		buffer = lastEof.write(buffer, c,true);
+		buffer = lastEof.write(buffer, c, true);
 
 		// write buffer
 		c.write(buffer);
@@ -156,6 +165,17 @@ public final class ShowConnection {
 		row.add(IntegerUtil.toBytes(bb == null ? 0 : bb.capacity()));
 		BufferQueue bq = c.getWriteQueue();
 		row.add(IntegerUtil.toBytes(bq == null ? 0 : bq.snapshotSize()));
+
+		String txLevel = "";
+		String txAutommit = "";
+		if (c instanceof ServerConnection) {
+			ServerConnection mysqlC = (ServerConnection) c;
+			bq = mysqlC.getWriteQueue();
+			txLevel = mysqlC.getTxIsolation() + "";
+			txAutommit = mysqlC.isAutocommit() + "";
+		}
+		row.add(txLevel.getBytes());
+		row.add(txAutommit.getBytes());
 
 		return row;
 	}

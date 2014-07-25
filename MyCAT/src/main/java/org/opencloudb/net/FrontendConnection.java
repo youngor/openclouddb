@@ -77,7 +77,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 				.getLocalAddress();
 		InetSocketAddress remoteAddr = (InetSocketAddress) channel
 				.getRemoteAddress();
-		this.host = localAddr.getHostString();
+		this.host = remoteAddr.getHostString();
 		this.port = localAddr.getPort();
 		this.localPort = remoteAddr.getPort();
 		this.handler = new FrontendAuthenticator(this);

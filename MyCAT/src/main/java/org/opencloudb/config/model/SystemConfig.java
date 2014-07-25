@@ -38,15 +38,14 @@ public final class SystemConfig {
 	private static final int DEFAULT_PORT = 8066;
 	private static final int DEFAULT_MANAGER_PORT = 9066;
 	private static final String DEFAULT_CHARSET = "UTF-8";
-	private static final int DEFAULT_BUFFER_SIZE = 4096*2000;
+	private static final int DEFAULT_BUFFER_SIZE = 4096 * 2000;
 	private static final int DEFAULT_BUFFER_CHUNK_SIZE = 4096;
 	private static final int DEFAULT_PROCESSORS = Runtime.getRuntime()
 			.availableProcessors();
 	public static final int DEFAULT_POOL_SIZE = 128;// 保持后端数据通道的默认最大值
-	public static final long DEFAULT_WAIT_TIMEOUT = 10 * 1000L;
 	public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
 	private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1 * 1000L;
-	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5*60 * 1000L;
+	private static final long DEFAULT_DATANODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
 	private static final long DEFAULT_DATANODE_HEARTBEAT_PERIOD = 10 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_PERIOD = 5 * 1000L;
 	private static final long DEFAULT_CLUSTER_HEARTBEAT_TIMEOUT = 10 * 1000L;
@@ -56,8 +55,8 @@ public final class SystemConfig {
 	private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
 	private static final int DEFAULT_PARSER_COMMENT_VERSION = 50148;
 	private static final int DEFAULT_SQL_RECORD_COUNT = 10;
-    private int frontWriteQueueSize=2048;
-	private String bindIp="0.0.0.0";
+	private int frontWriteQueueSize = 2048;
+	private String bindIp = "0.0.0.0";
 	private int serverPort;
 	private int managerPort;
 	private String charset;
@@ -77,13 +76,13 @@ public final class SystemConfig {
 	private int txIsolation;
 	private int parserCommentVersion;
 	private int sqlRecordCount;
-	private long waitTimeout;
 	private int processorBufferPool;
 	private int processorBufferChunk;
 	private int defaultMaxLimit;
-	public static final int SEQUENCEHANDLER_LOCALFILE=0;
-	public static final int SEQUENCEHANDLER_MYSQLDB=1;
-    private int sequnceHandlerType=SEQUENCEHANDLER_LOCALFILE;
+	public static final int SEQUENCEHANDLER_LOCALFILE = 0;
+	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
+	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
+
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
@@ -106,20 +105,15 @@ public final class SystemConfig {
 		this.txIsolation = Isolations.REPEATED_READ;
 		this.parserCommentVersion = DEFAULT_PARSER_COMMENT_VERSION;
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
-		this.waitTimeout = DEFAULT_WAIT_TIMEOUT;
-				this.defaultMaxLimit=DEFAULT_MAX_LIMIT;
 	}
 
-	
 	public int getSequnceHandlerType() {
 		return sequnceHandlerType;
 	}
 
-
 	public void setSequnceHandlerType(int sequnceHandlerType) {
 		this.sequnceHandlerType = sequnceHandlerType;
 	}
-
 
 	public int getFrontWriteQueueSize() {
 		return frontWriteQueueSize;
@@ -137,7 +131,6 @@ public final class SystemConfig {
 		this.bindIp = bindIp;
 	}
 
-	
 	public int getDefaultMaxLimit() {
 		return defaultMaxLimit;
 	}
@@ -175,14 +168,6 @@ public final class SystemConfig {
 
 	public int getManagerPort() {
 		return managerPort;
-	}
-
-	public long getWaitTimeout() {
-		return waitTimeout;
-	}
-
-	public void setWaitTimeout(long waitTimeout) {
-		this.waitTimeout = waitTimeout;
 	}
 
 	public void setManagerPort(int managerPort) {
@@ -333,7 +318,6 @@ public final class SystemConfig {
 		this.processorBufferChunk = processorBufferChunk;
 	}
 
-
 	@Override
 	public String toString() {
 		return "SystemConfig [frontWriteQueueSize=" + frontWriteQueueSize
@@ -352,13 +336,11 @@ public final class SystemConfig {
 				+ clusterHeartbeatTimeout + ", clusterHeartbeatRetry="
 				+ clusterHeartbeatRetry + ", txIsolation=" + txIsolation
 				+ ", parserCommentVersion=" + parserCommentVersion
-				+ ", sqlRecordCount=" + sqlRecordCount + ", waitTimeout="
-				+ waitTimeout + ", processorBufferPool=" + processorBufferPool
+				+ ", sqlRecordCount=" + sqlRecordCount
+				+ ", processorBufferPool=" + processorBufferPool
 				+ ", processorBufferChunk=" + processorBufferChunk
 				+ ", defaultMaxLimit=" + defaultMaxLimit
 				+ ", sequnceHandlerType=" + sequnceHandlerType + "]";
 	}
-
-	
 
 }

@@ -59,6 +59,7 @@ public final class ManagerParseShow {
     public static final int SLOW_SCHEMA = 26;
     public static final int BACKEND = 27;
     public static final int CACHE = 28;
+    public static final int SESSION = 29;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -363,7 +364,9 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@SLOW
+  
+
+	// SHOW @@SLOW
     static int show2SlCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OW ".length()) {
             char c1 = stmt.charAt(++offset);
@@ -765,8 +768,23 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@SERVER
+    // SHOW @@SESSION
     static int show2SeCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "RVER".length()) {
+        if (stmt.length() > offset + "SSION".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i')
+                    && (c4 == 'O' || c4 == 'o') && (c5 == 'N' || c5 == 'n')) {
+                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+                    return OTHER;
+                }
+                return SESSION;
+            }
+        }
+        else if (stmt.length() > offset + "RVER".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
