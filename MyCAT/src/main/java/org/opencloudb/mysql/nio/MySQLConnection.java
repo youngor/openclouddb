@@ -60,6 +60,7 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile String oldSchema;
 	private volatile boolean borrowed = false;
 	private volatile boolean modifiedSQLExecuted = false;
+	private volatile boolean txSetCmdExecuted = false;
 
 	private static long initClientFlags() {
 		int flag = 0;
@@ -319,11 +320,14 @@ public class MySQLConnection extends BackendAIOConnection {
 				this.autocommit = true;
 			} else {
 				this.autocommit = autocommit;
-
 			}
-			this.acCmd = conn.autocommit != this.autocommit ? (autocommit ? _AUTOCOMMIT_ON
-					: _AUTOCOMMIT_OFF)
-					: null;
+			if (this.autocommit) {
+				this.acCmd = (conn.autocommit == true) ? null : _AUTOCOMMIT_ON;
+			} else {// transaction
+				if (!conn.txSetCmdExecuted) {
+					this.acCmd = _AUTOCOMMIT_OFF;
+				}
+			}
 
 			if (LOGGER.isDebugEnabled()) {
 				StringBuilder inf = new StringBuilder();
@@ -425,11 +429,14 @@ public class MySQLConnection extends BackendAIOConnection {
 					public void run() {
 						conn.autocommit = StatusSync.this.autocommit;
 						conn.oldAutoCommit = autocommit;
+						if (StatusSync.this.autocommit == false) {
+							conn.txSetCmdExecuted = true;
+						}
 					}
 				};
 				cmd = acCmd;
 				acCmd = null;
-				cmd.write( conn);
+				cmd.write(conn);
 				// System.out.println("syn autocomit "+conn);
 				return true;
 			}
@@ -574,10 +581,12 @@ public class MySQLConnection extends BackendAIOConnection {
 
 	public void commit() {
 		_COMMIT.write(this);
+		txSetCmdExecuted=false;
 	}
 
 	public void rollback() {
 		_ROLLBACK.write(this);
+		txSetCmdExecuted=false;
 	}
 
 	public void release() {
@@ -586,6 +595,7 @@ public class MySQLConnection extends BackendAIOConnection {
 		modifiedSQLExecuted = false;
 		setResponseHandler(null);
 		pool.releaseChannel(this);
+		txSetCmdExecuted=false;
 	}
 
 	@Override

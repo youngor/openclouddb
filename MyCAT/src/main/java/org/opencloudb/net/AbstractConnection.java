@@ -196,12 +196,11 @@ public abstract class AbstractConnection implements NIOConnection {
 
 		ByteBuffer theBuffer = readBuffer;
 		if (theBuffer == null) {
-			theBuffer = ByteBuffer.allocate(1024);
+			theBuffer = processor.getBufferPool().allocate();
 			this.readBuffer = theBuffer;
 			channel.read(theBuffer, this, aioReadHandler);
 
 		} else if (theBuffer.hasRemaining()) {
-			// theBuffer.compact();
 			channel.read(theBuffer, this, aioReadHandler);
 		} else {
 			throw new java.lang.IllegalArgumentException("full buffer to read ");
@@ -272,7 +271,8 @@ public abstract class AbstractConnection implements NIOConnection {
 	public final void write(ByteBuffer buffer) {
 		if (isClosed.get()) {
 			recycle(buffer);
-			aioWriteHandler.failed(new RuntimeException("socket already closed "), this);
+			aioWriteHandler.failed(new RuntimeException(
+					"socket already closed "), this);
 			return;
 		}
 		try {
@@ -423,6 +423,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		lastWriteTime = TimeUtil.currentTimeMillis();
 		try {
 			writeLock.lock();
+
 			ByteBuffer theBuffer = writeBuffer;
 			if (theBuffer.hasRemaining()) {
 				theBuffer.compact();
@@ -431,6 +432,10 @@ public abstract class AbstractConnection implements NIOConnection {
 				this.recycle(theBuffer);
 				writeBuffer = null;
 				writing = false;
+				if (writeQueue == null) {
+					// closed already
+					return;
+				}
 				theBuffer = writeQueue.poll();
 				if (theBuffer != null) {
 					this.writeBuffer = theBuffer;
