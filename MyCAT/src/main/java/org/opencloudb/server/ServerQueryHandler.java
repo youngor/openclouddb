@@ -53,13 +53,13 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 	}
 
 	@Override
-	public void query(String origSQL) {
+	public void query(String sql) {
 		ServerConnection c = this.source;
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug(new StringBuilder().append(c).append(origSQL).toString());
+			LOGGER.debug(new StringBuilder().append(c).append(sql).toString());
 		}
 		//
-		int rs = ServerParse.parse(origSQL);
+		int rs = ServerParse.parse(sql);
 		int sqlType = rs & 0xff;
 		
 		switch (sqlType) {
