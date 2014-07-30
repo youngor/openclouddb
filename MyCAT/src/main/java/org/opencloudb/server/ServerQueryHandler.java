@@ -61,12 +61,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 		//
 		int rs = ServerParse.parse(origSQL);
 		int sqlType = rs & 0xff;
-		// user handler
-		String sql = MycatServer.getInstance().getSqlInterceptor()
-				.interceptSQL(origSQL, sqlType);
-		if (sql != origSQL && LOGGER.isDebugEnabled()) {
-			LOGGER.debug("sql intercepted to " + sql + " from " + origSQL);
-		}
+		
 		switch (sqlType) {
 		case ServerParse.EXPLAIN:
 			ExplainHandler.handle(sql, c, rs >>> 8);

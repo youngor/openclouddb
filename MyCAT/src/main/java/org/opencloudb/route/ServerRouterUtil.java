@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
+import org.opencloudb.MycatServer;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.SystemConfig;
@@ -101,10 +102,15 @@ public final class ServerRouterUtil {
 	 * @author mycat
 	 */
 	public static RouteResultset route(SystemConfig sysConfig,
-			SchemaConfig schema, int sqlType, String stmt, String charset,
+			SchemaConfig schema, int sqlType, String origSQL, String charset,
 			Object info, LayerCachePool cachePool)
 			throws SQLNonTransientException {
-		
+		// user handler
+		String stmt = MycatServer.getInstance().getSqlInterceptor()
+				.interceptSQL(origSQL, sqlType);
+		if (origSQL != stmt && LOGGER.isDebugEnabled()) {
+			LOGGER.debug("sql intercepted to " + stmt + " from " + origSQL);
+		}
 		if (schema.isCheckSQLSchema()) {
 			stmt = removeSchema(stmt, schema.getName());
 		}
@@ -134,7 +140,7 @@ public final class ServerRouterUtil {
 		// 生成和展开AST
 		QueryTreeNode ast = SQLParserDelegate.parse(stmt,
 				charset == null ? "utf-8" : charset);
-		
+
 		// Select SQL
 		if (ast.getNodeType() == NodeTypes.CURSOR_NODE) {
 			ResultSetNode rsNode = ((CursorNode) ast).getResultSetNode();
@@ -523,7 +529,8 @@ public final class ServerRouterUtil {
 
 	private static String addSQLLmit(SchemaConfig schema, RouteResultset rrs,
 			QueryTreeNode ast, String sql) throws SQLSyntaxErrorException {
-		if (!rrs.hasPrimaryKeyToCache()&&schema.getDefaultMaxLimit() != -1 && ast instanceof CursorNode
+		if (!rrs.hasPrimaryKeyToCache() && schema.getDefaultMaxLimit() != -1
+				&& ast instanceof CursorNode
 				&& ((CursorNode) ast).getFetchFirstClause() == null) {
 			String newstmt = SelectSQLAnalyser.addLimitCondtionForSelectSQL(
 					rrs, (CursorNode) ast, schema.getDefaultMaxLimit());
@@ -686,7 +693,7 @@ public final class ServerRouterUtil {
 			TableConfig tc = getTableConfig(schema, entry.getKey());
 			if (tc.getRule() == null && tc.getDataNodes().size() == 1) {
 				rrs.setCacheAble(isSelect);
-				//20140625 修复 配置为全局表单节点的语句不会自动加上limit
+				// 20140625 修复 配置为全局表单节点的语句不会自动加上limit
 				sql = addSQLLmit(schema, rrs, ast, sql);
 				return routeToSingleNode(rrs, tc.getDataNodes().get(0), sql);
 			}

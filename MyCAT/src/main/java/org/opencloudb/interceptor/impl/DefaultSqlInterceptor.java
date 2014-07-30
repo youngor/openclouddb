@@ -10,7 +10,7 @@ public class DefaultSqlInterceptor implements SQLInterceptor {
 	 */
 	@Override
 	public String interceptSQL(String sql, int sqlType) {
-		if (sqlType == ServerParse.UPDATE || sqlType == ServerParse.INSERT) {
+		if (sqlType == ServerParse.UPDATE || sqlType == ServerParse.INSERT||sqlType == ServerParse.SELECT||sqlType == ServerParse.DELETE) {
 			return sql.replace("\\'", "''");
 		} else {
 			return sql;
