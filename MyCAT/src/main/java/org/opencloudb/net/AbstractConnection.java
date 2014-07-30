@@ -373,7 +373,7 @@ public abstract class AbstractConnection implements NIOConnection {
 		// 鍥炴敹鍙戦�缂撳瓨
 		if (writeQueue != null) {
 			ByteBuffer buffer = null;
-			while ((buffer = writeQueue.poll()) != null) {
+			while ((writeQueue != null) && (buffer = writeQueue.poll()) != null) {
 				recycle(buffer);
 			}
 			writeQueue = null;

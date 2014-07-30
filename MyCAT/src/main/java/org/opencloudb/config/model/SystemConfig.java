@@ -82,6 +82,7 @@ public final class SystemConfig {
 	public static final int SEQUENCEHANDLER_LOCALFILE = 0;
 	public static final int SEQUENCEHANDLER_MYSQLDB = 1;
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
+	private String sqlInterceptor = "org.opencloudb.interceptor.impl.DefaultSqlInterceptor";
 
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
@@ -105,6 +106,14 @@ public final class SystemConfig {
 		this.txIsolation = Isolations.REPEATED_READ;
 		this.parserCommentVersion = DEFAULT_PARSER_COMMENT_VERSION;
 		this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
+	}
+
+	public String getSqlInterceptor() {
+		return sqlInterceptor;
+	}
+
+	public void setSqlInterceptor(String sqlInterceptor) {
+		this.sqlInterceptor = sqlInterceptor;
 	}
 
 	public int getSequnceHandlerType() {
@@ -340,7 +349,8 @@ public final class SystemConfig {
 				+ ", processorBufferPool=" + processorBufferPool
 				+ ", processorBufferChunk=" + processorBufferChunk
 				+ ", defaultMaxLimit=" + defaultMaxLimit
-				+ ", sequnceHandlerType=" + sequnceHandlerType + "]";
+				+ ", sequnceHandlerType=" + sequnceHandlerType
+				+ ", sqlInterceptor=" + sqlInterceptor + "]";
 	}
 
 }

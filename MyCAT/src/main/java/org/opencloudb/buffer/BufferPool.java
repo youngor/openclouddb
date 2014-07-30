@@ -121,6 +121,9 @@ public final class BufferPool {
 	}
 
 	public void recycle(ByteBuffer buffer) {
+		if (buffer == null) {
+			return;
+		}
 		checkValidBuffer(buffer);
 		recycleBuffer(buffer);
 	}

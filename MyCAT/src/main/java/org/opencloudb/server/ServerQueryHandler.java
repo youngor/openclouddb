@@ -24,6 +24,7 @@
 package org.opencloudb.server;
 
 import org.apache.log4j.Logger;
+import org.opencloudb.MycatServer;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.handler.FrontendQueryHandler;
 import org.opencloudb.net.mysql.OkPacket;
@@ -52,13 +53,21 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 	}
 
 	@Override
-	public void query(String sql) {
+	public void query(String origSQL) {
 		ServerConnection c = this.source;
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug(new StringBuilder().append(c).append(sql).toString());
+			LOGGER.debug(new StringBuilder().append(c).append(origSQL).toString());
 		}
-		int rs = ServerParse.parse(sql);
-		switch (rs & 0xff) {
+		//
+		int rs = ServerParse.parse(origSQL);
+		int sqlType = rs & 0xff;
+		// user handler
+		String sql = MycatServer.getInstance().getSqlInterceptor()
+				.interceptSQL(origSQL, sqlType);
+		if (sql != origSQL && LOGGER.isDebugEnabled()) {
+			LOGGER.debug("sql intercepted to " + sql + " from " + origSQL);
+		}
+		switch (sqlType) {
 		case ServerParse.EXPLAIN:
 			ExplainHandler.handle(sql, c, rs >>> 8);
 			break;

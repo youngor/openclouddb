@@ -38,6 +38,7 @@ import org.apache.log4j.Logger;
 import org.opencloudb.backend.PhysicalDBPool;
 import org.opencloudb.cache.CacheService;
 import org.opencloudb.config.model.SystemConfig;
+import org.opencloudb.interceptor.SQLInterceptor;
 import org.opencloudb.manager.ManagerConnectionFactory;
 import org.opencloudb.net.NIOAcceptor;
 import org.opencloudb.net.NIOConnector;
@@ -64,7 +65,8 @@ public class MycatServer {
 	private Properties dnIndexProperties;
 	private final AsynchronousChannelGroup[] asyncChannelGroups;
 	private int channelIndex = 0;
-	private final MyCATSequnceProcessor sequnceProcessor=new MyCATSequnceProcessor();
+	private final MyCATSequnceProcessor sequnceProcessor = new MyCATSequnceProcessor();
+	private final SQLInterceptor sqlInterceptor;
 
 	public static final MycatServer getInstance() {
 		return INSTANCE;
@@ -119,12 +121,21 @@ public class MycatServer {
 		routerService = new RouteService(cacheService);
 		// load datanode active index from properties
 		dnIndexProperties = loadDnIndexProps();
-
+		try {
+			sqlInterceptor = (SQLInterceptor) Class.forName(
+					system.getSqlInterceptor()).newInstance();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 		this.startupTime = TimeUtil.currentTimeMillis();
 	}
 
 	public MyCATSequnceProcessor getSequnceProcessor() {
 		return sequnceProcessor;
+	}
+
+	public SQLInterceptor getSqlInterceptor() {
+		return sqlInterceptor;
 	}
 
 	/**
@@ -201,8 +212,8 @@ public class MycatServer {
 		ManagerConnectionFactory mf = new ManagerConnectionFactory();
 		mf.setCharset(system.getCharset());
 		mf.setIdleTimeout(system.getIdleTimeout());
-		manager = new NIOAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(),
-				mf, this.asyncChannelGroups[0]);
+		manager = new NIOAcceptor(NAME + "Manager", system.getBindIp(),
+				system.getManagerPort(), mf, this.asyncChannelGroups[0]);
 		manager.setProcessors(processors);
 		manager.start();
 		LOGGER.info(manager.getName() + " is started and listening on "
@@ -213,8 +224,8 @@ public class MycatServer {
 		sf.setWriteQueueCapcity(system.getFrontWriteQueueSize());
 		sf.setCharset(system.getCharset());
 		sf.setIdleTimeout(system.getIdleTimeout());
-		server = new NIOAcceptor(NAME + "Server",  system.getBindIp(),system.getServerPort(), sf,
-				this.asyncChannelGroups[0]);
+		server = new NIOAcceptor(NAME + "Server", system.getBindIp(),
+				system.getServerPort(), sf, this.asyncChannelGroups[0]);
 		server.setProcessors(processors);
 		server.start();
 		// server started
@@ -267,12 +278,12 @@ public class MycatServer {
 			dnIndexProperties.setProperty(dataHost, newIndex);
 			LOGGER.info("save DataHost index  " + dataHost + " cur index "
 					+ curIndex);
-		
-			File parent = file.getParentFile(); 
-			if(parent != null && !parent.exists()){ 
-				parent.mkdirs(); 
-			} 
-		
+
+			File parent = file.getParentFile();
+			if (parent != null && !parent.exists()) {
+				parent.mkdirs();
+			}
+
 			fileOut = new FileOutputStream(file);
 			dnIndexProperties.store(fileOut, "update");
 		} catch (Exception e) {
