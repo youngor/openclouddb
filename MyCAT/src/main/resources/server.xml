@@ -26,6 +26,7 @@
 	<user name="test">
 		<property name="password">test</property>
 		<property name="schemas">TESTDB</property>
+		<property name="readOnly">true</property>
 	</user>
 
 
