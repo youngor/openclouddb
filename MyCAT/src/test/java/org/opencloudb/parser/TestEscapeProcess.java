@@ -16,46 +16,40 @@
  */
 package org.opencloudb.parser;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.sql.SQLSyntaxErrorException;
 
 import org.junit.Test;
+import org.opencloudb.interceptor.impl.DefaultSqlInterceptor;
 import org.opencloudb.mpp.InsertParseInf;
 import org.opencloudb.mpp.InsertSQLAnalyser;
-import org.testng.AssertJUnit;
 
 import com.foundationdb.sql.parser.QueryTreeNode;
 
 public class TestEscapeProcess {
 
-    String sql = "insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
-            + "values (2488899998,'u\\'aa\\'\\'a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)";
+	String sql = "insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
+			+ "values (2488899998,'u\\'aa\\'\\'a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)";
 
-    String sqlret = "insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
-            + "values (2488899998,'u''aa''''a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)";
+	String sqlret = "insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
+			+ "values (2488899998,'u''aa''''a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)";
 
-    String starWithEscapeSql = "\\insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
-            + "values (2488899998,'u\\'aa\\'\\'a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)\\";
+	String starWithEscapeSql = "\\insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
+			+ "values (2488899998,'u\\'aa\\'\\'a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)\\";
 
-    String starWithEscapeSqlret = "\\insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
-            + "values (2488899998,'u''aa''''a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)\\";
+	String starWithEscapeSqlret = "\\insert  into t_uud_user_account(USER_ID,USER_NAME,PASSWORD,CREATE_TIME,STATUS,NICK_NAME,USER_ICON_URL,USER_ICON_URL2,USER_ICON_URL3,ACCOUNT_TYPE) "
+			+ "values (2488899998,'u''aa''''a''aa','af8f9dffa5d420fbc249141645b962ee','2013-12-01 00:00:00',0,NULL,NULL,NULL,NULL,1)\\";
 
-    @Test
-    public void testFunctionEscapeProcess() throws SQLSyntaxErrorException {
-        QueryTreeNode ast = null;
-        InsertParseInf parsInf = null;
-        ast = SQLParserDelegate.parse(sql, SQLParserDelegate.DEFAULT_CHARSET);
-        parsInf = InsertSQLAnalyser.analyse(ast);
-        AssertJUnit.assertEquals("t_uud_user_account".toUpperCase(), parsInf.tableName);
-        AssertJUnit.assertEquals(6, parsInf.columnPairMap.size());
-        AssertJUnit.assertNull(parsInf.fromQryNode);
-    }
-
-    @Test
-    public void testEscapeProcess() {
-        String sqlProcessed = SQLParserDelegate.processEscape(sql);
-        AssertJUnit.assertEquals(sqlProcessed, sqlret);
-        String sqlProcessed1 = SQLParserDelegate.processEscape(starWithEscapeSql);
-        AssertJUnit.assertEquals(sqlProcessed1, starWithEscapeSqlret);
-    }
+	
+	@Test
+	public void testEscapeProcess() {
+		String sqlProcessed = DefaultSqlInterceptor.processEscape(sql);
+		assertEquals(sqlProcessed, sqlret);
+		String sqlProcessed1 = DefaultSqlInterceptor
+				.processEscape(starWithEscapeSql);
+		assertEquals(sqlProcessed1, starWithEscapeSqlret);
+	}
 
 }
