@@ -47,11 +47,16 @@ import org.opencloudb.response.Online;
 public class ManagerQueryHandler implements FrontendQueryHandler {
     private static final Logger LOGGER = Logger.getLogger(ManagerQueryHandler.class);
 
-    private final ManagerConnection source;
+	private final ManagerConnection source;
+	protected Boolean readOnly;
 
-    public ManagerQueryHandler(ManagerConnection source) {
-        this.source = source;
-    }
+	public void setReadOnly(Boolean readOnly) {
+		this.readOnly = readOnly;
+	}
+
+	public ManagerQueryHandler(ManagerConnection source) {
+		this.source = source;
+	}
 
     @Override
     public void query(String sql) {

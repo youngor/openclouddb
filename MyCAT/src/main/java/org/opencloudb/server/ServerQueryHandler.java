@@ -47,6 +47,11 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 			.getLogger(ServerQueryHandler.class);
 
 	private final ServerConnection source;
+	protected Boolean readOnly;
+
+	public void setReadOnly(Boolean readOnly) {
+		this.readOnly = readOnly;
+	}
 
 	public ServerQueryHandler(ServerConnection source) {
 		this.source = source;
@@ -54,6 +59,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 
 	@Override
 	public void query(String sql) {
+		
 		ServerConnection c = this.source;
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug(new StringBuilder().append(c).append(sql).toString());
@@ -110,6 +116,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 			c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
 			break;
 		default:
+			if(readOnly){
+				c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User readonly");
+				break;
+			}
 			c.execute(sql, rs & 0xff);
 		}
 	}

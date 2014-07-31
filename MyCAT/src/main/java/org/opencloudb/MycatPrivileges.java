@@ -88,5 +88,15 @@ public class MycatPrivileges implements FrontendPrivileges {
             return null;
         }
     }
-
+    
+    @Override
+    public Boolean isReadOnly(String user) {
+        MycatConfig conf = MycatServer.getInstance().getConfig();
+        UserConfig uc = conf.getUsers().get(user);
+        if (uc != null) {
+            return uc.isReadOnly();
+        } else {
+            return null;
+        }
+    }
 }

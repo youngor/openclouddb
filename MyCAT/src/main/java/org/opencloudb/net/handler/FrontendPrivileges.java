@@ -51,5 +51,12 @@ public interface FrontendPrivileges {
      * 提供有效的用户schema集合
      */
     Set<String> getUserSchemas(String user);
+    
+    /**
+     * 检查用户是否为只读权限
+     * @param user
+     * @return
+     */
+    Boolean isReadOnly(String user);
 
 }

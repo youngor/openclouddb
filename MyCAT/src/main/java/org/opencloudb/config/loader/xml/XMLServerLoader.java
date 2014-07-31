@@ -154,8 +154,12 @@ public class XMLServerLoader {
                 UserConfig user = new UserConfig();
                 user.setName(name);
                 Map<String, Object> props = ConfigUtil.loadElements(e);
-                user.setPassword((String) props.get("password"));
-                String schemas = (String) props.get("schemas");
+				user.setPassword((String) props.get("password"));
+				String readOnly = (String) props.get("readOnly");
+				if (null != readOnly) {
+					user.setReadOnly(Boolean.valueOf(readOnly));
+				}
+				String schemas = (String) props.get("schemas");
                 if (schemas != null) {
                     String[] strArray = SplitUtil.split(schemas, ',', true);
                     user.setSchemas(new HashSet<String>(Arrays.asList(strArray)));

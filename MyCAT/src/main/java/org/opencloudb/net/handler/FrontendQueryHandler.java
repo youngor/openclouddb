@@ -30,6 +30,7 @@ package org.opencloudb.net.handler;
  */
 public interface FrontendQueryHandler {
 
-    void query(String sql);
+	void query(String sql);
 
+	void setReadOnly(Boolean readOnly);
 }

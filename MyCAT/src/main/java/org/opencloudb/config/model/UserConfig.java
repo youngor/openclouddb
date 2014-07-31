@@ -32,7 +32,17 @@ public class UserConfig {
 
     private String name;
     private String password;
-    private Set<String> schemas;
+    private boolean readOnly=false;
+    
+    public boolean isReadOnly() {
+		return readOnly;
+	}
+
+	public void setReadOnly(boolean readOnly) {
+		this.readOnly = readOnly;
+	}
+
+	private Set<String> schemas;
 
     public String getName() {
         return name;

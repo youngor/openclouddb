@@ -260,6 +260,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 			}
 
 			// 执行查询
+			queryHandler.setReadOnly(privileges.isReadOnly(user));
 			queryHandler.query(sql);
 		} else {
 			writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR,
