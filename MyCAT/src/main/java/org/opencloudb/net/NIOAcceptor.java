@@ -49,11 +49,12 @@ public final class NIOAcceptor implements
 	private NIOProcessor[] processors;
 	private int nextProcessor;
 	private long acceptCount;
-   private final String name;
-	public NIOAcceptor(String name, String ip,int port,
+	private final String name;
+
+	public NIOAcceptor(String name, String ip, int port,
 			FrontendConnectionFactory factory, AsynchronousChannelGroup group)
 			throws IOException {
-		this.name=name;
+		this.name = name;
 		this.port = port;
 		this.factory = factory;
 		serverChannel = AsynchronousServerSocketChannel.open(group);
@@ -61,7 +62,7 @@ public final class NIOAcceptor implements
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 16 * 1024);
 		// backlog=100
-		serverChannel.bind(new InetSocketAddress(ip,port), 100);
+		serverChannel.bind(new InetSocketAddress(ip, port), 100);
 	}
 
 	public String getName() {
@@ -124,10 +125,12 @@ public final class NIOAcceptor implements
 	}
 
 	private NIOProcessor nextProcessor() {
-		if (++nextProcessor == processors.length) {
+		int inx = ++nextProcessor;
+		if (inx >= processors.length) {
 			nextProcessor = 0;
+			inx = 0;
 		}
-		return processors[nextProcessor];
+		return processors[inx];
 	}
 
 	private static void closeChannel(AsynchronousSocketChannel channel) {

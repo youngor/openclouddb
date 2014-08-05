@@ -136,8 +136,9 @@ public final class NIOConnector implements
 
 	private NIOProcessor nextProcessor() {
 		int inx = ++nextProcessor;
-		if (nextProcessor >= processors.length) {
+		if (inx >= processors.length) {
 			nextProcessor = 0;
+			inx = 0;
 		}
 		return processors[inx];
 	}
