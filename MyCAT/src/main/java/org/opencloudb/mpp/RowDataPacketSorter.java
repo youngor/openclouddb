@@ -34,7 +34,7 @@ import org.opencloudb.util.CompareUtil;
 
 public class RowDataPacketSorter {
 
-	private final OrderCol[] orderCols;
+	protected final OrderCol[] orderCols;
 
 	private List<RowDataPacket> sorted = new ArrayList<RowDataPacket>();
 	private RowDataPacket[] array, resultTemp;
@@ -158,7 +158,7 @@ public class RowDataPacketSorter {
 		}
 	}
 
-	private int compareObject(Object l, Object r, OrderCol orderCol) {
+	protected int compareObject(Object l, Object r, OrderCol orderCol) {
 
 		int colType = orderCol.getColMeta().getColType();
 		byte[] left = (byte[]) l;

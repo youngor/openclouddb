@@ -21,48 +21,27 @@
  * https://code.google.com/p/opencloudb/.
  *
  */
-package org.opencloudb.route;
+package org.opencloudb.mpp;
 
-import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import org.opencloudb.net.mysql.RowDataPacket;
 
-public class SQLMerge implements Serializable {
-	private LinkedHashMap<String, Integer> orderByCols;
-	private Map<String, Integer> mergeCols;
-	private String[] groupByCols;
-	private boolean hasAggrColumn;
+public class RangRowDataPacketSorter extends RowDataPacketSorter {
 
-	public LinkedHashMap<String, Integer> getOrderByCols() {
-		return orderByCols;
+	public RangRowDataPacketSorter(OrderCol[] orderCols) {
+		super(orderCols);
 	}
-
-	public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
-		this.orderByCols = orderByCols;
+	
+	public boolean ascDesc(int byColumnIndex) {
+		if (this.orderCols[byColumnIndex].orderType == OrderCol.COL_ORDER_TYPE_ASC) {// 升序
+			return true;
+		}
+		return false;
 	}
-
-	public Map<String, Integer> getMergeCols() {
-		return mergeCols;
+	
+	public int compareRowData(RowDataPacket l, RowDataPacket r, int byColumnIndex) {
+		byte[] left = l.fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+		byte[] right = r.fieldValues.get(this.orderCols[byColumnIndex].colMeta.colIndex);
+		
+		return compareObject(left, right, this.orderCols[byColumnIndex]);
 	}
-
-	public void setMergeCols(Map<String, Integer> mergeCols) {
-		this.mergeCols = mergeCols;
-	}
-
-	public String[] getGroupByCols() {
-		return groupByCols;
-	}
-
-	public void setGroupByCols(String[] groupByCols) {
-		this.groupByCols = groupByCols;
-	}
-
-	public boolean isHasAggrColumn() {
-		return hasAggrColumn;
-	}
-
-	public void setHasAggrColumn(boolean hasAggrColumn) {
-		this.hasAggrColumn = hasAggrColumn;
-	}
-
 }

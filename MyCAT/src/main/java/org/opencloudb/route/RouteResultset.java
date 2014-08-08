@@ -23,6 +23,7 @@
  */
 package org.opencloudb.route;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ import org.opencloudb.util.FormatUtil;
 /**
  * @author mycat
  */
-public final class RouteResultset {
+public final class RouteResultset implements Serializable {
 	private String statement; // 原始语句
 	private final int sqlType;
 	private RouteResultsetNode[] nodes; // 路由结果节点
@@ -49,6 +50,14 @@ public final class RouteResultset {
 		this.statement = stmt;
 		this.limitSize = -1;
 		this.sqlType = sqlType;
+	}
+	
+	public void resetNodes() {
+		if (nodes != null) {
+			for (RouteResultsetNode node : nodes) {
+				node.resetStatement();
+			}
+		}
 	}
 
 	public SQLMerge getSqlMerge() {

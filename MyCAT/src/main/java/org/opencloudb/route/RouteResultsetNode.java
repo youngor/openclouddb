@@ -23,24 +23,36 @@
  */
 package org.opencloudb.route;
 
+import java.io.Serializable;
+
 import org.opencloudb.server.parser.ServerParse;
 
 /**
  * @author mycat
  */
-public final class RouteResultsetNode {
-	private final String name; // 数据节点名称
-	private final String statement; // 执行的语句
+public final class RouteResultsetNode implements Serializable {
+	private final String name; 	// 数据节点名称
+	private String statement;	// 执行的语句
+	private final String srcStatement; 
 	private final int sqlType;
 	private final boolean canRunInReadDB;
 	private final boolean hasBlanceFlag;
 
-	public RouteResultsetNode(String name, int sqlType, String statement) {
+	public RouteResultsetNode(String name, int sqlType, String srcStatement) {
 		this.name = name;
 		this.sqlType = sqlType;
-		this.statement = statement;
+		this.srcStatement = srcStatement;
+		this.statement = srcStatement;
 		canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
 		hasBlanceFlag = (statement!=null)&&statement.startsWith("/*balance*/");
+	}
+	
+	public void setStatement(String statement) {
+		this.statement = statement;
+	}
+	
+	public void resetStatement() {
+		this.statement = srcStatement;
 	}
 
 	public boolean canRunnINReadDB(boolean autocommit) {

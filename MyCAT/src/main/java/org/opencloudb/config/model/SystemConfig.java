@@ -84,6 +84,13 @@ public final class SystemConfig {
 	private int sequnceHandlerType = SEQUENCEHANDLER_LOCALFILE;
 	private String sqlInterceptor = "org.opencloudb.interceptor.impl.DefaultSqlInterceptor";
 
+	public static final int MUTINODELIMIT_SMALL_DATA=0;
+	public static final int MUTINODELIMIT_LAR_DATA=1;
+    private int mutiNodeLimitType=MUTINODELIMIT_SMALL_DATA;
+    
+    public static final int MUTINODELIMIT_PATCH_SIZE = 100;
+    private int mutiNodePatchSize=MUTINODELIMIT_PATCH_SIZE;
+	
 	public SystemConfig() {
 		this.serverPort = DEFAULT_PORT;
 		this.managerPort = DEFAULT_MANAGER_PORT;
@@ -351,6 +358,22 @@ public final class SystemConfig {
 				+ ", defaultMaxLimit=" + defaultMaxLimit
 				+ ", sequnceHandlerType=" + sequnceHandlerType
 				+ ", sqlInterceptor=" + sqlInterceptor + "]";
+	}
+
+	public int getMutiNodeLimitType() {
+		return mutiNodeLimitType;
+	}
+
+	public void setMutiNodeLimitType(int mutiNodeLimitType) {
+		this.mutiNodeLimitType = mutiNodeLimitType;
+	}
+
+	public int getMutiNodePatchSize() {
+		return mutiNodePatchSize;
+	}
+
+	public void setMutiNodePatchSize(int mutiNodePatchSize) {
+		this.mutiNodePatchSize = mutiNodePatchSize;
 	}
 
 }

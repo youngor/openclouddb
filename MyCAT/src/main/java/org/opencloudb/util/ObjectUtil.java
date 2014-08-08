@@ -23,11 +23,33 @@
  */
 package org.opencloudb.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 /**
  * @author mycat
  */
 public final class ObjectUtil {
 
+	public static Object copyObject(Object object) {
+		ByteArrayOutputStream b = new ByteArrayOutputStream();
+		ObjectOutputStream s = null;
+		try {
+			s = new ObjectOutputStream(b);
+			s.writeObject(object);
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(b.toByteArray()));
+			return ois.readObject();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
     /**
      * 递归地比较两个数组是否相同，支持多维数组。
      * <p>

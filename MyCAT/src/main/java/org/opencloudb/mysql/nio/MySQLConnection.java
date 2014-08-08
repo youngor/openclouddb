@@ -447,6 +447,7 @@ public class MySQLConnection extends BackendAIOConnection {
 			executed = true;
 			if (rrn.getStatement() != null) {
 				conn.sendQueryCmd(rrn.getStatement());
+				LOGGER.debug("excute :" + rrn);
 			}
 
 		}
