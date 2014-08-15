@@ -24,17 +24,38 @@
 package org.opencloudb.route;
 
 import java.sql.SQLNonTransientException;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
+import org.opencloudb.MycatServer;
 import org.opencloudb.cache.CachePool;
 import org.opencloudb.cache.CacheService;
 import org.opencloudb.cache.LayerCachePool;
 import org.opencloudb.config.model.SchemaConfig;
 import org.opencloudb.config.model.SystemConfig;
+import org.opencloudb.route.handler.HintHandler;
+import org.opencloudb.route.handler.HintSQLHandler;
+import org.opencloudb.route.handler.HintSchemaHandler;
 import org.opencloudb.server.parser.ServerParse;
+import org.opencloudb.util.StringUtil;
 
 public class RouteService {
+    private static final Logger LOGGER = Logger
+            .getLogger(RouteService.class);
 	private final CachePool sqlRouteCache;
 	private final LayerCachePool tableId2DataNodeCache;
+
+    //sql注释的类型处理handler 集合，现在支持两种类型的处理：sql,schema
+    private static Map<String,HintHandler> hintHandlerMap = new HashMap<String,HintHandler>();
+
+    static {
+        hintHandlerMap.put("sql",new HintSQLHandler());
+        hintHandlerMap.put("schema",new HintSchemaHandler());
+    }
 
 	public RouteService(CacheService cachService) {
 		sqlRouteCache = cachService.getCachePool("SQLRouteCache");
@@ -51,6 +72,7 @@ public class RouteService {
 			throws SQLNonTransientException {
 		RouteResultset rrs = null;
 		String cacheKey = null;
+
 		if (sqlType == ServerParse.SELECT) {
 			cacheKey = schema.getName() + stmt;
 			rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
@@ -58,27 +80,32 @@ public class RouteService {
 				return rrs;
 			}
 		}
-		// 处理自定义分片注释
-		String mycatHint = "/*!mycat";
-		/* !mycat: select name from aa */
+
+		// 处理自定义分片注释, 注释格式：/*!mycat: type = value */ sql
+		String mycatHint = "/*!mycat:";
+		/* !mycat: sql = select name from aa */
+        /* !mycat: schema = test */
 		if (stmt.startsWith(mycatHint)) {
 			int endPos = stmt.indexOf("*/");
 			if (endPos > 0) {
-				// 用!mycat内部的SQL来做路由分析
-				String hintSQl = stmt.substring(mycatHint.length(), endPos)
+				// 用!mycat:内部的语句来做路由分析
+				String hint = stmt.substring(mycatHint.length(), endPos)
 						.trim();
-				rrs = ServerRouterUtil.route(sysconf, schema, sqlType, hintSQl,
-						charset, info, tableId2DataNodeCache);
-				// 替换RRS中的SQL执行
-				String realSQL = stmt.substring(endPos + "*/".length()).trim();
-				RouteResultsetNode[] oldRsNodes = rrs.getNodes();
-				RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];
-				for (int i = 0; i < newRrsNodes.length; i++) {
-					newRrsNodes[i] = new RouteResultsetNode(
-							oldRsNodes[i].getName(),
-							oldRsNodes[i].getSqlType(), realSQL);
-				}
-				rrs.setNodes(newRrsNodes);
+
+                String[] hints = hint.split("=");
+                if(hints.length == 2){
+                    String hintType = hints[0].trim().toLowerCase(Locale.US);
+                    String hintValue = hints[1].trim();
+                    String realSQL = stmt.substring(endPos + "*/".length()).trim();
+
+                    HintHandler hintHandler = hintHandlerMap.get(hintType);
+                    if(hintHandler != null){
+                        rrs = hintHandler.route(sysconf,schema,sqlType,realSQL,charset,info,tableId2DataNodeCache,
+                                hintValue);
+                    }else{
+                        LOGGER.warn("TODO , support hint sql type : " + hintType );
+                    }
+                }
 			}
 		} else {
 			stmt = stmt.trim();
@@ -91,4 +118,5 @@ public class RouteService {
 		}
 		return rrs;
 	}
+
 }
