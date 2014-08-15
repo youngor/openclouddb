@@ -50,7 +50,7 @@ public class IncrSequencePropHandler extends IncrSequenceHandler {
 
 	private IncrSequencePropHandler() {
 		filePath = Thread.currentThread().getContextClassLoader()
-				.getResource("").getPath()
+				.getResource("").getPath().replaceAll("%20", " ")
 				+ FILE_NAME;
 		// filePath = SystemConfig.getHomePath() + "/conf/seq_gloal.properties";
 	}
