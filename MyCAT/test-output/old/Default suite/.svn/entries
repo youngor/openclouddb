@@ -1,7 +1,7 @@
 10
 
 dir
-529
+530
 http://code.taobao.org/svn/openclouddb/trunk/MyCAT/test-output/old/Default%20suite
 http://code.taobao.org/svn/openclouddb
 
@@ -25,6 +25,74 @@ wuzhihui
 
 
 333ad601-27c3-4164-9dfd-7d68b599a590
+
+Default test.properties
+file
+
+
+
+
+2014-07-30T13:20:06.847166Z
+b568c436168899bdf894e2d038065a16
+2014-07-30T13:14:16.046751Z
+502
+wuzhihui
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+34
+
+classes.html
+file
+
+
+
+
+2014-07-30T13:20:06.847166Z
+a4866307e0572a961d83f72b6a286179
+2014-07-30T13:14:16.046751Z
+502
+wuzhihui
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+95
 
 groups.html
 file
@@ -331,72 +399,4 @@ wuzhihui
 
 
 217
-
-Default test.properties
-file
-
-
-
-
-2014-07-30T13:20:06.847166Z
-b568c436168899bdf894e2d038065a16
-2014-07-30T13:14:16.046751Z
-502
-wuzhihui
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-34
-
-classes.html
-file
-
-
-
-
-2014-07-30T13:20:06.847166Z
-a4866307e0572a961d83f72b6a286179
-2014-07-30T13:14:16.046751Z
-502
-wuzhihui
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-95
 

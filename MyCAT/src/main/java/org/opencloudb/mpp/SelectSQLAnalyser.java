@@ -212,13 +212,8 @@ public class SelectSQLAnalyser {
 			return addLimitCondtionForSelectSQL(rrs, rsNode, defaultMaxLimit);
 
 		} else if (modifySQLLimit && offsetNode != null) {
-			if (true) {
-				offsetNode.setValue(0);
-				offCountNode.setValue(rrs.getLimitSize());
-			} else {
-				offsetNode.setValue(0);
-				offCountNode.setValue(rrs.getLimitStart() + rrs.getLimitSize());
-			}
+			offsetNode.setValue(0);
+			offCountNode.setValue(rrs.getLimitStart() + rrs.getLimitSize());
 			try {
 				return new NodeToString().toString(ast);
 			} catch (StandardException e) {
