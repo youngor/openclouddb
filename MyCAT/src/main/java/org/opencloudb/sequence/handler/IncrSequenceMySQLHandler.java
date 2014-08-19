@@ -80,7 +80,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 		if (seqVal.isNexValValid(nexVal)) {
 			return nexVal;
 		} else {
-			seqVal.fetching.set(false);
+			seqVal.fetching.compareAndSet(true, false);
 			return getSeqValueFromDB(seqVal);
 		}
 	}
