@@ -83,8 +83,9 @@ public class RouteService {
 
 		// 处理自定义分片注释, 注释格式：/*!mycat: type = value */ sql
 		String mycatHint = "/*!mycat:";
-		/* !mycat: sql = select name from aa */
-        /* !mycat: schema = test */
+        String hintSplit = "=";
+		/*!mycat: sql = select name from aa */
+        /*!mycat: schema = test */
 		if (stmt.startsWith(mycatHint)) {
 			int endPos = stmt.indexOf("*/");
 			if (endPos > 0) {
@@ -92,10 +93,10 @@ public class RouteService {
 				String hint = stmt.substring(mycatHint.length(), endPos)
 						.trim();
 
-                String[] hints = hint.split("=");
-                if(hints.length == 2){
-                    String hintType = hints[0].trim().toLowerCase(Locale.US);
-                    String hintValue = hints[1].trim();
+                int firstSplitPos = hint.indexOf(hintSplit);
+                if(firstSplitPos > 0 ){
+                    String hintType = hint.substring(0,firstSplitPos).trim().toLowerCase(Locale.US);
+                    String hintValue = hint.substring(firstSplitPos + hintSplit.length()).trim();
                     String realSQL = stmt.substring(endPos + "*/".length()).trim();
 
                     HintHandler hintHandler = hintHandlerMap.get(hintType);
@@ -103,7 +104,7 @@ public class RouteService {
                         rrs = hintHandler.route(sysconf,schema,sqlType,realSQL,charset,info,tableId2DataNodeCache,
                                 hintValue);
                     }else{
-                        LOGGER.warn("TODO , support hint sql type : " + hintType );
+                        LOGGER.warn("TODO , support hint sql type : " + hintType);
                     }
                 }
 			}
