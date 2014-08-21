@@ -117,11 +117,11 @@ public abstract class PhysicalDatasource {
 	public long getExecuteCount() {
 		return executeCount;
 	}
-
+	
 	public int getActiveCount() {
 		int running = 0;
 		for (BackendConnection con : this.items) {
-			if (con != null && con.isBorrowed()) {
+			if (con != null && con.isBorrowed() && !con.isFake()) {
 				running++;
 			}
 		}
@@ -135,7 +135,7 @@ public abstract class PhysicalDatasource {
 	public int getIdleCount() {
 		int idle = 0;
 		for (BackendConnection con : this.items) {
-			if (con != null && !con.isBorrowed()) {
+			if (con != null && !con.isBorrowed() && !con.isFake()) {
 				idle++;
 			}
 		}
@@ -163,32 +163,32 @@ public abstract class PhysicalDatasource {
 		try {
 
 			for (int i = 0; i < items.length; i++) {
-				BackendConnection c = items[i];
-				if (items[i] == null) {
+				BackendConnection con = items[i];
+				if (con == null) {
 					continue;
-				} else if (items[i].isClosedOrQuit()) {
+				} else if (con.isClosedOrQuit()) {
 					continue;
 				}
-				boolean borrowed = items[i].isBorrowed();
-				if (borrowed) {
+				boolean borrowed = con.isBorrowed();
+				if (borrowed && !con.isFake()) {
 					activeCons++;
-				} else {
+				} else if(!con.isFake()) {
 					idleCons++;
-					idleConList.add(items[i]);
+					idleConList.add(con);
 				}
 				if (!borrowed) {
-					if (validSchema(c.getSchema())) {
-						if (c.getLastTime() < hearBeatTime) {
+					if (validSchema(con.getSchema())) {
+						if (con.getLastTime() < hearBeatTime) {
 							if (heartBeatCons.size() < MAX_CONS_IN_ONE_CHECK) {
 								// Heart beat check
-								c.setBorrowed(true);
-								heartBeatCons.add(c);
+								con.setBorrowed(true);
+								heartBeatCons.add(con);
 							}
 						}
-					} else if (c.getLastTime() < hearBeatTime2) {
+					} else if (con.getLastTime() < hearBeatTime2) {
 						{// not valid schema conntion should close for idle
 							// exceed 2*conHeartBeatPeriod
-							c.close(" heart beate idle ");
+							con.close(" heart beate idle ");
 							items[i] = null;
 						}
 
@@ -361,6 +361,7 @@ public abstract class PhysicalDatasource {
 		// used to store new created connection
 		int emptyIndex = -1;
 		int bestCandidate = -1;
+		int faKeIndex = -1;
 		int bestCandidateSimilarity = -1;
 		final ReentrantLock lock = this.lock;
 		lock.lock();
@@ -373,6 +374,9 @@ public abstract class PhysicalDatasource {
 					emptyIndex = i;
 				} else if (items[i] != null) {
 					BackendConnection conn = items[i];
+					if (conn.isFake()) {
+						faKeIndex = i;
+					}
 					// closed or quit
 					if (conn.isClosedOrQuit()) {
 						items[i] = null;
@@ -388,6 +392,9 @@ public abstract class PhysicalDatasource {
 						}
 					}
 				}
+			}
+			if (emptyIndex == -1) {
+				emptyIndex = faKeIndex;
 			}
 			if (bestCandidate != -1) {
 				takeCon(items[bestCandidate], handler, attachment,
@@ -449,6 +456,11 @@ public abstract class PhysicalDatasource {
 }
 
 class FakeConnection implements BackendConnection {
+
+	@Override
+	public boolean isFake() {
+		return true;
+	}
 
 	@Override
 	public boolean isFromSlaveDB() {

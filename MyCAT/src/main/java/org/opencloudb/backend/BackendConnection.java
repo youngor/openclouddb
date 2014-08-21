@@ -63,5 +63,7 @@ public interface BackendConnection extends ClosableConnection {
 	public boolean isAutocommit();
 
 	public long getId();
+	
+	public boolean isFake();
 
 }

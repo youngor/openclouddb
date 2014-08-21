@@ -443,4 +443,8 @@ public class JDBCConnection implements BackendConnection {
 				+ ", port=" + port + "]";
 	}
 
+	@Override
+	public boolean isFake(){
+		return false;
+	}
 }

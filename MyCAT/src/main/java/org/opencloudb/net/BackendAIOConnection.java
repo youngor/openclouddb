@@ -115,4 +115,8 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 				+ port + ", localPort=" + localPort + "]";
 	}
 
+	@Override
+	public boolean isFake(){
+		return false;
+	}
 }

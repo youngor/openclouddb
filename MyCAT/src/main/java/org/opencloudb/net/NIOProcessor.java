@@ -166,7 +166,7 @@ public final class NIOProcessor {
 			BackendConnection c = it.next().getValue();
 
 			// 删除空连接
-			if (c == null) {
+			if (c == null|| c.isFake()) {
 				it.remove();
 				continue;
 			}
