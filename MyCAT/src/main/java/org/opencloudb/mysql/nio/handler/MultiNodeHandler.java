@@ -65,6 +65,7 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 	}
 
 	private int nodeCount;
+	private int okCount;
 	private Runnable terminateCallBack;
 
 	@Override
@@ -150,9 +151,19 @@ abstract class MultiNodeHandler implements ResponseHandler, Terminatable {
 		}
 		return zeroReached;
 	}
+	
+	protected boolean decrementOkCountBy(int finished) {
+		lock.lock();
+		try {
+			return --okCount == 0;
+		} finally {
+			lock.unlock();
+		}
+	}
 
 	protected void reset(int initCount) {
 		nodeCount = initCount;
+		okCount = initCount;
 		isFailed.set(false);
 		error = null;
 		packetId = 0;

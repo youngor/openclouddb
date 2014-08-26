@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,7 +44,6 @@ import org.opencloudb.config.ErrorCode;
 import org.opencloudb.config.model.SystemConfig;
 import org.opencloudb.mpp.DataMergeService;
 import org.opencloudb.mpp.MutiDataMergeService;
-import org.opencloudb.mpp.controller.NodeExcutionController;
 import org.opencloudb.mysql.nio.handler.CommitNodeHandler;
 import org.opencloudb.mysql.nio.handler.KillConnectionHandler;
 import org.opencloudb.mysql.nio.handler.MultiNodeQueryHandler;
@@ -59,8 +58,6 @@ import org.opencloudb.route.RouteResultset;
 import org.opencloudb.route.RouteResultsetNode;
 import org.opencloudb.server.parser.ServerParse;
 import org.opencloudb.util.ObjectUtil;
-
-import com.sun.corba.se.impl.orbutil.ObjectUtility;
 
 /**
  * @author mycat

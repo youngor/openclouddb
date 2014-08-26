@@ -28,12 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.opencloudb.MycatConfig;
-import org.opencloudb.MycatServer;
 import org.opencloudb.backend.BackendConnection;
-import org.opencloudb.backend.ConnectionMeta;
-import org.opencloudb.backend.PhysicalDBNode;
-import org.opencloudb.cache.MysqlDataSetService;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.mpp.MutiDataMergeService;
 import org.opencloudb.net.mysql.ErrorPacket;
@@ -58,8 +53,6 @@ public class NodeWithLimitHandler implements ResponseHandler, Terminatable {
 	private volatile ByteBuffer buffer;
 	private volatile boolean isRunning;
 	private Runnable terminateCallBack;
-	private static final MysqlDataSetService dataSetSrv = MysqlDataSetService
-			.getInstance();
 
 	public NodeWithLimitHandler(RouteResultsetNode route,
 			NonBlockingSession session, MutiDataMergeService dataMergeSvr) {
@@ -242,9 +235,7 @@ public class NodeWithLimitHandler implements ResponseHandler, Terminatable {
 
 	@Override
 	public void rowResponse(byte[] row, BackendConnection conn) {
-		boolean canOutput = dataMergeSvr.onNewRecord(
-				this.node.getName(),
-				row);
+		dataMergeSvr.onNewRecord(this.node.getName(), row);
 	}
 
 	@Override

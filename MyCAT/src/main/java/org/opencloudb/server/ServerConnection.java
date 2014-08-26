@@ -26,6 +26,7 @@ package org.opencloudb.server;
 import java.io.IOException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.sql.SQLNonTransientException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 import org.opencloudb.MycatServer;
@@ -52,6 +53,9 @@ public class ServerConnection extends FrontendConnection {
 	private volatile String txInterrputMsg = "";
 	private long lastInsertId;
 	private NonBlockingSession session;
+
+	private AtomicBoolean hasOkRsp = new AtomicBoolean(false);  //表示在Data返回后还有OK Packet报文的语句
+	
 	public ServerConnection(AsynchronousSocketChannel channel)
 			throws IOException {
 		super(channel);
@@ -167,6 +171,8 @@ public class ServerConnection extends FrontendConnection {
 					.getRouterservice()
 					.route(MycatServer.getInstance().getConfig().getSystem(),
 							schema, type, sql, this.charset, this);
+			
+			hasOkRsp.set(rrs.isCallStatement());
 		} catch (SQLNonTransientException e) {
 			StringBuilder s = new StringBuilder();
 			LOGGER.warn(s.append(this).append(sql).toString() + " err:"
@@ -235,6 +241,11 @@ public class ServerConnection extends FrontendConnection {
 			});
 			return;
 		}
+	}
+
+	
+	public AtomicBoolean isHasOkRsp() {
+		return hasOkRsp;
 	}
 
 	@Override

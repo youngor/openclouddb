@@ -82,7 +82,7 @@ public class MySQLConnection extends BackendAIOConnection {
 		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
 		// client extension
 		// flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
-		// flag |= Capabilities.CLIENT_MULTI_RESULTS;
+		flag |= Capabilities.CLIENT_MULTI_RESULTS;
 		return flag;
 	}
 

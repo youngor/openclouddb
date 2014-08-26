@@ -33,7 +33,6 @@ import org.opencloudb.MycatServer;
 import org.opencloudb.backend.BackendConnection;
 import org.opencloudb.backend.ConnectionMeta;
 import org.opencloudb.backend.PhysicalDBNode;
-import org.opencloudb.cache.MysqlDataSetService;
 import org.opencloudb.config.ErrorCode;
 import org.opencloudb.net.mysql.ErrorPacket;
 import org.opencloudb.net.mysql.OkPacket;
@@ -55,8 +54,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 	private volatile ByteBuffer buffer;
 	private volatile boolean isRunning;
 	private Runnable terminateCallBack;
-	private static final MysqlDataSetService dataSetSrv = MysqlDataSetService
-			.getInstance();
 
 	public SingleNodeHandler(RouteResultsetNode route,
 			NonBlockingSession session) {
@@ -229,12 +226,16 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		conn.setRunning(false);
 		conn.recordSql(source.getHost(), source.getSchema(),
 				node.getStatement());
-		session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
-		endRunning();
+		
+		//判断是调用存储过程的话不能在这里释放链接
+		if ( !source.isHasOkRsp().get() )
+		{
+			session.releaseConnectionIfSafe(conn, LOGGER.isDebugEnabled());
+			endRunning();
+		}
 		eof[3] = ++packetId;
 		buffer = source.writeToBuffer(eof, allocBuffer());
 		source.write(buffer);
-
 	}
 
 	/**
@@ -262,7 +263,6 @@ public class SingleNodeHandler implements ResponseHandler, Terminatable {
 		}
 		eof[3] = ++packetId;
 		buffer = source.writeToBuffer(eof, buffer);
-
 	}
 
 	@Override

@@ -45,6 +45,8 @@ public final class RouteResultset implements Serializable {
 	// limit output total
 	private int limitSize;
 	private SQLMerge sqlMerge;
+	
+	private Boolean callStatement = false;  //处理call关键字
 
 	public RouteResultset(String stmt, int sqlType) {
 		this.statement = stmt;
@@ -187,6 +189,14 @@ public final class RouteResultset implements Serializable {
 
 	public void setStatement(String statement) {
 		this.statement = statement;
+	}
+	
+	public Boolean isCallStatement() {
+		return callStatement;
+	}
+
+	public void setCallStatement(Boolean callStatement) {
+		this.callStatement = callStatement;
 	}
 
 	@Override

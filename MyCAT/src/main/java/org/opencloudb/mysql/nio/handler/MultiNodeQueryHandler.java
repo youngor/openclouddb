@@ -202,7 +202,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 			} finally {
 				lock.unlock();
 			}
-			if (decrementCountBy(1)) {
+			
+			boolean isEndPacket = source.isHasOkRsp().get() ? decrementOkCountBy(1) : decrementCountBy(1);
+			if (isEndPacket) {
 				if (this.autocommit) {// clear all connections
 					session.releaseConnections();
 				}
@@ -210,9 +212,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 					tryErrorFinished(conn, true);
 					return;
 				}
+				
 				lock.lock();
 				try {
-
 					ok.packetId = ++packetId;// OK_PACKET
 					ok.affectedRows = affectedRows;
 					if (insertId > 0) {
@@ -250,22 +252,30 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		if (errorRepsponsed) {
 			return;
 		}
-		if (clearIfSessionClosed(session)) {
-			return;
-		} else if (canClose(conn, false)) {
-			return;
-		}
+		
 		ServerConnection source = session.getSource();
-		if (decrementCountBy(1)) {
-			if (this.autocommit) {// clear all connections
-				session.releaseConnections();
-			}
-
-			if (this.isFail() || session.closed()) {
-				tryErrorFinished(conn, true);
+		if ( !source.isHasOkRsp().get() )
+		{
+			if (clearIfSessionClosed(session)) {
+				return;
+			} else if (canClose(conn, false)) {
 				return;
 			}
-
+		}
+		
+		if (decrementCountBy(1)) {
+			if ( !source.isHasOkRsp().get() )
+			{
+				if (this.autocommit) {// clear all connections
+					session.releaseConnections();
+				}
+		
+				if (this.isFail() || session.closed()) {
+					tryErrorFinished(conn, true);
+					return;
+				}
+			}
+			
 			try {
 				lock.lock();
 				// lazy allocate buffer
@@ -396,7 +406,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler {
 		lock.lock();
 		try {
 			if (dataMergeSvr != null) {
-				boolean canOutput = dataMergeSvr.onNewRecord(
+				dataMergeSvr.onNewRecord(
 						((RouteResultsetNode) conn.getAttachment()).getName(),
 						row);
 			} else {
