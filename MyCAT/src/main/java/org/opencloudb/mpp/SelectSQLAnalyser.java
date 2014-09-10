@@ -91,7 +91,8 @@ public class SelectSQLAnalyser {
 	}
 
 	public static String addLimitCondtionForSelectSQL(RouteResultset rrs,
-			CursorNode cursNode, int defaultMaxLimit) throws SQLSyntaxErrorException {
+			CursorNode cursNode, int defaultMaxLimit)
+			throws SQLSyntaxErrorException {
 		NumericConstantNode offCountNode = new NumericConstantNode();
 		offCountNode.setNodeType(NodeTypes.INT_CONSTANT_NODE);
 		offCountNode.setValue(defaultMaxLimit);
@@ -208,7 +209,7 @@ public class SelectSQLAnalyser {
 		}
 		// if no limit in sql and defaultMaxLimit not equals -1 ,then and limit
 		if ((modifySQLLimit) && (offCountNode == null)
-			&& (defaultMaxLimit != -1)&& !rrs.hasPrimaryKeyToCache()) {
+				&& (defaultMaxLimit != -1) && !rrs.hasPrimaryKeyToCache()) {
 			return addLimitCondtionForSelectSQL(rrs, rsNode, defaultMaxLimit);
 
 		} else if (modifySQLLimit && offsetNode != null) {
@@ -311,6 +312,9 @@ public class SelectSQLAnalyser {
 				defaultTableName = baseT.getOrigTableName().getTableName();
 			} else if (fromT instanceof JoinNode) {
 				ResultSetNode leftNode = ((JoinNode) fromT).getLeftResultSet();
+				while (leftNode instanceof JoinNode) {
+					leftNode = ((JoinNode) leftNode).getLeftResultSet();
+				}
 				if (leftNode instanceof FromBaseTable) {
 					defaultTableName = ((FromBaseTable) leftNode)
 							.getOrigTableName().getTableName();
